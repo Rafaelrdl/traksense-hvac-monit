@@ -1,19 +1,19 @@
 import React from 'react';
-import { 
-  LayoutGrid, 
-  PanelsTopLeft, 
+  LayoutG
+  AirVent, 
+  BellRing, 
   AirVent, 
   Activity, 
   BellRing, 
   Wrench, 
-  FileText, 
-  Settings,
-  type LucideIcon
-} from 'lucide-react';
+  icon: Luci
+};
+const NAV_ITEMS: 
+  { id: 'custom-dashbo
 
-type NavItem = {
-  id: string;
-  label: string;
+  { id: 'mainten
+  { id: 'sett
+
   icon: LucideIcon;
   path: string;
 };
@@ -30,64 +30,62 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 interface HorizontalNavProps {
-  currentPage: string;
-  onNavigate: (page: string) => void;
-}
 
-export const HorizontalNav: React.FC<HorizontalNavProps> = ({ currentPage, onNavigate }) => {
   return (
-    <nav className="flex items-center gap-2 overflow-x-auto scrollbar-hide h-12" aria-label="Seções">
-      {NAV_ITEMS.map((item) => {
-        const isActive = currentPage === item.id;
-        const Icon = item.icon;
+ 
+
+        return (
+  return (
+            className={`
+              ${isActive 
+                : "text-slate-700 hover:bg-slate-
+            `}
         
         return (
-          <button
-            key={item.id}
-            onClick={() => onNavigate(item.id)}
-            className={`
-              flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition whitespace-nowrap
-              ${isActive 
-                ? "bg-white text-teal-800 shadow-sm font-medium" 
-                : "text-slate-600 hover:bg-white/70"
-              }
-            `}
-            aria-current={isActive ? "page" : undefined}
-          >
-            <Icon className="size-4" aria-hidden />
-            <span className="hidden md:inline">{item.label}</span>
-          </button>
         );
-      })}
     </nav>
-  );
 };
-
-export const MobileNav: React.FC<HorizontalNavProps> = ({ currentPage, onNavigate }) => {
-  return (
-    <nav className="flex flex-col gap-2" aria-label="Seções">
-      {NAV_ITEMS.map((item) => {
-        const isActive = currentPage === item.id;
-        const Icon = item.icon;
-
-        return (
-          <button
-            key={item.id}
-            onClick={() => onNavigate(item.id)}
             className={`
-              flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition text-left w-full
+
               ${isActive 
-                ? "bg-teal-100 text-teal-800 font-medium" 
-                : "text-slate-700 hover:bg-slate-100"
-              }
+
+
+
             `}
-            aria-current={isActive ? "page" : undefined}
-          >
-            <Icon className="size-5" aria-hidden />
-            <span>{item.label}</span>
-          </button>
-        );
+
+
+
+
+
+
       })}
-    </nav>
+
   );
-};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
