@@ -1,38 +1,41 @@
 import React from 'react';
 import { 
-import { 
   LayoutGrid, 
+  PanelsTopLeft,
+  AirVent,
+  Activity,
+  BellRing,
   Wrench, 
+  FileText,
   Settings 
-import { cn 
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-  id: stri
-  icon: Luci
+type NavItem = {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  path: string;
 };
-const NAV_ITEMS: NavIt
-  { id: 'custom-dashboard', label
 
-  { id: 'maintena
-  { id: 'setti
-
-  currentPage: strin
-}
-ex
-
-    <nav 
-        "flex gap-2",
-          ? "flex-col space-y-1" // Mobile: vertical layout
-      )}
-      style={!isMobile ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefin
-      {NAV_ITEMS.map((item) => {
-        const isActive = currentPage === item.id;
-        return (
-            key={item.id}
-  
+const NAV_ITEMS: NavItem[] = [
+  { id: 'overview', label: 'Visão Geral', icon: LayoutGrid, path: '/overview' },
+  { id: 'custom-dashboard', label: 'Dashboard Custom', icon: PanelsTopLeft, path: '/custom-dashboard' },
+  { id: 'assets', label: 'Ativos (HVAC)', icon: AirVent, path: '/assets' },
+  { id: 'sensors', label: 'Sensores & Telemetria', icon: Activity, path: '/sensors' },
+  { id: 'alerts', label: 'Alertas & Regras', icon: BellRing, path: '/alerts' },
+  { id: 'maintenance', label: 'Manutenção', icon: Wrench, path: '/maintenance' },
+  { id: 'reports', label: 'Relatórios', icon: FileText, path: '/reports' },
+  { id: 'settings', label: 'Configurações', icon: Settings, path: '/settings' }
+];
 
 interface HorizontalNavProps {
   currentPage: string;
   onNavigate: (page: string) => void;
+}
+
+function cn(...classes: Array<string | false | undefined>) {
+  return classes.filter(Boolean).join(' ');
 }
 
 export const HorizontalNav: React.FC<HorizontalNavProps> = ({ currentPage, onNavigate }) => {
@@ -62,7 +65,8 @@ export const HorizontalNav: React.FC<HorizontalNavProps> = ({ currentPage, onNav
             <Icon className="size-4 shrink-0" aria-hidden="true" />
             <span className="hidden md:inline">{item.label}</span>
           </button>
-
+        );
       })}
-
+    </nav>
   );
+};
