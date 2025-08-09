@@ -1,19 +1,19 @@
 import { MaintenanceTask, MaintenanceSchedule, MaintenanceHistory, MaintenancePart } from '../types/hvac';
 
-// Mock data for maintenance management
-export class MaintenanceDataGenerator {
+  private tasks: MaintenanceTask[] = []
+  private history: MaintenanceHistory[]
   private tasks: MaintenanceTask[] = [];
   private schedules: MaintenanceSchedule[] = [];
   private history: MaintenanceHistory[] = [];
 
-  constructor(assetIds: string[], assetTags: string[]) {
-    this.generateMaintenanceSchedules(assetIds, assetTags);
-    this.generateMaintenanceTasks(assetIds, assetTags);
-    this.generateMaintenanceHistory(assetIds, assetTags);
-  }
+      {
+        title: 'Air Filter Replacement',
+        frequency: 'monthly' as const,
+        duration: 60,
+   
 
-  private generateMaintenanceSchedules(assetIds: string[], assetTags: string[]) {
-    const scheduleTemplates = [
+      },
+        type: 'cleaning' as con
       {
         type: 'filter' as const,
         title: 'Air Filter Replacement',
@@ -32,228 +32,228 @@ export class MaintenanceDataGenerator {
         title: 'Coil Cleaning',
         description: 'Clean evaporator and condenser coils to maintain heat transfer efficiency',
         frequency: 'quarterly' as const,
-        interval: 90,
+        parts: [],
         duration: 180,
-        priority: 'High' as const,
+      },
         instructions: 'Power down system, remove panels, clean coils with approved solution, rinse and dry',
         parts: [{ id: '2', name: 'Coil Cleaner Solution', partNumber: 'CLN-001', quantity: 1, unitCost: 25.00 }],
         tools: ['Coil cleaning brush', 'Pressure washer', 'Chemical sprayer'],
         safety: ['Wear protective gear', 'Ensure adequate ventilation', 'Lockout/tagout procedures']
       },
-      {
+       
         type: 'calibration' as const,
         title: 'Sensor Calibration',
         description: 'Calibrate temperature and pressure sensors for accurate readings',
         frequency: 'annually' as const,
         interval: 365,
-        duration: 120,
+        frequency: 'mo
         priority: 'Medium' as const,
-        instructions: 'Compare sensor readings with reference instruments, adjust calibration as needed',
+        priority: 'Medium' as const,
         parts: [],
         tools: ['Calibration kit', 'Reference thermometer', 'Pressure gauge'],
         safety: ['Handle precision instruments carefully']
-      },
+    ];
       {
         type: 'inspection' as const,
         title: 'Electrical Connection Inspection',
         description: 'Inspect electrical connections for signs of wear, corrosion, or loose connections',
         frequency: 'quarterly' as const,
-        interval: 90,
+
         duration: 90,
         priority: 'High' as const,
         instructions: 'Visual inspection of all electrical connections, tighten loose connections, replace damaged wiring',
-        parts: [{ id: '3', name: 'Electrical Contact Cleaner', partNumber: 'ELC-001', quantity: 1, unitCost: 15.00 }],
-        tools: ['Multimeter', 'Torque wrench', 'Wire strippers'],
-        safety: ['Lockout/tagout procedures', 'Wear insulated gloves', 'Test for live circuits']
-      },
-      {
-        type: 'lubrication' as const,
-        title: 'Bearing Lubrication',
-        description: 'Lubricate motor bearings and moving parts',
-        frequency: 'monthly' as const,
-        interval: 30,
-        duration: 45,
-        priority: 'Medium' as const,
-        instructions: 'Apply specified lubricant to bearing points, check for proper grease level',
-        parts: [{ id: '4', name: 'High-Temperature Bearing Grease', partNumber: 'LUB-001', quantity: 1, unitCost: 35.00 }],
-        tools: ['Grease gun', 'Cleaning cloths'],
-        safety: ['Ensure system is powered off', 'Avoid over-lubrication']
-      }
-    ];
-
-    assetIds.forEach((assetId, index) => {
-      const assetTag = assetTags[index];
-      
-      scheduleTemplates.forEach((template, templateIndex) => {
-        const scheduleId = `sched-${assetId}-${templateIndex}`;
-        const nextDue = new Date();
-        nextDue.setDate(nextDue.getDate() + Math.floor(Math.random() * template.interval));
-
-        this.schedules.push({
-          id: scheduleId,
-          assetId,
-          assetTag,
-          maintenanceType: template.type,
-          title: template.title,
-          description: template.description,
-          frequency: template.frequency,
-          interval: template.interval,
-          estimatedDuration: template.duration,
-          priority: template.priority,
-          enabled: true,
-          nextDue,
-          assignedTeam: Math.random() > 0.5 ? 'HVAC Team A' : 'HVAC Team B',
-          instructions: template.instructions,
-          requiredParts: template.parts,
-          requiredTools: template.tools,
-          safetyRequirements: template.safety
-        });
-      });
-    });
-  }
-
-  private generateMaintenanceTasks(assetIds: string[], assetTags: string[]) {
-    const taskTypes = ['preventive', 'corrective', 'predictive'] as const;
-    const categories = ['filter', 'cleaning', 'calibration', 'inspection', 'repair', 'lubrication'] as const;
-    const priorities = ['Low', 'Medium', 'High', 'Critical'] as const;
-    const statuses = ['scheduled', 'in_progress', 'completed', 'overdue'] as const;
-    const assignees = ['John Smith', 'Maria Garcia', 'David Chen', 'Sarah Wilson', 'Mike Johnson'];
-
-    // Generate upcoming and current tasks
-    for (let i = 0; i < 25; i++) {
-      const assetIndex = Math.floor(Math.random() * assetIds.length);
-      const assetId = assetIds[assetIndex];
-      const assetTag = assetTags[assetIndex];
-      const type = taskTypes[Math.floor(Math.random() * taskTypes.length)];
-      const category = categories[Math.floor(Math.random() * categories.length)];
       const priority = priorities[Math.floor(Math.random() * priorities.length)];
-      const status = statuses[Math.floor(Math.random() * statuses.length)];
 
-      const scheduledDate = new Date();
       if (status === 'overdue') {
-        scheduledDate.setDate(scheduledDate.getDate() - Math.floor(Math.random() * 30));
-      } else {
-        scheduledDate.setDate(scheduledDate.getDate() + Math.floor(Math.random() * 60));
+      } 
+      }
+      const task: MaintenanceTask = {
+        assetId,
+        type,
+        title: this.getTaskTitle(categ
+        priority,
+        scheduledDate
+        assignedTo: assignees[Math.f
+        recurring: Math.random() > 0.3,
+        recurringType: Math.random() > 0.5 ? 'monthly' : 'quarterly',
+        createdBy: 'System',
+        partsUsed: status === 'completed' ? this.generateRandomParts() : u
+       
+      
+
+  }
+  private generateMaintenanceHistory(ass
+    co
+    // Generate 50 historical maintenance records
+      const assetIndex = Math.floor(Math.random() * assetIds.le
+      const assetTag = assetTags[as
+      
+
+      const beforeHealthScore
+      const afterHealthSc
+      this.history
+        taskId: `ta
+        assetTag,
+        category,
+        completedDate,
+        duration: 30 + Math.floor(Math.r
+        partsUsed: this.generateRandom
+        beforeHealthScore,
+        findings: this.getFindings(cat
+      });
+  }
+  private getTaskTitle(category: string): string {
+      filter: 'Air Filter Replacement',
+      calibration: 'Sensor Calibration',
+      repair: 'Component Repair',
+      replacement: 'Component Replacement',
+    };
+  }
+  priva
+   
+
+      repair: 'Repair identified component issues and test functionality',
+      replacement: 'Replace worn or failed components',
+    };
+  }
+  private generateRandomParts(): MaintenancePart[] {
+      { id: '1', name: 'HEPA Filter 24x24x4', partNumber: 'FLT-2424-4', quantity: 1, unitCost: 45.0
+
+      { id: '5', name: 'V-Belt', partNumbe
+
+    return parts.slice(0, numParts).map(part => ({
+      quantity: Math.floor(Math.random() * 
+  }
+  private getMaintenanceNotes(category: string): string {
+      filter: 'Replaced filters were moderately dirty. System airflow improved si
+      const priority = priorities[Math.floor(Math.random() * priorities.length)];
+      repair: 'Replaced faulty component. System tested and operating norma
+
+  }
+      if (status === 'overdue') {
+      filter: ['Filter 70% loaded with dust and debris', 'Housing seal intact', 'No air 
+      calibrat
+      repair: ['Faulty pressure switch identified', 'Wiring connections corroded'],
       }
 
       const task: MaintenanceTask = {
-        id: `task-${i + 1}`,
+      filter: ['Continue mon
         assetId,
-        assetTag,
+      repair: ['M
         type,
-        category,
-        title: this.getTaskTitle(category),
-        description: this.getTaskDescription(category),
+  }
+  getTasks(): MaintenanceTask[] {
+  }
         priority,
-        status,
-        scheduledDate,
-        estimatedDuration: 30 + Math.floor(Math.random() * 180), // 30-210 minutes
-        assignedTo: assignees[Math.floor(Math.random() * assignees.length)],
-        assignedTeam: Math.random() > 0.5 ? 'HVAC Team A' : 'HVAC Team B',
+  }
+  getHistory(): Mainte
+  }
+  // Add a new task
+    const newTask: MaintenanceTask = {
         recurring: Math.random() > 0.3,
-        recurringInterval: Math.random() > 0.5 ? 30 : 90,
+      createdBy: 'Current User'
         recurringType: Math.random() > 0.5 ? 'monthly' : 'quarterly',
-        createdDate: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)),
+  }
         createdBy: 'System',
-        cost: status === 'completed' ? 50 + Math.floor(Math.random() * 500) : undefined,
-        partsUsed: status === 'completed' ? this.generateRandomParts() : undefined,
-        completedDate: status === 'completed' ? new Date() : undefined,
-        completedBy: status === 'completed' ? assignees[Math.floor(Math.random() * assignees.length)] : undefined,
-        notes: status === 'completed' ? 'Task completed successfully. All components functioning normally.' : undefined
-      };
+    const taskIndex = this.tasks.findIndex(t => t.id === taskId);
 
-      this.tasks.push(task);
-    }
+    return this.tasks[taskIndex];
+
+  completeTask(taskId: string, notes?: string, cost?: number): MaintenanceTask | null {
+      st
+
+      cost
+
   }
 
-  private generateMaintenanceHistory(assetIds: string[], assetTags: string[]) {
-    const categories = ['filter', 'cleaning', 'calibration', 'inspection', 'repair', 'lubrication'] as const;
-    const assignees = ['John Smith', 'Maria Garcia', 'David Chen', 'Sarah Wilson', 'Mike Johnson'];
+        assetId: task.assetId,
+        type: task.type,
+        title: task.title,
 
     // Generate 50 historical maintenance records
-    for (let i = 0; i < 50; i++) {
-      const assetIndex = Math.floor(Math.random() * assetIds.length);
-      const assetId = assetIds[assetIndex];
-      const assetTag = assetTags[assetIndex];
-      const category = categories[Math.floor(Math.random() * categories.length)];
+        notes: notes || '',
+        recommendations: ['Continue monitoring system performance']
+      this.history.unshift(historyEntry);
+      // Create next recurring task if applic
+        const nextTask: MaintenanceTask = {
       
-      const completedDate = new Date();
-      completedDate.setDate(completedDate.getDate() - Math.floor(Math.random() * 365)); // Last year
+          scheduledDate: new Date(Date.
+          completedDate: undefined,
 
-      const beforeHealthScore = 60 + Math.floor(Math.random() * 30); // 60-90
-      const improvement = 5 + Math.floor(Math.random() * 15); // 5-20 point improvement
-      const afterHealthScore = Math.min(100, beforeHealthScore + improvement);
-
-      this.history.push({
-        id: `hist-${i + 1}`,
-        taskId: `task-hist-${i + 1}`,
-        assetId,
-        assetTag,
-        type: 'preventive',
-        category,
-        title: this.getTaskTitle(category),
-        completedDate,
-        completedBy: assignees[Math.floor(Math.random() * assignees.length)],
-        duration: 30 + Math.floor(Math.random() * 180),
-        cost: 50 + Math.floor(Math.random() * 500),
-        partsUsed: this.generateRandomParts(),
-        notes: this.getMaintenanceNotes(category),
-        beforeHealthScore,
-        afterHealthScore,
-        findings: this.getFindings(category),
-        recommendations: this.getRecommendations(category)
-      });
+          partsUsed: undefined
+        this.tasks.push(nextTask);
     }
+
+}
+
+
+
+        assetTag,
+
+        category,
+
+        completedDate,
+
+
+
+
+
+        beforeHealthScore,
+
+
+
+      });
+
   }
 
   private getTaskTitle(category: string): string {
-    const titles = {
+
       filter: 'Air Filter Replacement',
-      cleaning: 'System Cleaning & Inspection',
+
       calibration: 'Sensor Calibration',
-      inspection: 'Routine Inspection',
+
       repair: 'Component Repair',
-      lubrication: 'Bearing Lubrication',
+
       replacement: 'Component Replacement',
-      electrical: 'Electrical System Check'
+
     };
-    return titles[category as keyof typeof titles] || 'General Maintenance';
+
   }
 
-  private getTaskDescription(category: string): string {
-    const descriptions = {
-      filter: 'Replace air filters and inspect filter housing for proper seal',
-      cleaning: 'Clean coils, drains, and inspect overall system cleanliness',
-      calibration: 'Calibrate temperature and pressure sensors for accurate readings',
-      inspection: 'Visual inspection of all system components and connections',
+
+
+
+
+
+
       repair: 'Repair identified component issues and test functionality',
-      lubrication: 'Lubricate bearings and moving parts per manufacturer specifications',
+
       replacement: 'Replace worn or failed components',
-      electrical: 'Inspect electrical connections and perform continuity tests'
+
     };
-    return descriptions[category as keyof typeof descriptions] || 'Perform scheduled maintenance';
+
   }
 
   private generateRandomParts(): MaintenancePart[] {
-    const parts = [
-      { id: '1', name: 'HEPA Filter 24x24x4', partNumber: 'FLT-2424-4', quantity: 1, unitCost: 45.00 },
-      { id: '2', name: 'Coil Cleaner Solution', partNumber: 'CLN-001', quantity: 1, unitCost: 25.00 },
-      { id: '3', name: 'Motor Oil', partNumber: 'OIL-001', quantity: 2, unitCost: 15.00 },
-      { id: '4', name: 'Electrical Connector', partNumber: 'ELC-002', quantity: 3, unitCost: 8.50 },
-      { id: '5', name: 'V-Belt', partNumber: 'BLT-001', quantity: 1, unitCost: 35.00 }
-    ];
 
-    const numParts = Math.floor(Math.random() * 3) + 1;
+
+
+
+
+
+
+
+
     return parts.slice(0, numParts).map(part => ({
-      ...part,
-      quantity: Math.floor(Math.random() * 3) + 1
-    }));
+
+
+
   }
 
   private getMaintenanceNotes(category: string): string {
-    const notes = {
-      filter: 'Replaced filters were moderately dirty. System airflow improved significantly.',
-      cleaning: 'Coils had moderate buildup. Cleaned thoroughly and checked drain functionality.',
+
+
+
       calibration: 'Sensors were within acceptable range. Minor adjustments made.',
       inspection: 'Overall system condition good. Minor wear noted on belt drive.',
       repair: 'Replaced faulty component. System tested and operating normally.',
