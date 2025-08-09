@@ -133,90 +133,90 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
         ]
       }
     ],
-    graphic: [
       // Background circle for main content
-      {
+      // Background circle for main content
+      {circle',
         type: 'circle',
         left: '50%',
-        top: '55%',
         shape: {
-          cx: 0,
+        shape: {
+          cy: 0,
           cy: 0,
           r: 65
-        },
         style: {
+        style: { 255, 0.95)',
           fill: 'rgba(255, 255, 255, 0.95)',
-          stroke: 'rgba(7, 106, 117, 0.08)',
-          lineWidth: 1,
+          shadowColor: 'rgba(0, 0, 0, 0.08)'
+      {
           shadowBlur: 12,
           shadowColor: 'rgba(0, 0, 0, 0.08)'
-        }
-      },
-      // Main score display
-      {
-        type: 'text',
-        left: '50%',
         top: '48%',
         style: {
-          text: `${safeHealthScore.toFixed(0)}`,
+      // Main score display0)}`,
+      {
+        type: 'text',
+        left: '50%',lor(safeHealthScore),
+          textAlign: 'center',
+        style: {ter'
+        }
           fontSize: 32,
           fontWeight: 'bold',
           fill: getHealthColor(safeHealthScore),
-          textAlign: 'center',
-          fontFamily: 'Inter'
-        }
-      },
-      // Score denominator
-      {
         type: 'text',
         left: '50%',
-        top: '56%',
-        style: {
-          text: '/100',
-          fontSize: 14,
-          fill: '#999',
-          textAlign: 'center',
-          fontFamily: 'Inter'
         }
+        style: {
+      // Score denominator
+          fontSize: 14,
+        type: 'text',
+        left: '50%',
+          fontFamily: 'Inter'
+        style: {
       },
       // Status label
       {
-        type: 'text',
         left: '50%',
-        top: '64%',
-        style: {
+          fontFamily: 'Inter'
+        }
           text: getHealthLabel(safeHealthScore),
           fontSize: 13,
           fill: getHealthColor(safeHealthScore),
-          textAlign: 'center',
+        type: 'text',',
           fontWeight: '600',
-          fontFamily: 'Inter'
-        }
+        top: '64%',
+        style: {
       },
       // ΔP reading
       {
-        type: 'text',
-        left: '50%',
+          textAlign: 'center',
+          fontWeight: '600',
+        top: '82%',
+        style: {
+          text: `ΔP: ${safeDpFilter.toFixed(0)} Pa`,
+      // ΔP reading
+      {
+          textAlign: 'center',
+          fontFamily: 'Inter'
         top: '82%',
         style: {
           text: `ΔP: ${safeDpFilter.toFixed(0)} Pa`,
           fontSize: 12,
           fill: '#076A75',
-          textAlign: 'center',
+        left: '50%',
           fontFamily: 'Inter'
         }
       },
-      // Days until change
-      {
-        type: 'text',
-        left: '50%',
-        top: '88%',
-        style: {
-          text: `Troca sugerida em ${safeDaysUntilChange} dias`,
           fontSize: 11,
           fill: '#999',
           textAlign: 'center',
           fontFamily: 'Inter'
+        }
+  };
+
+  try {
+    return (
+      <div style={{ height, width: '100%' }}>
+        <ReactECharts 
         }
       }
     ]
@@ -231,20 +231,11 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
           opts={{ renderer: 'svg', locale: 'pt' }}
           notMerge={true}
           lazyUpdate={true}
-        />
-      </div>
-    );
-  } catch (error) {
-    console.error('Error rendering GaugeFilterHealth:', error);
-    return (
-      <div 
-        className="flex items-center justify-center text-muted-foreground bg-muted/10 rounded-lg border border-dashed border-muted"
-        style={{ height }}
       >
         <div className="text-center">
           <div className="text-sm">Erro ao renderizar gauge de saúde do filtro</div>
-        </div>
-      </div>
+  } catch (error) {
+    console.error('Error rendering GaugeFilterHealth:', error);
     );
   }
-};
+};          <div className="text-sm">Erro ao renderizar gauge de saúde do filtro</div>        </div>      </div>    );  }};
