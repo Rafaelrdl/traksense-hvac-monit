@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/app';
 import { Bell, ExternalLink, Clock, Building, Menu } from 'lucide-react';
-import { HorizontalNav } from './HorizontalNav';
+import { HorizontalNav, MobileNav } from './HorizontalNav';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -60,7 +60,7 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
                 >
                   <div className="space-y-4">
                     <h2 className="text-lg font-semibold mb-4">Navegação</h2>
-                    <HorizontalNav 
+                    <MobileNav 
                       currentPage={currentPage} 
                       onNavigate={handleMobileNavigation}
                     />
