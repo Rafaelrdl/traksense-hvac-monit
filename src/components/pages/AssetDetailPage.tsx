@@ -290,7 +290,7 @@ export const AssetDetailPage: React.FC = () => {
                       {alert.severity}
                     </span>
                     <span className="text-sm text-muted-foreground">
-                      {alert.timestamp.toLocaleString('pt-BR')}
+                      {(alert.timestamp instanceof Date ? alert.timestamp : new Date(alert.timestamp)).toLocaleString('pt-BR')}
                     </span>
                   </div>
                   <p className="text-sm">{alert.message}</p>
@@ -320,7 +320,7 @@ export const AssetDetailPage: React.FC = () => {
                 {assetSensors.slice(0, 10).map(sensor => (
                   <tr key={sensor.id} className="border-b">
                     <td className="py-2 px-4">
-                      {sensor.lastReading?.timestamp.toLocaleString('pt-BR')}
+                      {sensor.lastReading?.timestamp ? (sensor.lastReading.timestamp instanceof Date ? sensor.lastReading.timestamp : new Date(sensor.lastReading.timestamp)).toLocaleString('pt-BR') : 'N/A'}
                     </td>
                     <td className="py-2 px-4">{sensor.tag}</td>
                     <td className="py-2 px-4">

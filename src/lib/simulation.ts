@@ -440,8 +440,9 @@ export class SimulationEngine {
       return data.filter(point => 
         point && 
         point.timestamp && 
-        point.timestamp >= timeRange.start && 
-        point.timestamp <= timeRange.end
+        (point.timestamp instanceof Date || !isNaN(Date.parse(point.timestamp))) &&
+        new Date(point.timestamp) >= timeRange.start && 
+        new Date(point.timestamp) <= timeRange.end
       );
     } catch (error) {
       console.error(`Error getting telemetry data for sensor ${sensorId}:`, error);

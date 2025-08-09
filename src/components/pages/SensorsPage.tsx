@@ -94,7 +94,7 @@ export const SensorsPage: React.FC = () => {
                       <div>
                         <div>{sensor.lastReading.value.toFixed(2)} {sensor.unit}</div>
                         <div className="text-xs text-muted-foreground">
-                          {sensor.lastReading.timestamp.toLocaleString('pt-BR')}
+                          {(sensor.lastReading.timestamp instanceof Date ? sensor.lastReading.timestamp : new Date(sensor.lastReading.timestamp)).toLocaleString('pt-BR')}
                         </div>
                       </div>
                     ) : (

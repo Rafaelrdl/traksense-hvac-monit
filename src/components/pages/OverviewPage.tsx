@@ -149,9 +149,10 @@ export const OverviewPage: React.FC = () => {
     }
   };
 
-  const getTimeAgo = (date: Date) => {
+  const getTimeAgo = (date: Date | string | number) => {
     const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
+    const timestamp = date instanceof Date ? date : new Date(date);
+    const diffMs = now.getTime() - timestamp.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffHours / 24);
 

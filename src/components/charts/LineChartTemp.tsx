@@ -49,15 +49,17 @@ export const LineChartTemp: React.FC<LineChartTempProps> = ({ data, height = 300
     );
   }
 
-  const formatTime = (timestamp: Date) => {
-    return timestamp.toLocaleTimeString('pt-BR', {
+  const formatTime = (timestamp: number | Date) => {
+    const date = typeof timestamp === 'number' ? new Date(timestamp) : timestamp;
+    return date.toLocaleTimeString('pt-BR', {
       hour: '2-digit',
       minute: '2-digit'
     });
   };
 
-  const formatDate = (timestamp: Date) => {
-    return timestamp.toLocaleDateString('pt-BR', {
+  const formatDate = (timestamp: number | Date) => {
+    const date = typeof timestamp === 'number' ? new Date(timestamp) : timestamp;
+    return date.toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
       hour: '2-digit',
@@ -116,7 +118,10 @@ export const LineChartTemp: React.FC<LineChartTempProps> = ({ data, height = 300
       {
         name: 'Insuflamento',
         type: 'line',
-        data: data.supply?.map(point => [point.timestamp, point.value]) || [],
+        data: data.supply?.filter(point => point && point.timestamp).map(point => [
+          point.timestamp instanceof Date ? point.timestamp : new Date(point.timestamp), 
+          point.value
+        ]) || [],
         smooth: 0.3,
         lineStyle: { width: 2, color: '#076A75' },
         itemStyle: { color: '#076A75' },
@@ -125,7 +130,10 @@ export const LineChartTemp: React.FC<LineChartTempProps> = ({ data, height = 300
       {
         name: 'Retorno',
         type: 'line',
-        data: data.return?.map(point => [point.timestamp, point.value]) || [],
+        data: data.return?.filter(point => point && point.timestamp).map(point => [
+          point.timestamp instanceof Date ? point.timestamp : new Date(point.timestamp), 
+          point.value
+        ]) || [],
         smooth: 0.3,
         lineStyle: { width: 2, color: '#2E868F' },
         itemStyle: { color: '#2E868F' },
@@ -134,7 +142,10 @@ export const LineChartTemp: React.FC<LineChartTempProps> = ({ data, height = 300
       {
         name: 'Setpoint',
         type: 'line',
-        data: data.setpoint?.map(point => [point.timestamp, point.value]) || [],
+        data: data.setpoint?.filter(point => point && point.timestamp).map(point => [
+          point.timestamp instanceof Date ? point.timestamp : new Date(point.timestamp), 
+          point.value
+        ]) || [],
         lineStyle: { 
           width: 2, 
           type: 'dashed',

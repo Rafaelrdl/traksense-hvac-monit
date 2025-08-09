@@ -34,7 +34,8 @@ export const BarChartEnergy: React.FC<BarChartEnergyProps> = ({
     
     data.forEach(point => {
       if (point && point.timestamp && typeof point.value === 'number' && !isNaN(point.value)) {
-        const hour = point.timestamp.getHours();
+        const timestamp = point.timestamp instanceof Date ? point.timestamp : new Date(point.timestamp);
+        const hour = timestamp.getHours();
         hours[hour] = (hours[hour] || 0) + point.value;
       }
     });
