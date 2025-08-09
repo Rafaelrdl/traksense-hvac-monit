@@ -947,7 +947,9 @@ export class SimulationEngine {
         
         // Keep only last 24 hours for real-time data
         const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        const filteredData = sensorData.filter(p => p.timestamp > cutoff);
+        const existingData = this.telemetryData.get(sensor.id) || [];
+        const filteredData = existingData.filter(p => p.timestamp > cutoff);
+        filteredData.push(point);
         this.telemetryData.set(sensor.id, filteredData);
         
         // Update last reading
