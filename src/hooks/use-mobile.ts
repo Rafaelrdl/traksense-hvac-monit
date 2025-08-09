@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 
-const MOBILE_BREAKPOINT = 768
+const MOBILE_BREAKPOINT = 1024 // Changed from 768 to 1024 to match md: breakpoint
 
 export function useIsMobile() {
   const [isMobile, setIsMobile] = useState<boolean | undefined>(undefined)

@@ -172,9 +172,10 @@ function DesktopSidebar({ currentPage, onNavigate }: TrakSenseSidebarProps) {
     <div 
       className={cn(
         "bg-sidebar text-sidebar transition-all duration-300 h-full flex-shrink-0 border-r border-primary/20",
-        "hidden md:flex md:flex-col", // Hide on mobile, show on desktop
+        "flex flex-col", // Always visible on desktop
         sidebarCollapsed ? "w-16" : "w-60"
       )}
+      style={{ minHeight: '100%' }}
     >
       {/* Toggle Button */}
       <div className="p-4 border-b border-primary/20">
@@ -236,7 +237,11 @@ function DesktopSidebar({ currentPage, onNavigate }: TrakSenseSidebarProps) {
 export function TrakSenseSidebar({ currentPage, onNavigate }: TrakSenseSidebarProps) {
   const isMobile = useIsMobile();
 
-  // Always render desktop sidebar - let CSS handle mobile responsiveness
+  // Render desktop sidebar only on desktop - mobile uses TopBar trigger
+  if (isMobile) {
+    return null; // Mobile sidebar is handled by MobileSidebar in TopBar
+  }
+
   return <DesktopSidebar currentPage={currentPage} onNavigate={onNavigate} />;
 }
 
