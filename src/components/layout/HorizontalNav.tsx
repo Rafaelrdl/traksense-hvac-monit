@@ -1,14 +1,14 @@
 import React from 'react';
 import { 
-import { 
-  Activity, 
+  LayoutGrid,
   PanelsTopLeft, 
   AirVent, 
   Activity, 
   BellRing, 
-  icon: Lu
+  Wrench,
   FileText, 
-const NAV_I
+  Settings,
+  type LucideIcon
 } from 'lucide-react';
 
 type NavItem = {
@@ -16,7 +16,7 @@ type NavItem = {
   label: string;
   icon: LucideIcon;
   path: string;
-ex
+};
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'overview', label: 'Visão Geral', icon: LayoutGrid, path: '/overview' },
@@ -30,34 +30,63 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 interface HorizontalNavProps {
+  currentPage: string;
+  onNavigate: (page: string) => void;
+}
 
-export const MobileNav: React.FC<Hori
- 
-
+export const HorizontalNav: React.FC<HorizontalNavProps> = ({ currentPage, onNavigate }) => {
+  return (
+    <nav className="flex items-center gap-2 overflow-x-auto scrollbar-hide h-12" aria-label="Seções">
+      {NAV_ITEMS.map((item) => {
+        const isActive = currentPage === item.id;
+        const Icon = item.icon;
         
-          
+        return (
+          <button
+            key={item.id}
             onClick={() => onNavigate(item.id)}
-              "flex items-center
-              isActive 
-                : "text-slate-700 hover:bg-slate-
-        
-            <Ico
-          </butto
+            className={`
+              flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition whitespace-nowrap
+              ${isActive 
+                ? "bg-white text-teal-800 shadow-sm font-medium" 
+                : "text-slate-600 hover:bg-white/70"
+              }
+            `}
+            aria-current={isActive ? "page" : undefined}
+          >
+            <Icon className="size-4" aria-hidden />
+            <span className="hidden md:inline">{item.label}</span>
+          </button>
+        );
       })}
+    </nav>
   );
+};
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+export const MobileNav: React.FC<HorizontalNavProps> = ({ currentPage, onNavigate }) => {
+  return (
+    <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide" aria-label="Seções">
+      {NAV_ITEMS.map((item) => {
+        const isActive = currentPage === item.id;
+        const Icon = item.icon;
+        
+        return (
+          <button
+            key={item.id}
+            onClick={() => onNavigate(item.id)}
+            className={`
+              flex items-center gap-1 px-2 py-2 rounded-lg text-sm transition
+              ${isActive 
+                ? "bg-white text-teal-800 shadow-sm" 
+                : "text-slate-700 hover:bg-slate-100/50"
+              }
+            `}
+            aria-current={isActive ? "page" : undefined}
+          >
+            <Icon className="size-4" aria-hidden />
+          </button>
+        );
+      })}
+    </nav>
+  );
+};
