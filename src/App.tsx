@@ -7,6 +7,7 @@ import { SensorsPage } from './components/pages/SensorsPage';
 import { AlertsPage } from './components/pages/AlertsPage';
 import { ReportsPage } from './components/pages/ReportsPage';
 import { SettingsPage } from './components/pages/SettingsPage';
+import { CustomDashboard } from './components/dashboard/CustomDashboard';
 import { useAppStore } from './store/app';
 
 function App() {
@@ -44,6 +45,8 @@ function App() {
     switch (currentPage) {
       case 'overview':
         return <OverviewPage />;
+      case 'custom-dashboard':
+        return <CustomDashboard />;
       case 'assets':
         return <AssetsPage />;
       case 'sensors':
