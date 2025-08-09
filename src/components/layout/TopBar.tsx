@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/app';
 import { Bell, ExternalLink, Clock, Building } from 'lucide-react';
+import { TrakSenseSidebar } from './TrakSenseSidebar';
 
-export const TopBar: React.FC = () => {
+interface TopBarProps {
+  currentPage?: string;
+  onNavigate?: (page: string) => void;
+}
+
+export const TopBar: React.FC<TopBarProps> = ({ currentPage = '', onNavigate = () => {} }) => {
   const alerts = useAppStore(state => state.alerts);
   const lastUpdateTime = useAppStore(state => state.lastUpdateTime);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -19,9 +25,15 @@ export const TopBar: React.FC = () => {
   const activeAlerts = alerts.filter(alert => !alert.resolved && !alert.acknowledged);
 
   return (
-    <div className="h-16 bg-primary text-primary-foreground px-6 flex items-center justify-between border-b">
-      {/* Logo and Brand */}
+    <div className="h-16 bg-primary text-primary-foreground px-6 flex items-center justify-between border-b w-full">
+      {/* Left Side - Logo, Mobile Trigger, and Brand */}
       <div className="flex items-center space-x-4">
+        {/* Mobile Menu Trigger */}
+        <div className="md:hidden">
+          <TrakSenseSidebar currentPage={currentPage} onNavigate={onNavigate} />
+        </div>
+        
+        {/* Logo and Brand */}
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-primary-foreground/20 rounded-lg flex items-center justify-center">
             <Building className="w-5 h-5" />

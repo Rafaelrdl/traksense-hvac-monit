@@ -1,6 +1,6 @@
 import React from 'react';
 import { TopBar } from './TopBar';
-import { Sidebar } from './Sidebar';
+import { TrakSenseSidebar } from './TrakSenseSidebar';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,9 +11,17 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigate }) => {
   return (
     <div className="h-screen flex flex-col bg-background">
-      <TopBar />
+      {/* Top Bar with integrated mobile trigger */}
+      <TopBar currentPage={currentPage} onNavigate={onNavigate} />
+      
+      {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
-        <Sidebar currentPage={currentPage} onNavigate={onNavigate} />
+        {/* Desktop Sidebar */}
+        <div className="hidden md:block">
+          <TrakSenseSidebar currentPage={currentPage} onNavigate={onNavigate} />
+        </div>
+        
+        {/* Main Content */}
         <main className="flex-1 overflow-auto">
           {children}
         </main>

@@ -56,7 +56,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   
   selectedAssetId: null,
   selectedTimeRange: '24h',
-  sidebarCollapsed: false,
+  sidebarCollapsed: (() => {
+    // Initialize from localStorage
+    try {
+      const stored = localStorage.getItem('sidebar:collapsed');
+      return stored === 'true';
+    } catch {
+      return false;
+    }
+  })(),
   
   isSimulationRunning: false,
   lastUpdateTime: null,
@@ -67,7 +75,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   
   setTimeRange: (range) => set({ selectedTimeRange: range }),
   
-  setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
+  setSidebarCollapsed: (collapsed) => {
+    // Persist to localStorage
+    try {
+      localStorage.setItem('sidebar:collapsed', String(collapsed));
+    } catch {
+      // Ignore localStorage errors
+    }
+    set({ sidebarCollapsed: collapsed });
+  },
   
   startSimulation: () => {
     const state = get();

@@ -33,6 +33,16 @@
   --chart-4: oklch(0.78 0.05 194);
   --chart-5: oklch(0.52 0.09 194);
   --radius: 0.75rem;
+
+  /* TrakNor style tokens for sidebar */
+  --surface-1: oklch(0.982 0.006 189);
+  --accent-ring: #006b76;
+  --accent-active: #075a63;
+  --text-strong: #0b3a3f;
+  --text-muted: #3c5b5f;
+  --sidebar-bg: #0e6b70;
+  --sidebar-item-active-bg: color-mix(in oklab, var(--surface-1) 65%, var(--sidebar-bg));
+  --sidebar-divider: color-mix(in oklab, black 12%, white);
 }
 
 @theme {
@@ -73,4 +83,39 @@
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   @apply bg-background text-foreground antialiased;
+}
+
+@layer utilities {
+  .bg-sidebar {
+    background-color: var(--sidebar-bg);
+  }
+  
+  .text-sidebar {
+    color: var(--surface-1);
+  }
+  
+  .text-sidebar-muted {
+    color: color-mix(in oklab, var(--surface-1) 70%, transparent);
+  }
+  
+  .bg-sidebar-item-active {
+    background-color: var(--sidebar-item-active-bg);
+  }
+  
+  .ring-accent {
+    --tw-ring-color: var(--accent-ring);
+  }
+  
+  .border-sidebar-divider {
+    border-color: var(--sidebar-divider);
+  }
+  
+  .active-pill {
+    @apply bg-sidebar-item-active text-white font-medium rounded-full;
+  }
+  
+  .active-pill:focus-visible {
+    @apply ring-2 ring-accent ring-offset-2;
+    --tw-ring-offset-color: var(--sidebar-bg);
+  }
 }
