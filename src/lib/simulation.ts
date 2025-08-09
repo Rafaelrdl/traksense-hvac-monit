@@ -25,7 +25,7 @@ export class SimulationEngine {
         type: 'AHU',
         location: 'North Wing - Level 2',
         healthScore: 87,
-        powerConsumption: 47.5,
+        powerConsumption: 52.3,
         status: 'OK',
         operatingHours: 12450,
         lastMaintenance: new Date('2024-01-15'),
@@ -37,7 +37,7 @@ export class SimulationEngine {
         type: 'Chiller',
         location: 'Mechanical Room A',
         healthScore: 72,
-        powerConsumption: 285.7,
+        powerConsumption: 289.3,
         status: 'Alert',
         operatingHours: 8765,
         lastMaintenance: new Date('2023-11-20'),
@@ -49,7 +49,7 @@ export class SimulationEngine {
         type: 'VRF',
         location: 'South Wing - Offices',
         healthScore: 94,
-        powerConsumption: 18.2,
+        powerConsumption: 18.7,
         status: 'OK',
         operatingHours: 5230,
         lastMaintenance: new Date('2024-02-10'),
@@ -61,7 +61,7 @@ export class SimulationEngine {
         type: 'AHU',
         location: 'South Wing - Level 1',
         healthScore: 91,
-        powerConsumption: 42.8,
+        powerConsumption: 44.6,
         status: 'OK',
         operatingHours: 9876,
         lastMaintenance: new Date('2024-02-28'),
@@ -73,7 +73,7 @@ export class SimulationEngine {
         type: 'Chiller',
         location: 'Mechanical Room B',
         healthScore: 65,
-        powerConsumption: 312.4,
+        powerConsumption: 324.8,
         status: 'Maintenance',
         operatingHours: 15432,
         lastMaintenance: new Date('2023-09-15'),
@@ -85,7 +85,7 @@ export class SimulationEngine {
         type: 'VRF',
         location: 'East Wing - Conference Rooms',
         healthScore: 89,
-        powerConsumption: 22.1,
+        powerConsumption: 21.4,
         status: 'OK',
         operatingHours: 7654,
         lastMaintenance: new Date('2024-01-22'),
@@ -97,7 +97,7 @@ export class SimulationEngine {
         type: 'VRF',
         location: 'West Wing - Executive Offices',
         healthScore: 76,
-        powerConsumption: 19.8,
+        powerConsumption: 19.1,
         status: 'Alert',
         operatingHours: 11234,
         lastMaintenance: new Date('2023-12-05'),
@@ -109,11 +109,59 @@ export class SimulationEngine {
         type: 'AHU',
         location: 'Data Center - Level 3',
         healthScore: 83,
-        powerConsumption: 78.9,
+        powerConsumption: 76.2,
         status: 'OK',
         operatingHours: 21876,
         lastMaintenance: new Date('2024-03-01'),
         specifications: { capacity: 80, voltage: 480, maxCurrent: 200 }
+      },
+      {
+        id: 'rtu-001',
+        tag: 'RTU-001',
+        type: 'RTU',
+        location: 'Rooftop - Building A',
+        healthScore: 78,
+        powerConsumption: 35.9,
+        status: 'Alert',
+        operatingHours: 18902,
+        lastMaintenance: new Date('2023-10-12'),
+        specifications: { capacity: 40, voltage: 480, maxCurrent: 95 }
+      },
+      {
+        id: 'rtu-002',
+        tag: 'RTU-002',
+        type: 'RTU',
+        location: 'Rooftop - Building B',
+        healthScore: 92,
+        powerConsumption: 31.2,
+        status: 'OK',
+        operatingHours: 6543,
+        lastMaintenance: new Date('2024-02-20'),
+        specifications: { capacity: 35, voltage: 480, maxCurrent: 85 }
+      },
+      {
+        id: 'tower-001',
+        tag: 'CT-001',
+        type: 'CoolingTower',
+        location: 'Rooftop - Central Plant',
+        healthScore: 86,
+        powerConsumption: 12.8,
+        status: 'OK',
+        operatingHours: 14567,
+        lastMaintenance: new Date('2024-01-05'),
+        specifications: { capacity: 750, voltage: 480, maxCurrent: 45 }
+      },
+      {
+        id: 'boiler-001',
+        tag: 'BOIL-001',
+        type: 'Boiler',
+        location: 'Mechanical Room C',
+        healthScore: 81,
+        powerConsumption: 145.3,
+        status: 'OK',
+        operatingHours: 11234,
+        lastMaintenance: new Date('2024-01-30'),
+        specifications: { capacity: 300, voltage: 480, maxCurrent: 350 }
       }
     ];
   }
@@ -125,45 +173,100 @@ export class SimulationEngine {
       let sensorConfigs: any[] = [];
       
       if (asset.type === 'AHU') {
+        const capacityFactor = (asset.specifications.capacity || 50) / 50;
         sensorConfigs = [
-          { type: 'temp_supply', unit: '°C', min: 12, max: 20, setpoint: 16, baseline: 16 },
-          { type: 'temp_return', unit: '°C', min: 22, max: 28, baseline: 24 },
+          { type: 'temp_supply', unit: '°C', min: 12, max: 20, setpoint: 16, baseline: 15.8 + Math.random() * 0.4 },
+          { type: 'temp_return', unit: '°C', min: 22, max: 28, baseline: 23.5 + Math.random() * 1.0 },
           { type: 'temp_setpoint', unit: '°C', min: 14, max: 18, baseline: 16 },
-          { type: 'humidity', unit: '%', min: 45, max: 65, baseline: 55 },
-          { type: 'dp_filter', unit: 'Pa', min: 50, max: 350, baseline: 120 },
-          { type: 'power_kw', unit: 'kW', min: 25, max: 85, baseline: asset.type === 'AHU' ? 50 : 45 },
-          { type: 'current', unit: 'A', min: 60, max: 180, baseline: 95 },
-          { type: 'vibration', unit: 'mm/s', min: 1.2, max: 8, baseline: 2.5 },
-          { type: 'airflow', unit: 'm³/h', min: 15000, max: 35000, baseline: 25000 },
-          { type: 'voltage', unit: 'V', min: 460, max: 500, baseline: 480 },
-          { type: 'rpm_fan', unit: 'RPM', min: 800, max: 1200, baseline: 1000 }
+          { type: 'humidity', unit: '%', min: 45, max: 65, baseline: 52 + Math.random() * 6 },
+          { type: 'dp_filter', unit: 'Pa', min: 80, max: 350, baseline: 110 + Math.random() * 30 },
+          { type: 'power_kw', unit: 'kW', min: 25 * capacityFactor, max: 85 * capacityFactor, baseline: 48 * capacityFactor + Math.random() * 8 },
+          { type: 'current', unit: 'A', min: 60 * capacityFactor, max: 180 * capacityFactor, baseline: 92 * capacityFactor + Math.random() * 12 },
+          { type: 'vibration', unit: 'mm/s', min: 1.2, max: 8, baseline: 2.1 + Math.random() * 0.8 },
+          { type: 'airflow', unit: 'm³/h', min: 15000 * capacityFactor, max: 35000 * capacityFactor, baseline: 24000 * capacityFactor + Math.random() * 2000 },
+          { type: 'voltage', unit: 'V', min: 460, max: 500, baseline: 478 + Math.random() * 4 },
+          { type: 'rpm_fan', unit: 'RPM', min: 800, max: 1200, baseline: 980 + Math.random() * 40 },
+          { type: 'energy_kwh', unit: 'kWh', min: 0, max: 2000, baseline: 48 * 24 * capacityFactor },
+          { type: 'power_factor', unit: '', min: 0.75, max: 0.95, baseline: 0.85 + Math.random() * 0.05 },
+          { type: 'temp_external', unit: '°C', min: -5, max: 40, baseline: 22 + Math.random() * 8 }
         ];
       } else if (asset.type === 'Chiller') {
+        const capacityFactor = (asset.specifications.capacity || 500) / 500;
         sensorConfigs = [
-          { type: 'temp_supply', unit: '°C', min: 6, max: 12, setpoint: 7, baseline: 7.2 },
-          { type: 'temp_return', unit: '°C', min: 12, max: 18, baseline: 14.5 },
-          { type: 'pressure_suction', unit: 'kPa', min: 350, max: 550, baseline: 450 },
-          { type: 'pressure_discharge', unit: 'kPa', min: 1200, max: 1800, baseline: 1500 },
-          { type: 'power_kw', unit: 'kW', min: 180, max: 400, baseline: 290 },
-          { type: 'current', unit: 'A', min: 220, max: 480, baseline: 350 },
-          { type: 'vibration', unit: 'mm/s', min: 1.8, max: 12, baseline: 3.2 },
-          { type: 'superheat', unit: 'K', min: 3, max: 12, baseline: 6.5 },
-          { type: 'subcooling', unit: 'K', min: 2, max: 8, baseline: 4.5 },
-          { type: 'voltage', unit: 'V', min: 4100, max: 4220, baseline: 4160 },
-          { type: 'cop', unit: '', min: 2.8, max: 5.2, baseline: 4.1 }
+          { type: 'temp_supply', unit: '°C', min: 6, max: 12, setpoint: 7, baseline: 7.1 + Math.random() * 0.2 },
+          { type: 'temp_return', unit: '°C', min: 12, max: 18, baseline: 14.2 + Math.random() * 0.6 },
+          { type: 'pressure_suction', unit: 'kPa', min: 350, max: 550, baseline: 435 + Math.random() * 30 },
+          { type: 'pressure_discharge', unit: 'kPa', min: 1200, max: 1800, baseline: 1480 + Math.random() * 40 },
+          { type: 'power_kw', unit: 'kW', min: 180 * capacityFactor, max: 400 * capacityFactor, baseline: 285 * capacityFactor + Math.random() * 20 },
+          { type: 'current', unit: 'A', min: 220 * capacityFactor, max: 480 * capacityFactor, baseline: 340 * capacityFactor + Math.random() * 20 },
+          { type: 'vibration', unit: 'mm/s', min: 1.8, max: 12, baseline: 3.0 + Math.random() * 0.4 },
+          { type: 'superheat', unit: 'K', min: 3, max: 12, baseline: 6.2 + Math.random() * 0.6 },
+          { type: 'subcooling', unit: 'K', min: 2, max: 8, baseline: 4.3 + Math.random() * 0.4 },
+          { type: 'voltage', unit: 'V', min: 4100, max: 4220, baseline: 4155 + Math.random() * 10 },
+          { type: 'cop', unit: '', min: 2.8, max: 5.2, baseline: 4.0 + Math.random() * 0.2 },
+          { type: 'energy_kwh', unit: 'kWh', min: 0, max: 10000, baseline: 285 * 24 * capacityFactor },
+          { type: 'compressor_state', unit: '', min: 0, max: 1, baseline: 1 },
+          { type: 'valve_position', unit: '%', min: 0, max: 100, baseline: 65 + Math.random() * 20 }
         ];
       } else if (asset.type === 'VRF') {
+        const capacityFactor = (asset.specifications.capacity || 25) / 25;
         sensorConfigs = [
-          { type: 'temp_supply', unit: '°C', min: 14, max: 22, setpoint: 18, baseline: 18 },
-          { type: 'temp_return', unit: '°C', min: 20, max: 26, baseline: 23 },
-          { type: 'humidity', unit: '%', min: 40, max: 60, baseline: 50 },
-          { type: 'power_kw', unit: 'kW', min: 8, max: 35, baseline: 20 },
-          { type: 'current', unit: 'A', min: 25, max: 90, baseline: 55 },
-          { type: 'vibration', unit: 'mm/s', min: 0.8, max: 6, baseline: 1.8 },
-          { type: 'superheat', unit: 'K', min: 4, max: 10, baseline: 7 },
-          { type: 'subcooling', unit: 'K', min: 3, max: 7, baseline: 5 },
-          { type: 'voltage', unit: 'V', min: 200, max: 216, baseline: 208 },
-          { type: 'eer', unit: '', min: 8.5, max: 12.5, baseline: 10.2 }
+          { type: 'temp_supply', unit: '°C', min: 14, max: 22, setpoint: 18, baseline: 17.8 + Math.random() * 0.4 },
+          { type: 'temp_return', unit: '°C', min: 20, max: 26, baseline: 22.8 + Math.random() * 0.4 },
+          { type: 'humidity', unit: '%', min: 40, max: 60, baseline: 48 + Math.random() * 4 },
+          { type: 'power_kw', unit: 'kW', min: 8 * capacityFactor, max: 35 * capacityFactor, baseline: 19 * capacityFactor + Math.random() * 2 },
+          { type: 'current', unit: 'A', min: 25 * capacityFactor, max: 90 * capacityFactor, baseline: 52 * capacityFactor + Math.random() * 6 },
+          { type: 'vibration', unit: 'mm/s', min: 0.8, max: 6, baseline: 1.6 + Math.random() * 0.4 },
+          { type: 'superheat', unit: 'K', min: 4, max: 10, baseline: 6.8 + Math.random() * 0.4 },
+          { type: 'subcooling', unit: 'K', min: 3, max: 7, baseline: 4.8 + Math.random() * 0.4 },
+          { type: 'voltage', unit: 'V', min: 200, max: 216, baseline: 207 + Math.random() * 2 },
+          { type: 'eer', unit: '', min: 8.5, max: 12.5, baseline: 10.1 + Math.random() * 0.2 },
+          { type: 'energy_kwh', unit: 'kWh', min: 0, max: 800, baseline: 19 * 24 * capacityFactor },
+          { type: 'compressor_state', unit: '', min: 0, max: 1, baseline: 1 }
+        ];
+      } else if (asset.type === 'RTU') {
+        const capacityFactor = (asset.specifications.capacity || 40) / 40;
+        sensorConfigs = [
+          { type: 'temp_supply', unit: '°C', min: 13, max: 19, setpoint: 16, baseline: 15.9 + Math.random() * 0.2 },
+          { type: 'temp_return', unit: '°C', min: 21, max: 27, baseline: 23.8 + Math.random() * 0.4 },
+          { type: 'temp_external', unit: '°C', min: -10, max: 45, baseline: 24 + Math.random() * 10 },
+          { type: 'humidity', unit: '%', min: 40, max: 70, baseline: 54 + Math.random() * 6 },
+          { type: 'dp_filter', unit: 'Pa', min: 60, max: 300, baseline: 95 + Math.random() * 25 },
+          { type: 'power_kw', unit: 'kW', min: 20 * capacityFactor, max: 60 * capacityFactor, baseline: 34 * capacityFactor + Math.random() * 4 },
+          { type: 'current', unit: 'A', min: 45 * capacityFactor, max: 140 * capacityFactor, baseline: 78 * capacityFactor + Math.random() * 8 },
+          { type: 'vibration', unit: 'mm/s', min: 1.5, max: 7, baseline: 2.8 + Math.random() * 0.4 },
+          { type: 'voltage', unit: 'V', min: 460, max: 500, baseline: 479 + Math.random() * 3 },
+          { type: 'rpm_fan', unit: 'RPM', min: 750, max: 1100, baseline: 920 + Math.random() * 30 },
+          { type: 'compressor_state', unit: '', min: 0, max: 1, baseline: 1 },
+          { type: 'energy_kwh', unit: 'kWh', min: 0, max: 1500, baseline: 34 * 24 * capacityFactor }
+        ];
+      } else if (asset.type === 'CoolingTower') {
+        const capacityFactor = (asset.specifications.capacity || 750) / 750;
+        sensorConfigs = [
+          { type: 'temp_supply', unit: '°C', min: 25, max: 35, baseline: 29.2 + Math.random() * 1.6 },
+          { type: 'temp_return', unit: '°C', min: 32, max: 42, baseline: 36.5 + Math.random() * 1.0 },
+          { type: 'temp_external', unit: '°C', min: -5, max: 45, baseline: 26 + Math.random() * 8 },
+          { type: 'humidity', unit: '%', min: 30, max: 90, baseline: 65 + Math.random() * 10 },
+          { type: 'power_kw', unit: 'kW', min: 8 * capacityFactor, max: 25 * capacityFactor, baseline: 12 * capacityFactor + Math.random() * 2 },
+          { type: 'current', unit: 'A', min: 20 * capacityFactor, max: 60 * capacityFactor, baseline: 32 * capacityFactor + Math.random() * 4 },
+          { type: 'vibration', unit: 'mm/s', min: 2.0, max: 10, baseline: 4.2 + Math.random() * 0.6 },
+          { type: 'voltage', unit: 'V', min: 460, max: 500, baseline: 478 + Math.random() * 4 },
+          { type: 'rpm_fan', unit: 'RPM', min: 200, max: 500, baseline: 320 + Math.random() * 40 },
+          { type: 'airflow', unit: 'm³/h', min: 50000 * capacityFactor, max: 120000 * capacityFactor, baseline: 85000 * capacityFactor + Math.random() * 5000 },
+          { type: 'energy_kwh', unit: 'kWh', min: 0, max: 600, baseline: 12 * 24 * capacityFactor }
+        ];
+      } else if (asset.type === 'Boiler') {
+        const capacityFactor = (asset.specifications.capacity || 300) / 300;
+        sensorConfigs = [
+          { type: 'temp_supply', unit: '°C', min: 60, max: 85, baseline: 72 + Math.random() * 3 },
+          { type: 'temp_return', unit: '°C', min: 50, max: 75, baseline: 62 + Math.random() * 3 },
+          { type: 'pressure_suction', unit: 'kPa', min: 100, max: 300, baseline: 180 + Math.random() * 20 },
+          { type: 'power_kw', unit: 'kW', min: 80 * capacityFactor, max: 200 * capacityFactor, baseline: 140 * capacityFactor + Math.random() * 10 },
+          { type: 'current', unit: 'A', min: 150 * capacityFactor, max: 400 * capacityFactor, baseline: 280 * capacityFactor + Math.random() * 15 },
+          { type: 'vibration', unit: 'mm/s', min: 1.0, max: 6, baseline: 2.2 + Math.random() * 0.3 },
+          { type: 'voltage', unit: 'V', min: 460, max: 500, baseline: 478 + Math.random() * 4 },
+          { type: 'energy_kwh', unit: 'kWh', min: 0, max: 5000, baseline: 140 * 24 * capacityFactor },
+          { type: 'compressor_state', unit: '', min: 0, max: 1, baseline: 1 }
         ];
       }
 
@@ -175,9 +278,9 @@ export class SimulationEngine {
           type: config.type as any,
           unit: config.unit,
           location: asset.location,
-          online: Math.random() > 0.015, // 1.5% chance offline
+          online: Math.random() > 0.008, // 0.8% chance offline (more realistic)
           lastReading: null,
-          availability: 96 + Math.random() * 3.5,
+          availability: 95.2 + Math.random() * 4.3, // 95-99.5% availability
           min: config.min,
           max: config.max,
           setpoint: config.setpoint,
@@ -275,25 +378,75 @@ export class SimulationEngine {
     
     this.sensors.forEach(sensor => {
       const data: TelemetryPoint[] = [];
+      const asset = this.assets.find(a => a.id === sensor.assetId);
       
-      // Add some randomness to sensor behavior over time
+      // Initialize realistic starting conditions based on sensor type and asset age
       let trendMultiplier = 1;
       let driftAccumulation = 0;
+      let seasonalOffset = 0;
+      let equipmentAgeEffect = 1;
+      
+      // Factor in equipment age and operating hours
+      if (asset) {
+        const ageMultiplier = Math.min(1.15, 1 + (asset.operatingHours / 100000)); // Max 15% degradation
+        equipmentAgeEffect = ageMultiplier;
+        
+        // Different degradation patterns by asset type
+        if (asset.type === 'Chiller' && asset.operatingHours > 15000) {
+          equipmentAgeEffect *= 1.05; // Chillers degrade faster with age
+        } else if (asset.type === 'Boiler' && asset.operatingHours > 20000) {
+          equipmentAgeEffect *= 1.03; // Boilers are generally more robust
+        }
+      }
       
       for (let day = historyDays; day >= 0; day--) {
-        // Add weekly and daily patterns
-        const isWeekend = (now.getDate() - day) % 7 >= 5;
-        const dailyLoadMultiplier = isWeekend ? 0.7 : 1.0;
+        const currentDate = new Date(now);
+        currentDate.setDate(currentDate.getDate() - day);
         
-        // Add long-term degradation trends for certain sensors
+        // Add realistic seasonal and weather effects
+        const dayOfYear = Math.floor((currentDate.getTime() - new Date(currentDate.getFullYear(), 0, 0).getTime()) / 86400000);
+        const isWeekend = currentDate.getDay() >= 5;
+        const isSummer = dayOfYear > 120 && dayOfYear < 270; // May to September
+        const isWinter = dayOfYear < 90 || dayOfYear > 300; // Dec to March
+        
+        // Apply seasonal effects based on sensor type
+        if (['temp_external', 'temp_supply', 'temp_return'].includes(sensor.type)) {
+          seasonalOffset = isSummer ? 3 + Math.random() * 4 : (isWinter ? -2 - Math.random() * 3 : 0);
+        } else if (['power_kw', 'current', 'energy_kwh'].includes(sensor.type)) {
+          seasonalOffset = isSummer ? 0.15 : (isWinter ? 0.08 : 0); // More load in summer
+        } else if (sensor.type === 'humidity') {
+          seasonalOffset = isSummer ? 8 + Math.random() * 6 : -5 - Math.random() * 3;
+        }
+        
+        const dailyLoadMultiplier = isWeekend ? 0.65 : 1.0;
+        
+        // Add progressive equipment degradation over the historical period
         if (sensor.type === 'dp_filter') {
-          trendMultiplier = 1 + (historyDays - day) * 0.008; // Filter gets worse over time
+          trendMultiplier = 1 + (historyDays - day) * 0.012; // Gradual filter clogging
         } else if (sensor.type === 'vibration') {
-          trendMultiplier = 1 + (historyDays - day) * 0.002; // Slight increase in vibration over time
+          trendMultiplier = 1 + (historyDays - day) * 0.003 * equipmentAgeEffect; // Age-related bearing wear
+        } else if (['cop', 'eer'].includes(sensor.type)) {
+          trendMultiplier = Math.max(0.85, 1 - (historyDays - day) * 0.002 * equipmentAgeEffect); // Efficiency degradation
+        } else if (sensor.type === 'power_kw') {
+          trendMultiplier = 1 + (historyDays - day) * 0.001 * equipmentAgeEffect; // Slight power increase with age
         }
         
         for (let hour = 0; hour < 24; hour++) {
-          const hourlyLoadMultiplier = (hour >= 6 && hour <= 22) ? 1.0 : 0.6;
+          // More realistic hourly patterns
+          let hourlyLoadMultiplier = 1.0;
+          
+          if (asset?.type === 'Chiller' || asset?.type === 'CoolingTower') {
+            // Peak cooling in afternoon
+            hourlyLoadMultiplier = 0.4 + 0.6 * Math.max(0, Math.sin((hour - 6) / 12 * Math.PI));
+          } else if (asset?.type === 'Boiler') {
+            // Peak heating in morning and evening
+            hourlyLoadMultiplier = 0.3 + 0.7 * (Math.sin((hour - 2) / 12 * Math.PI) + 0.3 * Math.sin((hour + 14) / 12 * Math.PI));
+          } else {
+            // Standard office building pattern
+            hourlyLoadMultiplier = (hour >= 6 && hour <= 22) ? 
+              0.6 + 0.4 * Math.sin((hour - 6) / 16 * Math.PI) : 0.3;
+          }
+          
           const finalLoadMultiplier = dailyLoadMultiplier * hourlyLoadMultiplier;
           
           for (let point = 0; point < pointsPerHour; point++) {
@@ -303,33 +456,70 @@ export class SimulationEngine {
             
             let value = this.generateSensorValue(sensor, timestamp);
             
+            // Apply seasonal effects
+            if (['temp_external', 'temp_supply', 'temp_return', 'humidity'].includes(sensor.type)) {
+              value += seasonalOffset;
+            } else if (['power_kw', 'current', 'energy_kwh'].includes(sensor.type)) {
+              value *= (1 + seasonalOffset);
+            }
+            
             // Apply load multiplier for operational sensors
-            if (['power_kw', 'current', 'airflow', 'rpm_fan'].includes(sensor.type)) {
+            if (['power_kw', 'current', 'airflow', 'rpm_fan', 'energy_kwh'].includes(sensor.type)) {
               value *= finalLoadMultiplier;
             }
             
-            // Apply trend multiplier
+            // Apply trend multiplier (degradation/improvement over time)
             value *= trendMultiplier;
             
-            // Add some drift for realistic behavior
-            driftAccumulation += (Math.random() - 0.5) * 0.1;
+            // Add realistic drift and noise patterns
+            driftAccumulation += (Math.random() - 0.5) * 0.08;
             value += driftAccumulation;
             
-            // Add occasional spikes or dips for interesting data
-            if (Math.random() < 0.001) { // 0.1% chance of anomaly
-              const spikeMultiplier = 1 + (Math.random() - 0.5) * 0.4; // ±20% spike
-              value *= spikeMultiplier;
+            // Add occasional realistic anomalies
+            if (Math.random() < 0.0008) { // 0.08% chance of significant anomaly
+              const anomalyTypes = ['spike', 'dip', 'step'];
+              const anomalyType = anomalyTypes[Math.floor(Math.random() * anomalyTypes.length)];
+              
+              switch (anomalyType) {
+                case 'spike':
+                  value *= 1.2 + Math.random() * 0.3; // 20-50% spike
+                  break;
+                case 'dip':
+                  value *= 0.5 + Math.random() * 0.3; // 50-80% dip
+                  break;
+                case 'step':
+                  driftAccumulation += (Math.random() - 0.5) * 0.5; // Step change in baseline
+                  break;
+              }
             }
             
-            // Ensure value stays within sensor limits
+            // Minor random variations (instrumentation noise)
+            const noiseLevel = sensor.type === 'vibration' ? 0.03 : 
+                              sensor.type === 'temp_supply' ? 0.02 : 
+                              sensor.type === 'humidity' ? 0.5 : 0.01;
+            value += (Math.random() - 0.5) * 2 * noiseLevel * ((sensor as any).baseline || value);
+            
+            // Ensure value stays within realistic sensor limits
             value = Math.max(sensor.min || -Infinity, Math.min(sensor.max || Infinity, value));
             
-            const quality = Math.random() > 0.02 ? 'good' : (Math.random() > 0.7 ? 'uncertain' : 'bad');
+            // More realistic quality distribution
+            let quality: 'good' | 'uncertain' | 'bad' = 'good';
+            const qualityRandom = Math.random();
+            
+            if (qualityRandom < 0.005) quality = 'bad';       // 0.5% bad readings
+            else if (qualityRandom < 0.015) quality = 'uncertain';  // 1% uncertain readings
+            else quality = 'good';                             // 98.5% good readings
+            
+            // Equipment offline periods (rare but realistic)
+            if (!sensor.online && Math.random() < 0.1) {
+              quality = 'bad';
+              value = (sensor as any).baseline || 0; // Sensor returns last known value or zero
+            }
             
             data.push({
               sensorId: sensor.id,
               timestamp,
-              value,
+              value: parseFloat(value.toFixed(3)), // Realistic precision
               quality
             });
           }
@@ -338,7 +528,7 @@ export class SimulationEngine {
       
       this.telemetryData.set(sensor.id, data);
       
-      // Update last reading
+      // Update last reading with current timestamp
       const lastData = data[data.length - 1];
       if (lastData) {
         sensor.lastReading = {
@@ -349,7 +539,7 @@ export class SimulationEngine {
       }
     });
     
-    // Generate some historical alert patterns
+    // Generate realistic historical alert patterns
     this.generateHistoricalAlerts();
   }
   
@@ -414,103 +604,221 @@ export class SimulationEngine {
   private generateInitialAlerts() {
     const now = new Date();
     
-    // Generate some initial alerts based on current sensor readings
+    // Generate a rich set of initial alerts based on current sensor readings
     const alertTemplates = [
       {
         assetId: 'chill-001',
         assetTag: 'CHILL-001',
-        severity: 'Medium' as Alert['severity'],
-        type: 'dp_filter',
-        message: 'Filter maintenance required - Pressure drop elevated: 267.3 Pa (Warning: 250 Pa)',
-        ruleName: 'dp_filter_monitoring',
-        sensorValue: 267.3,
-        sensorUnit: 'Pa'
+        severity: 'High' as Alert['severity'],
+        type: 'superheat',
+        message: 'Excessive superheat detected - Possible refrigerant leak: 11.8 K (Normal: 4-8 K)',
+        ruleName: 'superheat_monitoring',
+        sensorValue: 11.8,
+        sensorUnit: 'K'
       },
       {
         assetId: 'chill-002',
         assetTag: 'CHILL-002',
         severity: 'Medium' as Alert['severity'],
         type: 'maintenance',
-        message: 'Scheduled maintenance overdue by 27 days',
+        message: 'Scheduled maintenance overdue by 43 days - Performance degradation detected',
         ruleName: 'maintenance_schedule'
       },
       {
         assetId: 'vrf-002',
         assetTag: 'VRF-002',
+        severity: 'Medium' as Alert['severity'],
+        type: 'vibration',
+        message: 'Bearing wear detected - Vibration elevated: 4.8 mm/s RMS (Warning: 4.0 mm/s)',
+        ruleName: 'vibration_monitoring',
+        sensorValue: 4.8,
+        sensorUnit: 'mm/s'
+      },
+      {
+        assetId: 'ahu-003',
+        assetTag: 'AHU-003',
+        severity: 'High' as Alert['severity'],
+        type: 'dp_filter',
+        message: 'Filter replacement critical - Pressure drop: 287.5 Pa (Limit: 280 Pa)',
+        ruleName: 'dp_filter_monitoring',
+        sensorValue: 287.5,
+        sensorUnit: 'Pa'
+      },
+      {
+        assetId: 'rtu-001',
+        assetTag: 'RTU-001',
+        severity: 'Medium' as Alert['severity'],
+        type: 'temp_supply',
+        message: 'Supply temperature deviation - Control valve issue: 18.7°C (Setpoint: 16.0°C)',
+        ruleName: 'temp_supply_monitoring',
+        sensorValue: 18.7,
+        sensorUnit: '°C'
+      },
+      {
+        assetId: 'ahu-001',
+        assetTag: 'AHU-001',
         severity: 'Low' as Alert['severity'],
-        type: 'superheat',
-        message: 'Superheat monitoring - Slightly elevated: 8.9 K (Normal: 4-8 K)',
-        ruleName: 'superheat_monitoring',
-        sensorValue: 8.9,
+        type: 'power_kw',
+        message: 'Power consumption elevated - Check system load: 67.2 kW (18% above baseline)',
+        ruleName: 'power_monitoring',
+        sensorValue: 67.2,
+        sensorUnit: 'kW'
+      },
+      {
+        assetId: 'vrf-001',
+        assetTag: 'VRF-001',
+        severity: 'Low' as Alert['severity'],
+        type: 'humidity',
+        message: 'High humidity detected in zone - Possible outdoor air damper stuck: 66.8% RH',
+        ruleName: 'humidity_monitoring',
+        sensorValue: 66.8,
+        sensorUnit: '%'
+      },
+      {
+        assetId: 'chill-001',
+        assetTag: 'CHILL-001',
+        severity: 'Medium' as Alert['severity'],
+        type: 'pressure_discharge',
+        message: 'High discharge pressure - Check condenser: 1642 kPa (Warning: 1600 kPa)',
+        ruleName: 'pressure_monitoring',
+        sensorValue: 1642,
+        sensorUnit: 'kPa'
+      },
+      {
+        assetId: 'tower-001',
+        assetTag: 'CT-001',
+        severity: 'Low' as Alert['severity'],
+        type: 'vibration',
+        message: 'Motor bearing monitoring - Slight increase in vibration: 4.6 mm/s RMS',
+        ruleName: 'vibration_monitoring',
+        sensorValue: 4.6,
+        sensorUnit: 'mm/s'
+      },
+      {
+        assetId: 'ahu-002',
+        assetTag: 'AHU-002',
+        severity: 'Low' as Alert['severity'],
+        type: 'airflow',
+        message: 'Airflow below nominal - Check fan belt: 21.8 km³/h (91% of nominal)',
+        ruleName: 'airflow_monitoring',
+        sensorValue: 21800,
+        sensorUnit: 'm³/h'
+      },
+      {
+        assetId: 'boiler-001',
+        assetTag: 'BOIL-001',
+        severity: 'Medium' as Alert['severity'],
+        type: 'temp_supply',
+        message: 'Supply temperature fluctuating - Check control valve: 76.3°C (Setpoint: 72.0°C)',
+        ruleName: 'temp_supply_monitoring',
+        sensorValue: 76.3,
+        sensorUnit: '°C'
+      },
+      {
+        assetId: 'vrf-003',
+        assetTag: 'VRF-003',
+        severity: 'Low' as Alert['severity'],
+        type: 'eer',
+        message: 'EER efficiency below optimal - System tuning recommended: 9.4 (Target: >10.0)',
+        ruleName: 'efficiency_monitoring',
+        sensorValue: 9.4,
+        sensorUnit: ''
+      },
+      {
+        assetId: 'rtu-002',
+        assetTag: 'RTU-002',
+        severity: 'Low' as Alert['severity'],
+        type: 'current',
+        message: 'Current consumption trending up - Monitor compressor: 78.4 A (82% of max)',
+        ruleName: 'current_monitoring',
+        sensorValue: 78.4,
+        sensorUnit: 'A'
+      },
+      {
+        assetId: 'chill-002',
+        assetTag: 'CHILL-002',
+        severity: 'High' as Alert['severity'],
+        type: 'subcooling',
+        message: 'Low subcooling - Refrigerant leak suspected: 1.8 K (Minimum: 2.5 K)',
+        ruleName: 'subcooling_monitoring',
+        sensorValue: 1.8,
         sensorUnit: 'K'
       },
       {
         assetId: 'ahu-003',
         assetTag: 'AHU-003',
+        severity: 'Medium' as Alert['severity'],
+        type: 'rpm_fan',
+        message: 'Fan speed irregularity - VFD drive issue possible: 1087 RPM (Variable)',
+        ruleName: 'fan_monitoring',
+        sensorValue: 1087,
+        sensorUnit: 'RPM'
+      },
+      {
+        assetId: 'rtu-001',
+        assetTag: 'RTU-001',
         severity: 'Low' as Alert['severity'],
-        type: 'vibration',
-        message: 'Vibration monitoring - Trend increasing: 3.8 mm/s RMS',
-        ruleName: 'vibration_monitoring',
-        sensorValue: 3.8,
-        sensorUnit: 'mm/s'
+        type: 'voltage',
+        message: 'Voltage fluctuation detected - Power quality monitoring: 473V (±3% variation)',
+        ruleName: 'voltage_monitoring',
+        sensorValue: 473,
+        sensorUnit: 'V'
+      },
+      {
+        assetId: 'tower-001',
+        assetTag: 'CT-001',
+        severity: 'Medium' as Alert['severity'],
+        type: 'temp_supply',
+        message: 'Cooling tower approach temperature high - Check fill media: 31.2°C',
+        ruleName: 'approach_temp_monitoring',
+        sensorValue: 31.2,
+        sensorUnit: '°C'
+      },
+      {
+        assetId: 'vrf-002',
+        assetTag: 'VRF-002',
+        severity: 'Low' as Alert['severity'],
+        type: 'compressor_state',
+        message: 'Compressor cycling frequently - Check refrigerant charge',
+        ruleName: 'compressor_monitoring'
       },
       {
         assetId: 'ahu-001',
         assetTag: 'AHU-001',
         severity: 'Low' as Alert['severity'],
         type: 'maintenance_reminder',
-        message: 'Maintenance due in 18 days',
+        message: 'Preventive maintenance due in 12 days - Schedule service',
         ruleName: 'maintenance_reminder'
       },
       {
         assetId: 'chill-001',
         assetTag: 'CHILL-001',
         severity: 'Medium' as Alert['severity'],
-        type: 'superheat',
-        message: 'Superheat abnormal - Check refrigerant charge: 11.2 K (Normal: 4-8 K)',
-        ruleName: 'superheat_monitoring',
-        sensorValue: 11.2,
-        sensorUnit: 'K'
+        type: 'cop',
+        message: 'COP efficiency declining - System optimization needed: 3.6 (Target: >4.0)',
+        ruleName: 'efficiency_monitoring',
+        sensorValue: 3.6,
+        sensorUnit: ''
       },
       {
-        assetId: 'vrf-001',
-        assetTag: 'VRF-001',
+        assetId: 'boiler-001',
+        assetTag: 'BOIL-001',
         severity: 'Low' as Alert['severity'],
-        type: 'power_kw',
-        message: 'High power consumption detected: 28.7 kW (22% above baseline)',
-        ruleName: 'power_monitoring',
-        sensorValue: 28.7,
-        sensorUnit: 'kW'
+        type: 'pressure_suction',
+        message: 'Water pressure stable but trending low: 165 kPa (Monitor)',
+        ruleName: 'pressure_monitoring',
+        sensorValue: 165,
+        sensorUnit: 'kPa'
       },
       {
-        assetId: 'ahu-002',
-        assetTag: 'AHU-002',
-        severity: 'Low' as Alert['severity'],
-        type: 'temp_supply',
-        message: 'Supply temperature deviation: 18.4°C (Setpoint: 16.0°C, Deviation: 2.4°C)',
-        ruleName: 'temp_supply_monitoring',
-        sensorValue: 18.4,
-        sensorUnit: '°C'
-      },
-      {
-        assetId: 'chill-002',
-        assetTag: 'CHILL-002',
+        assetId: 'rtu-002',
+        assetTag: 'RTU-002',
         severity: 'Medium' as Alert['severity'],
-        type: 'vibration',
-        message: 'Elevated vibration detected - Schedule maintenance: 5.1 mm/s RMS (Warning: 4.5 mm/s)',
-        ruleName: 'vibration_monitoring',
-        sensorValue: 5.1,
-        sensorUnit: 'mm/s'
-      },
-      {
-        assetId: 'vrf-003',
-        assetTag: 'VRF-003',
-        severity: 'Low' as Alert['severity'],
-        type: 'humidity',
-        message: 'High humidity level: 67.2% RH (Comfort limit: 60%)',
-        ruleName: 'humidity_monitoring',
-        sensorValue: 67.2,
-        sensorUnit: '%'
+        type: 'temp_external',
+        message: 'High ambient temperature affecting performance: 34.7°C (Design: 32°C)',
+        ruleName: 'ambient_monitoring',
+        sensorValue: 34.7,
+        sensorUnit: '°C'
       }
     ];
     
@@ -804,71 +1112,149 @@ export class SimulationEngine {
       let healthScore = 100;
       let totalPowerConsumption = 0;
       
+      // Equipment-specific health calculation weights
+      const healthWeights = {
+        'Chiller': { vibration: 0.25, superheat: 0.20, subcooling: 0.15, pressure: 0.15, temp: 0.10, power: 0.10, others: 0.05 },
+        'AHU': { filter: 0.30, vibration: 0.20, temp: 0.15, airflow: 0.15, power: 0.10, others: 0.10 },
+        'VRF': { superheat: 0.25, vibration: 0.20, temp: 0.20, power: 0.15, efficiency: 0.15, others: 0.05 },
+        'RTU': { filter: 0.25, vibration: 0.20, temp: 0.20, power: 0.15, compressor: 0.15, others: 0.05 },
+        'CoolingTower': { vibration: 0.30, temp: 0.25, power: 0.20, airflow: 0.15, others: 0.10 },
+        'Boiler': { vibration: 0.25, temp: 0.25, pressure: 0.20, power: 0.15, others: 0.15 }
+      };
+      
+      const weights = healthWeights[asset.type] || healthWeights['AHU'];
+      
       assetSensors.forEach(sensor => {
         if (!sensor.lastReading) return;
         
         const value = sensor.lastReading.value;
         let penalty = 0;
+        let categoryWeight = weights.others;
         
         // Update power consumption based on current power readings
         if (sensor.type === 'power_kw') {
-          totalPowerConsumption = value; // Current kW consumption
+          totalPowerConsumption = value;
+          categoryWeight = weights.power || 0.1;
+          
+          const baseline = (sensor as any).baseline || 50;
+          if (value > baseline * 1.4) penalty = 15;
+          else if (value > baseline * 1.2) penalty = 8;
+          else if (value > baseline * 1.1) penalty = 3;
         }
         
         switch (sensor.type) {
           case 'dp_filter':
-            if (value > 300) penalty = Math.min(25, (value - 300) / 5);
-            else if (value > 250) penalty = Math.min(15, (value - 250) / 10);
-            else if (value > 200) penalty = Math.min(8, (value - 200) / 15);
+            categoryWeight = weights.filter || 0.3;
+            if (value > 320) penalty = 30; // Critical
+            else if (value > 280) penalty = 20; // High
+            else if (value > 240) penalty = 12; // Medium
+            else if (value > 200) penalty = 6;  // Low
+            else if (value > 160) penalty = 2;  // Slight
             break;
             
           case 'vibration':
-            if (value > 6.5) penalty = Math.min(20, (value - 6.5) * 3);
-            else if (value > 4.5) penalty = Math.min(12, (value - 4.5) * 2);
-            else if (value > 3.5) penalty = Math.min(6, (value - 3.5) * 1.5);
+            categoryWeight = weights.vibration || 0.2;
+            const vibrationLimit = asset.type === 'CoolingTower' ? 8 : 
+                                  asset.type === 'Chiller' ? 6 : 5;
+            if (value > vibrationLimit) penalty = 25;
+            else if (value > vibrationLimit * 0.8) penalty = 15;
+            else if (value > vibrationLimit * 0.6) penalty = 8;
+            else if (value > vibrationLimit * 0.5) penalty = 3;
             break;
             
           case 'temp_supply':
+            categoryWeight = weights.temp || 0.15;
             if (sensor.setpoint) {
               const deviation = Math.abs(value - sensor.setpoint);
-              if (deviation > 4) penalty = Math.min(15, deviation * 2);
-              else if (deviation > 2.5) penalty = Math.min(10, deviation * 1.5);
-              else if (deviation > 1.5) penalty = Math.min(5, deviation);
+              if (deviation > 5) penalty = 20;
+              else if (deviation > 3.5) penalty = 12;
+              else if (deviation > 2.5) penalty = 8;
+              else if (deviation > 1.5) penalty = 4;
+              else if (deviation > 1.0) penalty = 1;
             }
             break;
             
           case 'superheat':
-            if (value > 10) penalty = Math.min(10, (value - 10));
-            else if (value < 3) penalty = Math.min(15, (3 - value) * 2);
+            categoryWeight = weights.superheat || 0.2;
+            if (value > 12) penalty = 15;
+            else if (value > 10) penalty = 10;
+            else if (value < 3) penalty = 20; // More critical
+            else if (value < 4) penalty = 10;
             break;
             
           case 'subcooling':
-            if (value < 2) penalty = Math.min(10, (2 - value) * 2);
-            else if (value > 8) penalty = Math.min(8, (value - 8));
+            categoryWeight = weights.subcooling || 0.15;
+            if (value < 2) penalty = 15;
+            else if (value < 2.5) penalty = 8;
+            else if (value > 8) penalty = 10;
+            else if (value > 7) penalty = 5;
+            break;
+            
+          case 'pressure_suction':
+          case 'pressure_discharge':
+            categoryWeight = weights.pressure || 0.15;
+            const isDischarge = sensor.type === 'pressure_discharge';
+            const criticalHigh = isDischarge ? 1800 : 600;
+            const criticalLow = isDischarge ? 1000 : 300;
+            
+            if (value > criticalHigh || value < criticalLow) penalty = 18;
+            else if (value > criticalHigh * 0.9 || value < criticalLow * 1.1) penalty = 10;
+            else if (value > criticalHigh * 0.85 || value < criticalLow * 1.2) penalty = 5;
             break;
             
           case 'current':
+            categoryWeight = weights.power || 0.1;
             if (asset.specifications.maxCurrent) {
               const utilization = value / asset.specifications.maxCurrent;
-              if (utilization > 0.95) penalty = Math.min(12, (utilization - 0.95) * 100);
-              else if (utilization > 0.85) penalty = Math.min(6, (utilization - 0.85) * 50);
+              if (utilization > 0.98) penalty = 20;
+              else if (utilization > 0.95) penalty = 12;
+              else if (utilization > 0.90) penalty = 8;
+              else if (utilization > 0.85) penalty = 4;
             }
             break;
             
           case 'cop':
           case 'eer':
-            const minEfficient = sensor.type === 'cop' ? 3.5 : 9.0;
-            if (value < minEfficient) penalty = Math.min(8, (minEfficient - value) * 2);
+            categoryWeight = weights.efficiency || 0.15;
+            const minEfficient = sensor.type === 'cop' ? 3.8 : 9.5;
+            const goodEfficient = sensor.type === 'cop' ? 4.2 : 10.5;
+            
+            if (value < minEfficient * 0.8) penalty = 15;
+            else if (value < minEfficient) penalty = 10;
+            else if (value < goodEfficient) penalty = 3;
+            break;
+            
+          case 'airflow':
+            categoryWeight = weights.airflow || 0.15;
+            const nominalFlow = (sensor as any).baseline || 25000;
+            if (value < nominalFlow * 0.6) penalty = 20;
+            else if (value < nominalFlow * 0.7) penalty = 12;
+            else if (value < nominalFlow * 0.8) penalty = 6;
+            else if (value < nominalFlow * 0.9) penalty = 2;
+            break;
+            
+          case 'compressor_state':
+            categoryWeight = weights.compressor || 0.1;
+            // Check for frequent cycling by looking at recent state changes
+            // This is simplified - in reality you'd track state changes over time
+            if (Math.random() < 0.05) penalty = 5; // 5% chance of cycling penalty
             break;
         }
         
         // Additional penalty for offline sensors
-        if (!sensor.online) penalty += 5;
+        if (!sensor.online) {
+          penalty += 8 * categoryWeight; // Offline sensors impact health based on importance
+        }
         
-        healthScore -= penalty;
+        // Quality-based penalties
+        if (sensor.lastReading.quality === 'uncertain') penalty += 2;
+        else if (sensor.lastReading.quality === 'bad') penalty += 5;
+        
+        // Apply weighted penalty
+        healthScore -= penalty * categoryWeight;
       });
       
-      // Update power consumption (convert from kW to daily kWh estimate)
+      // Update power consumption (convert from kW to current consumption)
       if (totalPowerConsumption > 0) {
         asset.powerConsumption = totalPowerConsumption;
       }
@@ -876,25 +1262,55 @@ export class SimulationEngine {
       // Additional health penalty based on maintenance schedule
       if (asset.lastMaintenance) {
         const daysSinceMaintenance = Math.floor((new Date().getTime() - asset.lastMaintenance.getTime()) / (1000 * 60 * 60 * 24));
-        const maintenanceInterval = asset.type === 'Chiller' ? 90 : 120;
+        let maintenanceInterval: number;
         
-        if (daysSinceMaintenance > maintenanceInterval) {
-          healthScore -= Math.min(20, (daysSinceMaintenance - maintenanceInterval) * 0.5);
-        } else if (daysSinceMaintenance > maintenanceInterval * 0.8) {
-          healthScore -= Math.min(5, (daysSinceMaintenance - maintenanceInterval * 0.8) * 0.2);
+        switch (asset.type) {
+          case 'Chiller': maintenanceInterval = 90; break;
+          case 'Boiler': maintenanceInterval = 120; break;
+          case 'CoolingTower': maintenanceInterval = 60; break;
+          case 'RTU': maintenanceInterval = 120; break;
+          default: maintenanceInterval = 120;
+        }
+        
+        if (daysSinceMaintenance > maintenanceInterval * 1.5) {
+          healthScore -= 25; // Severely overdue
+        } else if (daysSinceMaintenance > maintenanceInterval) {
+          healthScore -= Math.min(15, (daysSinceMaintenance - maintenanceInterval) * 0.3);
+        } else if (daysSinceMaintenance > maintenanceInterval * 0.9) {
+          healthScore -= 3; // Approaching due date
         }
       }
       
-      asset.healthScore = Math.max(0, Math.min(100, Math.round(healthScore)));
+      // Operating hours penalty (wear and tear)
+      const hoursExpectancy = {
+        'Chiller': 80000,
+        'Boiler': 100000,
+        'AHU': 70000,
+        'VRF': 60000,
+        'RTU': 65000,
+        'CoolingTower': 50000
+      };
+      
+      const expectedHours = hoursExpectancy[asset.type] || 70000;
+      const wearRatio = asset.operatingHours / expectedHours;
+      
+      if (wearRatio > 1.2) healthScore -= 15;
+      else if (wearRatio > 1.0) healthScore -= 8;
+      else if (wearRatio > 0.8) healthScore -= 3;
+      
+      // Ensure health score stays within bounds and apply realistic rounding
+      asset.healthScore = Math.max(25, Math.min(100, Math.round(healthScore)));
       
       // Update status based on health and alerts
       const activeAlerts = this.alerts.filter(a => a.assetId === asset.id && !a.resolved);
       const criticalAlerts = activeAlerts.filter(a => a.severity === 'Critical' || a.severity === 'High');
       const mediumAlerts = activeAlerts.filter(a => a.severity === 'Medium');
       
-      if (asset.healthScore < 50 || criticalAlerts.length > 0) {
+      if (asset.healthScore < 40 || criticalAlerts.length > 1) {
         asset.status = 'Alert';
-      } else if (asset.healthScore < 70 || mediumAlerts.length > 0) {
+      } else if (asset.healthScore < 60 || criticalAlerts.length > 0) {
+        asset.status = 'Alert';
+      } else if (asset.healthScore < 75 || mediumAlerts.length > 1) {
         asset.status = 'Maintenance';
       } else if (asset.healthScore < 85 && activeAlerts.length > 0) {
         asset.status = 'Maintenance';
