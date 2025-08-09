@@ -110,7 +110,7 @@ function MobileSidebar({ currentPage, onNavigate }: TrakSenseSidebarProps) {
         <Button 
           variant="ghost" 
           size="icon"
-          className="md:hidden text-primary-foreground hover:bg-primary-foreground/10"
+          className="text-primary-foreground hover:bg-primary-foreground/10"
           aria-label="Abrir menu lateral"
         >
           <Menu className="h-6 w-6" />
@@ -172,6 +172,7 @@ function DesktopSidebar({ currentPage, onNavigate }: TrakSenseSidebarProps) {
     <div 
       className={cn(
         "bg-sidebar text-sidebar transition-all duration-300 h-full flex-shrink-0 border-r border-primary/20",
+        "hidden md:flex md:flex-col", // Hide on mobile, show on desktop
         sidebarCollapsed ? "w-16" : "w-60"
       )}
     >
@@ -235,9 +236,9 @@ function DesktopSidebar({ currentPage, onNavigate }: TrakSenseSidebarProps) {
 export function TrakSenseSidebar({ currentPage, onNavigate }: TrakSenseSidebarProps) {
   const isMobile = useIsMobile();
 
-  if (isMobile) {
-    return <MobileSidebar currentPage={currentPage} onNavigate={onNavigate} />;
-  }
-
+  // Always render desktop sidebar - let CSS handle mobile responsiveness
   return <DesktopSidebar currentPage={currentPage} onNavigate={onNavigate} />;
 }
+
+// Export MobileSidebar separately for use in TopBar
+export { MobileSidebar };

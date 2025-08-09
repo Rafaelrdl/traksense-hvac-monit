@@ -16,10 +16,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigat
       
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Desktop Sidebar */}
-        <div className="hidden md:block">
-          <TrakSenseSidebar currentPage={currentPage} onNavigate={onNavigate} />
-        </div>
+        {/* Sidebar - handles its own responsive behavior */}
+        <TrakSenseSidebar currentPage={currentPage} onNavigate={onNavigate} />
         
         {/* Main Content */}
         <main className="flex-1 overflow-auto">

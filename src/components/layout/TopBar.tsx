@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/app';
 import { Bell, ExternalLink, Clock, Building } from 'lucide-react';
-import { TrakSenseSidebar } from './TrakSenseSidebar';
+import { MobileSidebar } from './TrakSenseSidebar';
 
 interface TopBarProps {
   currentPage?: string;
@@ -30,7 +30,7 @@ export const TopBar: React.FC<TopBarProps> = ({ currentPage = '', onNavigate = (
       <div className="flex items-center space-x-4">
         {/* Mobile Menu Trigger */}
         <div className="md:hidden">
-          <TrakSenseSidebar currentPage={currentPage} onNavigate={onNavigate} />
+          <MobileSidebar currentPage={currentPage} onNavigate={onNavigate} />
         </div>
         
         {/* Logo and Brand */}
