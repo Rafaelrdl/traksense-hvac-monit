@@ -66,12 +66,98 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
                 Troca sugerida em: ${safeDaysUntilChange} dias`;
       }
     },
+    graphic: [
+      // Background circle
+      {
+        type: 'circle',
+        left: 'center',
+        top: 'center',
+        shape: {
+          cx: 0,
+          cy: 0,
+          r: 80
+        },
+        style: {
+          fill: 'rgba(255, 255, 255, 0.95)',
+          shadowColor: 'rgba(0, 0, 0, 0.08)',
+          shadowBlur: 12
+        }
+      },
+      // Main score display
+      {
+        type: 'text',
+        left: 'center',
+        top: '45%',
+        style: {
+          text: safeHealthScore.toFixed(0),
+          fontSize: 32,
+          fontWeight: 'bold',
+          fill: getHealthColor(safeHealthScore),
+          textAlign: 'center',
+          fontFamily: 'Inter'
+        }
+      },
+      // Score denominator
+      {
+        type: 'text',
+        left: 'center',
+        top: '52%',
+        style: {
+          text: '/100',
+          fontSize: 14,
+          fill: '#999',
+          textAlign: 'center',
+          fontFamily: 'Inter'
+        }
+      },
+      // Status label
+      {
+        type: 'text',
+        left: 'center',
+        top: '64%',
+        style: {
+          text: getHealthLabel(safeHealthScore),
+          fontSize: 13,
+          fill: getHealthColor(safeHealthScore),
+          textAlign: 'center',
+          fontWeight: '600',
+          fontFamily: 'Inter'
+        }
+      },
+      // ΔP reading
+      {
+        type: 'text',
+        left: 'center',
+        top: '75%',
+        style: {
+          text: `ΔP: ${safeDpFilter.toFixed(0)} Pa`,
+          fontSize: 12,
+          fill: '#076A75',
+          textAlign: 'center',
+          fontWeight: '600',
+          fontFamily: 'Inter'
+        }
+      },
+      // Days until change
+      {
+        type: 'text',
+        left: 'center',
+        top: '82%',
+        style: {
+          text: `Troca em ${safeDaysUntilChange} dias`,
+          fontSize: 11,
+          fill: '#999',
+          textAlign: 'center',
+          fontFamily: 'Inter'
+        }
+      }
+    ],
     series: [
       {
         name: 'Saúde do Filtro',
         type: 'gauge',
-        center: ['50%', '55%'],
-        radius: '80%',
+        center: ['50%', '50%'],
+        radius: '90%',
         startAngle: 200,
         endAngle: -20,
         min: 0,
@@ -82,7 +168,7 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
         },
         progress: {
           show: true,
-          width: 20,
+          width: 18,
           itemStyle: {
             color: getHealthColor(safeHealthScore),
             shadowBlur: 10,
@@ -94,7 +180,7 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
         },
         axisLine: {
           lineStyle: {
-            width: 20,
+            width: 18,
             color: [
               [0.6, 'rgba(224, 90, 71, 0.15)'],
               [0.8, 'rgba(245, 195, 77, 0.15)'],
@@ -132,93 +218,6 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
           }
         ]
       }
-    ],
-      // Background circle for main content
-      // Background circle for main content
-      {circle',
-        type: 'circle',
-        left: '50%',
-        shape: {
-        shape: {
-          cy: 0,
-          cy: 0,
-          r: 65
-        style: {
-        style: { 255, 0.95)',
-          fill: 'rgba(255, 255, 255, 0.95)',
-          shadowColor: 'rgba(0, 0, 0, 0.08)'
-      {
-          shadowBlur: 12,
-          shadowColor: 'rgba(0, 0, 0, 0.08)'
-        top: '48%',
-        style: {
-      // Main score display0)}`,
-      {
-        type: 'text',
-        left: '50%',lor(safeHealthScore),
-          textAlign: 'center',
-        style: {ter'
-        }
-          fontSize: 32,
-          fontWeight: 'bold',
-          fill: getHealthColor(safeHealthScore),
-        type: 'text',
-        left: '50%',
-        }
-        style: {
-      // Score denominator
-          fontSize: 14,
-        type: 'text',
-        left: '50%',
-          fontFamily: 'Inter'
-        style: {
-      },
-      // Status label
-      {
-        left: '50%',
-          fontFamily: 'Inter'
-        }
-          text: getHealthLabel(safeHealthScore),
-          fontSize: 13,
-          fill: getHealthColor(safeHealthScore),
-        type: 'text',',
-          fontWeight: '600',
-        top: '64%',
-        style: {
-      },
-      // ΔP reading
-      {
-          textAlign: 'center',
-          fontWeight: '600',
-        top: '82%',
-        style: {
-          text: `ΔP: ${safeDpFilter.toFixed(0)} Pa`,
-      // ΔP reading
-      {
-          textAlign: 'center',
-          fontFamily: 'Inter'
-        top: '82%',
-        style: {
-          text: `ΔP: ${safeDpFilter.toFixed(0)} Pa`,
-          fontSize: 12,
-          fill: '#076A75',
-        left: '50%',
-          fontFamily: 'Inter'
-        }
-      },
-          fontSize: 11,
-          fill: '#999',
-          textAlign: 'center',
-          fontFamily: 'Inter'
-        }
-  };
-
-  try {
-    return (
-      <div style={{ height, width: '100%' }}>
-        <ReactECharts 
-        }
-      }
     ]
   };
 
@@ -231,11 +230,20 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
           opts={{ renderer: 'svg', locale: 'pt' }}
           notMerge={true}
           lazyUpdate={true}
+        />
+      </div>
+    );
+  } catch (error) {
+    console.error('Error rendering GaugeFilterHealth:', error);
+    return (
+      <div 
+        className="flex items-center justify-center text-muted-foreground bg-muted/20 rounded-lg"
+        style={{ height }}
       >
         <div className="text-center">
           <div className="text-sm">Erro ao renderizar gauge de saúde do filtro</div>
-  } catch (error) {
-    console.error('Error rendering GaugeFilterHealth:', error);
+        </div>
+      </div>
     );
   }
-};          <div className="text-sm">Erro ao renderizar gauge de saúde do filtro</div>        </div>      </div>    );  }};
+};
