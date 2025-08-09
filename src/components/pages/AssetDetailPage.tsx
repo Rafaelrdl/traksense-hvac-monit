@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 export const AssetDetailPage: React.FC = () => {
-  const { setSelectedAsset, sensors, alerts } = useAppStore();
+  const { setSelectedAsset, sensors, alerts, maintenanceTasks, maintenanceSchedules, maintenanceHistory } = useAppStore();
   const selectedAsset = useSelectedAsset();
   const timeRange = useTimeRangeMs();
   const [selectedMetrics, setSelectedMetrics] = useState(['temp_supply', 'temp_return', 'power_kw']);
@@ -190,6 +190,7 @@ export const AssetDetailPage: React.FC = () => {
           {[
             { id: 'telemetry', label: 'Telemetria' },
             { id: 'performance', label: 'Performance' },
+            { id: 'maintenance', label: 'Manutenção' },
             { id: 'alerts', label: 'Histórico Alertas' },
             { id: 'raw', label: 'Telemetria Bruta' }
           ].map(tab => (
@@ -264,6 +265,133 @@ export const AssetDetailPage: React.FC = () => {
           <div className="bg-card rounded-xl p-6 border shadow-sm">
             <h3 className="text-lg font-semibold mb-4">Análise de Performance</h3>
             <ScatterPerformance data={performanceData} height={400} />
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'maintenance' && (
+        <div className="space-y-6">
+          {/* Maintenance Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-card rounded-xl p-6 border shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-semibold">Tarefas Pendentes</h4>
+                <Clock className="w-4 h-4 text-blue-600" />
+              </div>
+              <p className="text-2xl font-bold text-blue-600">
+                {maintenanceTasks.filter(t => t.assetId === selectedAsset.id && t.status === 'scheduled').length}
+              </p>
+            </div>
+            
+            <div className="bg-card rounded-xl p-6 border shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-semibold">Vencidas</h4>
+                <AlertTriangle className="w-4 h-4 text-red-600" />
+              </div>
+              <p className="text-2xl font-bold text-red-600">
+                {maintenanceTasks.filter(t => 
+                  t.assetId === selectedAsset.id && 
+                  t.status === 'scheduled' && 
+                  new Date(t.scheduledDate) < new Date()
+                ).length}
+              </p>
+            </div>
+            
+            <div className="bg-card rounded-xl p-6 border shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-semibold">Concluídas (30d)</h4>
+                <Activity className="w-4 h-4 text-green-600" />
+              </div>
+              <p className="text-2xl font-bold text-green-600">
+                {maintenanceHistory.filter(h => 
+                  h.assetId === selectedAsset.id && 
+                  new Date(h.completedDate) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+                ).length}
+              </p>
+            </div>
+          </div>
+
+          {/* Recent Tasks */}
+          <div className="bg-card rounded-xl p-6 border shadow-sm">
+            <h3 className="text-lg font-semibold mb-4">Próximas Manutenções</h3>
+            <div className="space-y-3">
+              {maintenanceTasks
+                .filter(t => t.assetId === selectedAsset.id && t.status === 'scheduled')
+                .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime())
+                .slice(0, 5)
+                .map(task => (
+                  <div key={task.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <h4 className="font-medium">{task.title}</h4>
+                      <p className="text-sm text-muted-foreground">{task.description}</p>
+                      <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                        <span>📅 {new Date(task.scheduledDate).toLocaleDateString('pt-BR')}</span>
+                        <span>⏱️ {task.estimatedDuration} min</span>
+                        {task.assignedTo && <span>👤 {task.assignedTo}</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        task.priority === 'Critical' ? 'bg-red-100 text-red-800' :
+                        task.priority === 'High' ? 'bg-orange-100 text-orange-800' :
+                        task.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {task.priority}
+                      </span>
+                      {new Date(task.scheduledDate) < new Date() && (
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          Vencida
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              {maintenanceTasks.filter(t => t.assetId === selectedAsset.id && t.status === 'scheduled').length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Nenhuma manutenção agendada para este ativo</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Maintenance History */}
+          <div className="bg-card rounded-xl p-6 border shadow-sm">
+            <h3 className="text-lg font-semibold mb-4">Histórico Recente</h3>
+            <div className="space-y-3">
+              {maintenanceHistory
+                .filter(h => h.assetId === selectedAsset.id)
+                .slice(0, 10)
+                .map(record => (
+                  <div key={record.id} className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium">{record.title}</h4>
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(record.completedDate).toLocaleDateString('pt-BR')}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">{record.notes}</p>
+                    <div className="flex items-center justify-between text-sm">
+                      <span>👤 {record.completedBy}</span>
+                      <span>💰 ${record.cost.toFixed(2)}</span>
+                    </div>
+                    {record.beforeHealthScore && record.afterHealthScore && (
+                      <div className="mt-2 text-sm">
+                        <span className="text-muted-foreground">Saúde: </span>
+                        <span className="text-red-500">{record.beforeHealthScore}%</span>
+                        <span className="text-muted-foreground"> → </span>
+                        <span className="text-green-600">{record.afterHealthScore}%</span>
+                        <span className="text-green-600"> (+{record.afterHealthScore - record.beforeHealthScore}%)</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              {maintenanceHistory.filter(h => h.assetId === selectedAsset.id).length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Nenhum histórico de manutenção disponível</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

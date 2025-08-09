@@ -239,6 +239,7 @@ function getWidgetCategory(widgetType: WidgetType): DashboardWidget['type'] {
   if (widgetType.includes('chart') || widgetType.includes('heatmap')) return 'chart';
   if (widgetType.includes('gauge')) return 'gauge';
   if (widgetType.includes('table')) return 'table';
+  if (widgetType === 'maintenance-overview') return 'maintenance';
   return 'kpi';
 }
 
@@ -254,7 +255,8 @@ function getWidgetTitle(widgetType: WidgetType): string {
     'energy-chart': 'Consumo Energético',
     'filter-gauge': 'Saúde do Filtro',
     'alerts-heatmap': 'Densidade de Alertas',
-    'alerts-table': 'Alertas Ativos'
+    'alerts-table': 'Alertas Ativos',
+    'maintenance-overview': 'Visão Geral Manutenção'
   };
   return titles[widgetType] || 'Widget';
 }
@@ -262,5 +264,6 @@ function getWidgetTitle(widgetType: WidgetType): string {
 function getWidgetDefaultSize(widgetType: WidgetType): DashboardWidget['size'] {
   if (widgetType.includes('kpi')) return 'small';
   if (widgetType.includes('table')) return 'large';
+  if (widgetType === 'maintenance-overview') return 'medium';
   return 'medium';
 }

@@ -21,7 +21,7 @@ import {
   Clock,
   Wrench
 } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { MaintenanceWidget } from './widgets/MaintenanceWidget';
 
 interface DraggableWidgetProps {
   widget: DashboardWidget;
@@ -225,6 +225,9 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
             )}
           </div>
         );
+      
+      case 'maintenance-overview':
+        return <MaintenanceWidget />;
       
       default:
         return (

@@ -1,4 +1,5 @@
-import { HVACAsset, Sensor, TelemetryPoint, Alert, SimulationScenario, SensorReading } from '../types/hvac';
+import { HVACAsset, Sensor, TelemetryPoint, Alert, SimulationScenario, SensorReading, MaintenanceTask, MaintenanceSchedule, MaintenanceHistory } from '../types/hvac';
+import { MaintenanceDataGenerator } from './maintenanceData';
 
 export class SimulationEngine {
   private assets: HVACAsset[] = [];
@@ -8,6 +9,7 @@ export class SimulationEngine {
   private scenarios: SimulationScenario[] = [];
   private activeScenario: SimulationScenario | null = null;
   private intervalId: NodeJS.Timeout | null = null;
+  private maintenanceData: MaintenanceDataGenerator | null = null;
 
   constructor() {
     this.initializeAssets();
@@ -15,6 +17,7 @@ export class SimulationEngine {
     this.initializeScenarios();
     this.generateHistoricalData();
     this.generateInitialAlerts();
+    this.initializeMaintenanceData();
   }
 
   private initializeAssets() {
@@ -1494,6 +1497,12 @@ export class SimulationEngine {
         alert.acknowledgedAt = now;
       });
   }
+
+  private initializeMaintenanceData() {
+    const assetIds = this.assets.map(a => a.id);
+    const assetTags = this.assets.map(a => a.tag);
+    this.maintenanceData = new MaintenanceDataGenerator(assetIds, assetTags);
+  }
   
   stop() {
     if (this.intervalId) {
@@ -1516,6 +1525,24 @@ export class SimulationEngine {
   getSensors() { return this.sensors; }
   getAlerts() { return this.alerts.slice().reverse(); } // Most recent first
   getScenarios() { return this.scenarios; }
+  
+  // Maintenance getters
+  getMaintenanceTasks() { return this.maintenanceData?.getTasks() || []; }
+  getMaintenanceSchedules() { return this.maintenanceData?.getSchedules() || []; }
+  getMaintenanceHistory() { return this.maintenanceData?.getHistory() || []; }
+  
+  // Maintenance actions
+  addMaintenanceTask(task: Omit<MaintenanceTask, 'id' | 'createdDate' | 'createdBy'>) {
+    return this.maintenanceData?.addTask(task);
+  }
+  
+  updateMaintenanceTask(taskId: string, updates: Partial<MaintenanceTask>) {
+    return this.maintenanceData?.updateTask(taskId, updates);
+  }
+  
+  completeMaintenanceTask(taskId: string, notes?: string, cost?: number) {
+    return this.maintenanceData?.completeTask(taskId, notes, cost);
+  }
   
   getTelemetryData(sensorId: string, timeRange?: { start: Date; end: Date }) {
     try {

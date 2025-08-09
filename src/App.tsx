@@ -6,7 +6,7 @@ import { AssetDetailPage } from './components/pages/AssetDetailPage';
 import { SensorsPage } from './components/pages/SensorsPage';
 import { AlertsPage } from './components/pages/AlertsPage';
 import { ReportsPage } from './components/pages/ReportsPage';
-import { SettingsPage } from './components/pages/SettingsPage';
+import { MaintenancePage } from './components/pages/MaintenancePage';
 import { CustomDashboard } from './components/dashboard/CustomDashboard';
 import { useAppStore } from './store/app';
 
@@ -53,6 +53,8 @@ function App() {
         return <SensorsPage />;
       case 'alerts':
         return <AlertsPage />;
+      case 'maintenance':
+        return <MaintenancePage />;
       case 'reports':
         return <ReportsPage />;
       case 'settings':

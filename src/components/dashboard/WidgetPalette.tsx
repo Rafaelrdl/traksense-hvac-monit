@@ -62,6 +62,13 @@ const widgetDefinitions = [
     icon: Wrench,
   },
   {
+    id: 'maintenance-overview' as WidgetType,
+    name: 'Visão Geral Manutenção',
+    description: 'Resumo de tarefas e programações de manutenção',
+    category: 'maintenance',
+    icon: Wrench,
+  },
+  {
     id: 'temperature-chart' as WidgetType,
     name: 'Tendências de Temperatura',
     description: 'Gráfico de linhas com temperaturas',
@@ -137,7 +144,9 @@ export const WidgetPalette: React.FC<WidgetPaletteProps> = ({ layoutId }) => {
           {Object.entries(groupedWidgets).map(([category, widgets]) => (
             <div key={category}>
               <h3 className="text-lg font-medium mb-3 capitalize">
-                {category === 'kpi' ? 'KPIs' : category === 'charts' ? 'Gráficos' : 'Tabelas'}
+                {category === 'kpi' ? 'KPIs' : 
+                 category === 'charts' ? 'Gráficos' : 
+                 category === 'maintenance' ? 'Manutenção' : 'Tabelas'}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {widgets.map(widget => {

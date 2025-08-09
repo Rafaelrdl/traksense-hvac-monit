@@ -9,7 +9,8 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Layout
+  Layout,
+  Wrench
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -23,6 +24,7 @@ const menuItems = [
   { id: 'assets', label: 'Ativos (HVAC)', icon: Wind },
   { id: 'sensors', label: 'Sensores & Telemetria', icon: Activity },
   { id: 'alerts', label: 'Alertas & Regras', icon: AlertTriangle },
+  { id: 'maintenance', label: 'Manutenção', icon: Wrench },
   { id: 'reports', label: 'Relatórios', icon: FileText },
   { id: 'settings', label: 'Configurações', icon: Settings }
 ];

@@ -168,3 +168,81 @@ export interface ChartThreshold {
   color: string;
   type: 'min' | 'max' | 'target' | 'warning' | 'critical';
 }
+
+export interface MaintenanceTask {
+  id: string;
+  assetId: string;
+  assetTag: string;
+  type: 'preventive' | 'corrective' | 'predictive' | 'emergency';
+  category: 'filter' | 'cleaning' | 'calibration' | 'inspection' | 'repair' | 'replacement' | 'lubrication' | 'electrical' | 'refrigerant';
+  title: string;
+  description: string;
+  priority: 'Low' | 'Medium' | 'High' | 'Critical';
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'overdue';
+  scheduledDate: Date;
+  estimatedDuration: number; // minutes
+  assignedTo?: string;
+  assignedTeam?: string;
+  completedDate?: Date;
+  completedBy?: string;
+  notes?: string;
+  cost?: number;
+  partsUsed?: MaintenancePart[];
+  nextMaintenanceDate?: Date;
+  recurring: boolean;
+  recurringInterval?: number; // days
+  recurringType?: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'annually' | 'operating_hours';
+  operatingHoursInterval?: number; // for operating hours based maintenance
+  createdDate: Date;
+  createdBy: string;
+}
+
+export interface MaintenancePart {
+  id: string;
+  name: string;
+  partNumber?: string;
+  quantity: number;
+  unitCost?: number;
+  supplier?: string;
+}
+
+export interface MaintenanceSchedule {
+  id: string;
+  assetId: string;
+  assetTag: string;
+  maintenanceType: MaintenanceTask['category'];
+  title: string;
+  description: string;
+  frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'annually' | 'operating_hours';
+  interval: number; // days or hours depending on frequency
+  estimatedDuration: number; // minutes
+  priority: MaintenanceTask['priority'];
+  enabled: boolean;
+  lastExecuted?: Date;
+  nextDue: Date;
+  assignedTeam?: string;
+  instructions?: string;
+  requiredParts?: MaintenancePart[];
+  requiredTools?: string[];
+  safetyRequirements?: string[];
+}
+
+export interface MaintenanceHistory {
+  id: string;
+  taskId: string;
+  assetId: string;
+  assetTag: string;
+  type: MaintenanceTask['type'];
+  category: MaintenanceTask['category'];
+  title: string;
+  completedDate: Date;
+  completedBy: string;
+  duration: number; // actual minutes taken
+  cost: number;
+  partsUsed: MaintenancePart[];
+  notes: string;
+  beforeHealthScore?: number;
+  afterHealthScore?: number;
+  findings?: string[];
+  recommendations?: string[];
+}

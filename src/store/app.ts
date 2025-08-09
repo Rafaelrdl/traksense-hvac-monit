@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { useMemo } from 'react';
-import { HVACAsset, Sensor, Alert, SimulationScenario, TelemetryPoint } from '../types/hvac';
+import { HVACAsset, Sensor, Alert, SimulationScenario, TelemetryPoint, MaintenanceTask, MaintenanceSchedule, MaintenanceHistory } from '../types/hvac';
 import { simEngine } from '../lib/simulation';
 
 interface AppState {
@@ -9,6 +9,9 @@ interface AppState {
   sensors: Sensor[];
   alerts: Alert[];
   scenarios: SimulationScenario[];
+  maintenanceTasks: MaintenanceTask[];
+  maintenanceSchedules: MaintenanceSchedule[];
+  maintenanceHistory: MaintenanceHistory[];
   
   // UI state
   selectedAssetId: string | null;
@@ -31,6 +34,14 @@ interface AppState {
   
   refreshData: () => void;
   acknowledgeAlert: (alertId: string) => void;
+  
+  // Maintenance actions
+  addMaintenanceTask: (task: Omit<MaintenanceTask, 'id' | 'createdDate' | 'createdBy'>) => void;
+  updateMaintenanceTask: (taskId: string, updates: Partial<MaintenanceTask>) => void;
+  completeMaintenanceTask: (taskId: string, notes?: string, cost?: number) => void;
+  addMaintenanceSchedule: (schedule: Omit<MaintenanceSchedule, 'id'>) => void;
+  updateMaintenanceSchedule: (scheduleId: string, updates: Partial<MaintenanceSchedule>) => void;
+  deleteMaintenanceSchedule: (scheduleId: string) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -39,6 +50,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   sensors: simEngine.getSensors(),
   alerts: simEngine.getAlerts(),
   scenarios: simEngine.getScenarios(),
+  maintenanceTasks: simEngine.getMaintenanceTasks(),
+  maintenanceSchedules: simEngine.getMaintenanceSchedules(),
+  maintenanceHistory: simEngine.getMaintenanceHistory(),
   
   selectedAssetId: null,
   selectedTimeRange: '24h',
@@ -77,6 +91,9 @@ export const useAppStore = create<AppState>((set, get) => ({
           assets: simEngine.getAssets(),
           sensors: simEngine.getSensors(),
           alerts: simEngine.getAlerts(),
+          maintenanceTasks: simEngine.getMaintenanceTasks(),
+          maintenanceSchedules: simEngine.getMaintenanceSchedules(),
+          maintenanceHistory: simEngine.getMaintenanceHistory(),
           lastUpdateTime: new Date()
         });
       }, 3000);
@@ -115,6 +132,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       sensors: simEngine.getSensors(),
       alerts: simEngine.getAlerts(),
       scenarios: simEngine.getScenarios(),
+      maintenanceTasks: simEngine.getMaintenanceTasks(),
+      maintenanceSchedules: simEngine.getMaintenanceSchedules(),
+      maintenanceHistory: simEngine.getMaintenanceHistory(),
       lastUpdateTime: new Date()
     });
   },
@@ -126,6 +146,56 @@ export const useAppStore = create<AppState>((set, get) => ({
         : alert
     );
     set({ alerts });
+  },
+
+  // Maintenance actions
+  addMaintenanceTask: (task) => {
+    const newTask = simEngine.addMaintenanceTask(task);
+    if (newTask) {
+      const currentTasks = get().maintenanceTasks;
+      set({ maintenanceTasks: [...currentTasks, newTask] });
+    }
+  },
+
+  updateMaintenanceTask: (taskId, updates) => {
+    const updatedTask = simEngine.updateMaintenanceTask(taskId, updates);
+    if (updatedTask) {
+      const currentTasks = get().maintenanceTasks;
+      const newTasks = currentTasks.map(task => 
+        task.id === taskId ? updatedTask : task
+      );
+      set({ maintenanceTasks: newTasks });
+    }
+  },
+
+  completeMaintenanceTask: (taskId, notes, cost) => {
+    const completedTask = simEngine.completeMaintenanceTask(taskId, notes, cost);
+    if (completedTask) {
+      set({
+        maintenanceTasks: simEngine.getMaintenanceTasks(),
+        maintenanceHistory: simEngine.getMaintenanceHistory()
+      });
+    }
+  },
+
+  addMaintenanceSchedule: (schedule) => {
+    const newSchedule = { ...schedule, id: `sched-${Date.now()}` };
+    const currentSchedules = get().maintenanceSchedules;
+    set({ maintenanceSchedules: [...currentSchedules, newSchedule] });
+  },
+
+  updateMaintenanceSchedule: (scheduleId, updates) => {
+    const currentSchedules = get().maintenanceSchedules;
+    const newSchedules = currentSchedules.map(schedule => 
+      schedule.id === scheduleId ? { ...schedule, ...updates } : schedule
+    );
+    set({ maintenanceSchedules: newSchedules });
+  },
+
+  deleteMaintenanceSchedule: (scheduleId) => {
+    const currentSchedules = get().maintenanceSchedules;
+    const newSchedules = currentSchedules.filter(schedule => schedule.id !== scheduleId);
+    set({ maintenanceSchedules: newSchedules });
   }
 }));
 
