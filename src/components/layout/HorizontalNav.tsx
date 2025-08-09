@@ -62,3 +62,33 @@ export const HorizontalNav: React.FC<HorizontalNavProps> = ({ currentPage, onNav
     </nav>
   );
 };
+
+// Mobile navigation component for drawer/sheet usage
+export const MobileNav: React.FC<HorizontalNavProps> = ({ currentPage, onNavigate }) => {
+  return (
+    <nav className="flex flex-col gap-1 py-4" aria-label="Menu móvel">
+      {NAV_ITEMS.map((item) => {
+        const Icon = item.icon;
+        const isActive = currentPage === item.id;
+        
+        return (
+          <button
+            key={item.id}
+            onClick={() => onNavigate(item.id)}
+            className={[
+              "flex items-center gap-3 px-4 py-3 text-left rounded-lg text-base transition-all duration-150",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2",
+              isActive 
+                ? "bg-teal-50 text-teal-800 font-medium" 
+                : "text-slate-700 hover:bg-slate-50 hover:text-teal-700"
+            ].join(" ")}
+            aria-current={isActive ? "page" : undefined}
+          >
+            <Icon className="size-5 shrink-0" aria-hidden />
+            <span>{item.label}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+};
