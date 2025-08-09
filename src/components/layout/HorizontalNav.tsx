@@ -1,19 +1,19 @@
 import React from 'react';
 import { 
-  LayoutGrid,
-  PanelsTopLeft,
+  AirVent,
+  BellRing,
   AirVent,
   Activity,
   BellRing,
   Wrench,
-  FileText,
-  Settings,
-  type LucideIcon
-} from 'lucide-react';
+  icon: Luc
+};
+const NAV_ITEMS: 
+  { id: 'custom-dashbo
 
-type NavItem = {
-  id: string;
-  label: string;
+  { id: 'mainten
+  { id: 'sett
+
   icon: LucideIcon;
   path: string;
 };
@@ -30,69 +30,40 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 interface HorizontalNavProps {
-  currentPage: string;
-  onNavigate: (page: string) => void;
-}
-
-function cn(...classes: Array<string | boolean | undefined>) {
-  return classes.filter(Boolean).join(' ');
-}
-
-export const HorizontalNav: React.FC<HorizontalNavProps> = ({ currentPage, onNavigate }) => {
-  return (
-    <nav 
-      className="flex items-center gap-2 overflow-x-auto scrollbar-hide h-12"
-      aria-label="Seções"
-    >
-      {NAV_ITEMS.map((item) => {
-        const Icon = item.icon;
-        const isActive = currentPage === item.id;
-        
-        return (
-          <button
-            key={item.id}
-            onClick={() => onNavigate(item.id)}
-            className={cn(
-              "flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2",
-              "min-w-fit whitespace-nowrap",
-              isActive 
-                ? "bg-white text-teal-800 shadow-sm font-medium" 
-                : "text-slate-600 hover:bg-white/70 hover:text-teal-700"
-            )}
-            aria-current={isActive ? "page" : undefined}
-          >
-            <Icon className="size-4 shrink-0" aria-hidden />
-            <span className="hidden md:inline">{item.label}</span>
+            <Icon clas
           </button>
+ 
+
+
+  return (
+ 
+
+        return (
+          
+         
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-tea
+                ? "bg-tea
+     
+          >
+            <span>{item.label}<
         );
-      })}
-    </nav>
-  );
+    </na
 };
 
-export const MobileNav: React.FC<HorizontalNavProps> = ({ currentPage, onNavigate }) => {
-  return (
-    <nav className="space-y-1" aria-label="Menu de navegação mobile">
-      {NAV_ITEMS.map((item) => {
-        const Icon = item.icon;
-        const isActive = currentPage === item.id;
-        
-        return (
-          <button
-            key={item.id}
-            onClick={() => onNavigate(item.id)}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-all duration-150",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2",
-              isActive
-                ? "bg-teal-50 text-teal-800 font-medium border-l-4 border-teal-600"
-                : "text-slate-700 hover:bg-slate-50 hover:text-teal-700"
-            )}
-            aria-current={isActive ? "page" : undefined}
-          >
-            <Icon className="size-5 shrink-0" aria-hidden />
-            <span>{item.label}</span>
+
+
+
+
+
+
+
+
+
+
+
+
+            <Icon className="size-4 shrink-0" aria-hidden />
+            <span className="hidden md:inline">{item.label}</span>
           </button>
         );
       })}
