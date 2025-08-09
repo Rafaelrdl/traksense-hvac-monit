@@ -3,7 +3,7 @@ import { useAppStore } from '../../store/app';
 import { 
   LayoutDashboard, 
   Wind, 
-  Sensors, 
+  Activity, 
   AlertTriangle, 
   FileText, 
   Settings,
@@ -19,7 +19,7 @@ interface SidebarProps {
 const menuItems = [
   { id: 'overview', label: 'Visão Geral', icon: LayoutDashboard },
   { id: 'assets', label: 'Ativos (HVAC)', icon: Wind },
-  { id: 'sensors', label: 'Sensores & Telemetria', icon: Sensors },
+  { id: 'sensors', label: 'Sensores & Telemetria', icon: Activity },
   { id: 'alerts', label: 'Alertas & Regras', icon: AlertTriangle },
   { id: 'reports', label: 'Relatórios', icon: FileText },
   { id: 'settings', label: 'Configurações', icon: Settings }

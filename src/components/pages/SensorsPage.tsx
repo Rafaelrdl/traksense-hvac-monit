@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAppStore } from '../../store/app';
-import { Sensors, Wifi, WifiOff, TrendingUp } from 'lucide-react';
+import { Activity, Wifi, WifiOff, TrendingUp } from 'lucide-react';
 
 export const SensorsPage: React.FC = () => {
   const { sensors } = useAppStore();
@@ -83,7 +83,7 @@ export const SensorsPage: React.FC = () => {
                 <tr key={sensor.id} className="border-b last:border-b-0 hover:bg-muted/30">
                   <td className="py-3 px-6">
                     <div className="flex items-center space-x-3">
-                      <Sensors className="w-4 h-4 text-primary" />
+                      <Activity className="w-4 h-4 text-primary" />
                       <span className="font-medium">{sensor.tag}</span>
                     </div>
                   </td>
