@@ -13,13 +13,30 @@ export const BarChartEnergy: React.FC<BarChartEnergyProps> = ({
   target = 2500, // Default daily target in kWh
   height = 300 
 }) => {
+  // Validate data
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return (
+      <div 
+        className="flex items-center justify-center text-muted-foreground bg-muted/20 rounded-lg"
+        style={{ height }}
+      >
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+          <p>Carregando dados de consumo...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Group data by hour and sum energy consumption
   const hourlyData = React.useMemo(() => {
     const hours: { [key: number]: number } = {};
     
     data.forEach(point => {
-      const hour = point.timestamp.getHours();
-      hours[hour] = (hours[hour] || 0) + point.value;
+      if (point && point.timestamp && typeof point.value === 'number' && !isNaN(point.value)) {
+        const hour = point.timestamp.getHours();
+        hours[hour] = (hours[hour] || 0) + point.value;
+      }
     });
     
     // Create array for all 24 hours
@@ -118,11 +135,29 @@ export const BarChartEnergy: React.FC<BarChartEnergyProps> = ({
     ]
   };
 
-  return (
-    <ReactECharts 
-      option={option} 
-      style={{ height, width: '100%' }}
-      opts={{ renderer: 'svg' }}
-    />
-  );
+  try {
+    return (
+      <div style={{ height, width: '100%' }}>
+        <ReactECharts 
+          option={option} 
+          style={{ height: '100%', width: '100%' }}
+          opts={{ renderer: 'svg', locale: 'pt' }}
+          notMerge={true}
+          lazyUpdate={true}
+        />
+      </div>
+    );
+  } catch (error) {
+    console.error('Error rendering BarChartEnergy:', error);
+    return (
+      <div 
+        className="flex items-center justify-center text-muted-foreground bg-muted/10 rounded-lg border border-dashed border-muted"
+        style={{ height }}
+      >
+        <div className="text-center">
+          <div className="text-sm">Erro ao renderizar gráfico de consumo</div>
+        </div>
+      </div>
+    );
+  }
 };

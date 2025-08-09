@@ -6,6 +6,7 @@ import { LineChartTemp } from '../charts/LineChartTemp';
 import { BarChartEnergy } from '../charts/BarChartEnergy';
 import { GaugeFilterHealth } from '../charts/GaugeFilterHealth';
 import { HeatmapAlarms } from '../charts/HeatmapAlarms';
+import { ChartWrapper } from '../charts/ChartWrapper';
 import { 
   Activity, 
   AlertTriangle, 
@@ -43,40 +44,59 @@ export const OverviewPage: React.FC = () => {
 
   // Get temperature data for the main chart
   const temperatureData = useMemo(() => {
-    const ahuSensor = sensors.find(s => s.assetId === 'ahu-001');
-    if (!ahuSensor) return { supply: [], return: [], setpoint: [] };
+    try {
+      const ahuSensor = sensors.find(s => s.assetId === 'ahu-001');
+      if (!ahuSensor) return { supply: [], return: [], setpoint: [] };
 
-    const supplyData = simEngine.getTelemetryData(`ahu-001-temp_supply`, timeRange);
-    const returnData = simEngine.getTelemetryData(`ahu-001-temp_return`, timeRange);
-    const setpointData = simEngine.getTelemetryData(`ahu-001-temp_setpoint`, timeRange);
+      const supplyData = simEngine.getTelemetryData(`ahu-001-temp_supply`, timeRange) || [];
+      const returnData = simEngine.getTelemetryData(`ahu-001-temp_return`, timeRange) || [];
+      const setpointData = simEngine.getTelemetryData(`ahu-001-temp_setpoint`, timeRange) || [];
 
-    return {
-      supply: supplyData,
-      return: returnData,
-      setpoint: setpointData
-    };
+      return {
+        supply: supplyData,
+        return: returnData,
+        setpoint: setpointData
+      };
+    } catch (error) {
+      console.error('Error loading temperature data:', error);
+      return { supply: [], return: [], setpoint: [] };
+    }
   }, [sensors, timeRange]);
 
   // Get energy consumption data
   const energyData = useMemo(() => {
-    return simEngine.getTelemetryData('ahu-001-power_kw', {
-      start: new Date(new Date().setHours(0, 0, 0, 0)),
-      end: new Date()
-    });
+    try {
+      return simEngine.getTelemetryData('ahu-001-power_kw', {
+        start: new Date(new Date().setHours(0, 0, 0, 0)),
+        end: new Date()
+      }) || [];
+    } catch (error) {
+      console.error('Error loading energy data:', error);
+      return [];
+    }
   }, []);
 
   // Get filter health data
   const filterData = useMemo(() => {
-    const dpFilterData = simEngine.getTelemetryData('ahu-001-dp_filter', timeRange);
-    const currentDp = dpFilterData.length > 0 ? dpFilterData[dpFilterData.length - 1].value : 0;
-    const healthScore = Math.max(0, 100 - (currentDp / 400) * 100);
-    const daysUntilChange = Math.max(1, Math.floor((400 - currentDp) / 5)); // Rough estimate
+    try {
+      const dpFilterData = simEngine.getTelemetryData('ahu-001-dp_filter', timeRange) || [];
+      const currentDp = dpFilterData.length > 0 ? dpFilterData[dpFilterData.length - 1].value : 0;
+      const healthScore = Math.max(0, Math.min(100, 100 - (currentDp / 400) * 100));
+      const daysUntilChange = Math.max(1, Math.floor((400 - currentDp) / 5)); // Rough estimate
 
-    return {
-      healthScore: healthScore,
-      dpFilter: currentDp,
-      daysUntilChange
-    };
+      return {
+        healthScore: isNaN(healthScore) ? 85 : healthScore,
+        dpFilter: isNaN(currentDp) ? 150 : currentDp,
+        daysUntilChange: isNaN(daysUntilChange) ? 30 : daysUntilChange
+      };
+    } catch (error) {
+      console.error('Error loading filter data:', error);
+      return {
+        healthScore: 85,
+        dpFilter: 150,
+        daysUntilChange: 30
+      };
+    }
   }, [timeRange]);
 
   // Generate heatmap data for alerts
@@ -231,13 +251,17 @@ export const OverviewPage: React.FC = () => {
         {/* Temperature Trends */}
         <div className="bg-card rounded-xl p-6 border shadow-sm">
           <h3 className="text-lg font-semibold mb-4">Tendências de Temperatura (AHU-001)</h3>
-          <LineChartTemp data={temperatureData} height={300} />
+          <ChartWrapper title="Temperatura" height={300}>
+            <LineChartTemp data={temperatureData} height={300} />
+          </ChartWrapper>
         </div>
 
         {/* Energy Consumption */}
         <div className="bg-card rounded-xl p-6 border shadow-sm">
           <h3 className="text-lg font-semibold mb-4">Consumo Energético (Hoje)</h3>
-          <BarChartEnergy data={energyData} height={300} />
+          <ChartWrapper title="Consumo Energético" height={300}>
+            <BarChartEnergy data={energyData} height={300} />
+          </ChartWrapper>
         </div>
       </div>
 
@@ -246,18 +270,22 @@ export const OverviewPage: React.FC = () => {
         {/* Filter Health Gauge */}
         <div className="bg-card rounded-xl p-6 border shadow-sm">
           <h3 className="text-lg font-semibold mb-4">Saúde do Filtro (AHU-001)</h3>
-          <GaugeFilterHealth 
-            healthScore={filterData.healthScore}
-            dpFilter={filterData.dpFilter}
-            daysUntilChange={filterData.daysUntilChange}
-            height={300}
-          />
+          <ChartWrapper title="Saúde do Filtro" height={300}>
+            <GaugeFilterHealth 
+              healthScore={filterData.healthScore}
+              dpFilter={filterData.dpFilter}
+              daysUntilChange={filterData.daysUntilChange}
+              height={300}
+            />
+          </ChartWrapper>
         </div>
 
         {/* Alert Heatmap */}
         <div className="bg-card rounded-xl p-6 border shadow-sm">
           <h3 className="text-lg font-semibold mb-4">Densidade de Alertas (Últimos 7 dias)</h3>
-          <HeatmapAlarms data={alertHeatmapData} height={200} />
+          <ChartWrapper title="Alertas" height={200}>
+            <HeatmapAlarms data={alertHeatmapData} height={200} />
+          </ChartWrapper>
         </div>
       </div>
 

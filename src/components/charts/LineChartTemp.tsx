@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { TelemetryPoint } from '../../types/hvac';
 
@@ -12,6 +12,43 @@ interface LineChartTempProps {
 }
 
 export const LineChartTemp: React.FC<LineChartTempProps> = ({ data, height = 300 }) => {
+  const [isReady, setIsReady] = useState(false);
+
+  // Small delay to ensure DOM is ready
+  useEffect(() => {
+    const timer = setTimeout(() => setIsReady(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Validate data availability
+  if (!isReady || !data || !data.supply || !data.return || !data.setpoint) {
+    return (
+      <div 
+        className="flex items-center justify-center text-muted-foreground bg-muted/20 rounded-lg"
+        style={{ height }}
+      >
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+          <p>Carregando dados de temperatura...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if data arrays have content
+  const hasData = data.supply.length > 0 || data.return.length > 0 || data.setpoint.length > 0;
+  
+  if (!hasData) {
+    return (
+      <div 
+        className="flex items-center justify-center text-muted-foreground"
+        style={{ height }}
+      >
+        <p>Nenhum dado disponível para o período selecionado</p>
+      </div>
+    );
+  }
+
   const formatTime = (timestamp: Date) => {
     return timestamp.toLocaleTimeString('pt-BR', {
       hour: '2-digit',
@@ -33,15 +70,18 @@ export const LineChartTemp: React.FC<LineChartTempProps> = ({ data, height = 300
       trigger: 'axis',
       axisPointer: { type: 'cross' },
       formatter: (params: any) => {
+        if (!params || !params[0]) return '';
         const time = formatDate(new Date(params[0].axisValue));
         let content = `<strong>${time}</strong><br/>`;
         params.forEach((param: any) => {
-          const value = param.value[1];
-          const change = param.seriesIndex > 0 ? 
-            ((value - params[param.seriesIndex - 1]?.value[1]) || 0).toFixed(1) : '0.0';
-          content += `${param.marker} ${param.seriesName}: ${value.toFixed(1)}°C `;
-          if (param.seriesIndex > 0) content += `(${change > 0 ? '+' : ''}${change}°C)<br/>`;
-          else content += '<br/>';
+          const value = param.value?.[1];
+          if (typeof value === 'number') {
+            const change = param.seriesIndex > 0 ? 
+              ((value - params[param.seriesIndex - 1]?.value?.[1]) || 0).toFixed(1) : '0.0';
+            content += `${param.marker} ${param.seriesName}: ${value.toFixed(1)}°C `;
+            if (param.seriesIndex > 0) content += `(${change > 0 ? '+' : ''}${change}°C)<br/>`;
+            else content += '<br/>';
+          }
         });
         return content;
       }
@@ -76,7 +116,7 @@ export const LineChartTemp: React.FC<LineChartTempProps> = ({ data, height = 300
       {
         name: 'Insuflamento',
         type: 'line',
-        data: data.supply.map(point => [point.timestamp, point.value]),
+        data: data.supply?.map(point => [point.timestamp, point.value]) || [],
         smooth: 0.3,
         lineStyle: { width: 2, color: '#076A75' },
         itemStyle: { color: '#076A75' },
@@ -85,7 +125,7 @@ export const LineChartTemp: React.FC<LineChartTempProps> = ({ data, height = 300
       {
         name: 'Retorno',
         type: 'line',
-        data: data.return.map(point => [point.timestamp, point.value]),
+        data: data.return?.map(point => [point.timestamp, point.value]) || [],
         smooth: 0.3,
         lineStyle: { width: 2, color: '#2E868F' },
         itemStyle: { color: '#2E868F' },
@@ -94,7 +134,7 @@ export const LineChartTemp: React.FC<LineChartTempProps> = ({ data, height = 300
       {
         name: 'Setpoint',
         type: 'line',
-        data: data.setpoint.map(point => [point.timestamp, point.value]),
+        data: data.setpoint?.map(point => [point.timestamp, point.value]) || [],
         lineStyle: { 
           width: 2, 
           type: 'dashed',
@@ -135,11 +175,29 @@ export const LineChartTemp: React.FC<LineChartTempProps> = ({ data, height = 300
     ]
   };
 
-  return (
-    <ReactECharts 
-      option={option} 
-      style={{ height, width: '100%' }}
-      opts={{ renderer: 'svg' }}
-    />
-  );
+  try {
+    return (
+      <div style={{ height, width: '100%' }}>
+        <ReactECharts 
+          option={option} 
+          style={{ height: '100%', width: '100%' }}
+          opts={{ renderer: 'svg', locale: 'pt' }}
+          notMerge={true}
+          lazyUpdate={true}
+        />
+      </div>
+    );
+  } catch (error) {
+    console.error('Error rendering LineChartTemp:', error);
+    return (
+      <div 
+        className="flex items-center justify-center text-muted-foreground bg-muted/10 rounded-lg border border-dashed border-muted"
+        style={{ height }}
+      >
+        <div className="text-center">
+          <div className="text-sm">Erro ao renderizar gráfico de temperatura</div>
+        </div>
+      </div>
+    );
+  }
 };

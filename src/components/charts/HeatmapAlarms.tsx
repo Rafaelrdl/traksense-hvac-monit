@@ -12,12 +12,36 @@ interface HeatmapAlarmsProps {
 }
 
 export const HeatmapAlarms: React.FC<HeatmapAlarmsProps> = ({ data, height = 200 }) => {
+  // Validate data
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return (
+      <div 
+        className="flex items-center justify-center text-muted-foreground bg-muted/20 rounded-lg"
+        style={{ height }}
+      >
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+          <p>Carregando heatmap de alertas...</p>
+        </div>
+      </div>
+    );
+  }
+
   const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
 
-  const maxCount = Math.max(...data.map(item => item.count), 1);
+  const validData = data.filter(item => 
+    item && 
+    typeof item.day === 'number' && 
+    typeof item.hour === 'number' && 
+    typeof item.count === 'number' && 
+    !isNaN(item.count) &&
+    item.date instanceof Date
+  );
 
-  const heatmapData = data.map(item => [
+  const maxCount = Math.max(...validData.map(item => item.count), 1);
+
+  const heatmapData = validData.map(item => [
     item.hour,
     item.day,
     item.count,
@@ -105,11 +129,29 @@ export const HeatmapAlarms: React.FC<HeatmapAlarmsProps> = ({ data, height = 200
     ]
   };
 
-  return (
-    <ReactECharts 
-      option={option} 
-      style={{ height, width: '100%' }}
-      opts={{ renderer: 'svg' }}
-    />
-  );
+  try {
+    return (
+      <div style={{ height, width: '100%' }}>
+        <ReactECharts 
+          option={option} 
+          style={{ height: '100%', width: '100%' }}
+          opts={{ renderer: 'svg', locale: 'pt' }}
+          notMerge={true}
+          lazyUpdate={true}
+        />
+      </div>
+    );
+  } catch (error) {
+    console.error('Error rendering HeatmapAlarms:', error);
+    return (
+      <div 
+        className="flex items-center justify-center text-muted-foreground bg-muted/10 rounded-lg border border-dashed border-muted"
+        style={{ height }}
+      >
+        <div className="text-center">
+          <div className="text-sm">Erro ao renderizar heatmap de alertas</div>
+        </div>
+      </div>
+    );
+  }
 };

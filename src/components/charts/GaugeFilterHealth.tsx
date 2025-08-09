@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 
 interface GaugeFilterHealthProps {
@@ -14,6 +14,36 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
   daysUntilChange,
   height = 300 
 }) => {
+  const [isReady, setIsReady] = useState(false);
+
+  // Small delay to ensure DOM is ready
+  useEffect(() => {
+    const timer = setTimeout(() => setIsReady(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Validate input parameters
+  if (!isReady || typeof healthScore !== 'number' || isNaN(healthScore) ||
+      typeof dpFilter !== 'number' || isNaN(dpFilter) ||
+      typeof daysUntilChange !== 'number' || isNaN(daysUntilChange)) {
+    return (
+      <div 
+        className="flex items-center justify-center text-muted-foreground bg-muted/20 rounded-lg"
+        style={{ height }}
+      >
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+          <p>Carregando dados do filtro...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Clamp values to safe ranges
+  const safeHealthScore = Math.max(0, Math.min(100, healthScore));
+  const safeDpFilter = Math.max(0, Math.min(500, dpFilter));
+  const safeDaysUntilChange = Math.max(0, Math.min(365, daysUntilChange));
+
   const getHealthColor = (score: number) => {
     if (score >= 80) return '#2E8B57'; // Green
     if (score >= 60) return '#F5C34D'; // Amber
@@ -30,10 +60,10 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
     tooltip: {
       formatter: () => {
         return `<strong>Saúde do Filtro</strong><br/>
-                Score: ${healthScore}/100<br/>
-                ΔP Atual: ${dpFilter.toFixed(1)} Pa<br/>
-                Status: ${getHealthLabel(healthScore)}<br/>
-                Troca sugerida em: ${daysUntilChange} dias`;
+                Score: ${safeHealthScore.toFixed(0)}/100<br/>
+                ΔP Atual: ${safeDpFilter.toFixed(1)} Pa<br/>
+                Status: ${getHealthLabel(safeHealthScore)}<br/>
+                Troca sugerida em: ${safeDaysUntilChange} dias`;
       }
     },
     series: [
@@ -47,7 +77,7 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
         max: 100,
         splitNumber: 10,
         itemStyle: {
-          color: getHealthColor(healthScore)
+          color: getHealthColor(safeHealthScore)
         },
         progress: {
           show: true,
@@ -98,7 +128,7 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
         },
         data: [
           {
-            value: healthScore,
+            value: safeHealthScore,
             name: 'Score'
           }
         ]
@@ -145,7 +175,7 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
         },
         data: [
           {
-            value: dpFilter,
+            value: safeDpFilter,
             name: 'ΔP'
           }
         ]
@@ -158,10 +188,10 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
         left: '50%',
         top: '85%',
         style: {
-          text: getHealthLabel(healthScore),
+          text: getHealthLabel(safeHealthScore),
           fontSize: 18,
           fontWeight: 'bold',
-          fill: getHealthColor(healthScore),
+          fill: getHealthColor(safeHealthScore),
           textAlign: 'center'
         }
       },
@@ -170,7 +200,7 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
         left: '50%',
         top: '92%',
         style: {
-          text: `Troca sugerida em ${daysUntilChange} dias`,
+          text: `Troca sugerida em ${safeDaysUntilChange} dias`,
           fontSize: 12,
           fill: '#666',
           textAlign: 'center'
@@ -181,7 +211,7 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
         left: '30%',
         top: '45%',
         style: {
-          text: `ΔP: ${dpFilter.toFixed(0)} Pa`,
+          text: `ΔP: ${safeDpFilter.toFixed(0)} Pa`,
           fontSize: 11,
           fill: '#076A75',
           textAlign: 'center',
@@ -191,11 +221,29 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
     ]
   };
 
-  return (
-    <ReactECharts 
-      option={option} 
-      style={{ height, width: '100%' }}
-      opts={{ renderer: 'svg' }}
-    />
-  );
+  try {
+    return (
+      <div style={{ height, width: '100%' }}>
+        <ReactECharts 
+          option={option} 
+          style={{ height: '100%', width: '100%' }}
+          opts={{ renderer: 'svg', locale: 'pt' }}
+          notMerge={true}
+          lazyUpdate={true}
+        />
+      </div>
+    );
+  } catch (error) {
+    console.error('Error rendering GaugeFilterHealth:', error);
+    return (
+      <div 
+        className="flex items-center justify-center text-muted-foreground bg-muted/10 rounded-lg border border-dashed border-muted"
+        style={{ height }}
+      >
+        <div className="text-center">
+          <div className="text-sm">Erro ao renderizar gauge de saúde do filtro</div>
+        </div>
+      </div>
+    );
+  }
 };

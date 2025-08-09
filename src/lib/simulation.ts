@@ -432,29 +432,41 @@ export class SimulationEngine {
   getScenarios() { return this.scenarios; }
   
   getTelemetryData(sensorId: string, timeRange?: { start: Date; end: Date }) {
-    const data = this.telemetryData.get(sensorId) || [];
-    
-    if (!timeRange) return data;
-    
-    return data.filter(point => 
-      point.timestamp >= timeRange.start && 
-      point.timestamp <= timeRange.end
-    );
+    try {
+      const data = this.telemetryData.get(sensorId) || [];
+      
+      if (!timeRange) return data;
+      
+      return data.filter(point => 
+        point && 
+        point.timestamp && 
+        point.timestamp >= timeRange.start && 
+        point.timestamp <= timeRange.end
+      );
+    } catch (error) {
+      console.error(`Error getting telemetry data for sensor ${sensorId}:`, error);
+      return [];
+    }
   }
   
   getAssetTelemetry(assetId: string, sensorTypes?: string[], timeRange?: { start: Date; end: Date }) {
-    const assetSensors = this.sensors.filter(s => 
-      s.assetId === assetId && 
-      (!sensorTypes || sensorTypes.includes(s.type))
-    );
-    
-    const result: { [sensorType: string]: TelemetryPoint[] } = {};
-    
-    assetSensors.forEach(sensor => {
-      result[sensor.type] = this.getTelemetryData(sensor.id, timeRange);
-    });
-    
-    return result;
+    try {
+      const assetSensors = this.sensors.filter(s => 
+        s.assetId === assetId && 
+        (!sensorTypes || sensorTypes.includes(s.type))
+      );
+      
+      const result: { [sensorType: string]: TelemetryPoint[] } = {};
+      
+      assetSensors.forEach(sensor => {
+        result[sensor.type] = this.getTelemetryData(sensor.id, timeRange);
+      });
+      
+      return result;
+    } catch (error) {
+      console.error(`Error getting asset telemetry for ${assetId}:`, error);
+      return {};
+    }
   }
 }
 
