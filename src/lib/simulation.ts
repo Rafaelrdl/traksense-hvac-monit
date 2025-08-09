@@ -929,7 +929,7 @@ export class SimulationEngine {
     return Math.max(sensor.min || -Infinity, Math.min(sensor.max || Infinity, finalValue));
   }
 
-  startRealTimeSimulation(intervalMs: number = 3000) {
+  startRealTimeSimulation(intervalMs: number = 300000) {
     if (this.intervalId) {
       clearInterval(this.intervalId);
     }

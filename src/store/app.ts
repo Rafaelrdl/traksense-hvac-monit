@@ -77,7 +77,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         clearInterval(state.refreshInterval);
       }
       
-      simEngine.startRealTimeSimulation(3000); // 3 second intervals
+      simEngine.startRealTimeSimulation(300000); // 5 minute intervals
       
       // Set up periodic data refresh
       const refreshInterval = setInterval(() => {
@@ -96,7 +96,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           maintenanceHistory: simEngine.getMaintenanceHistory(),
           lastUpdateTime: new Date()
         });
-      }, 3000);
+      }, 300000);
       
       set({ 
         isSimulationRunning: true,
