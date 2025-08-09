@@ -176,7 +176,7 @@ export const OverviewPage: React.FC = () => {
           <label className="text-sm text-muted-foreground">Período:</label>
           <select 
             className="px-3 py-1 border border-input rounded-md text-sm bg-background"
-            value={useAppStore.getState().selectedTimeRange}
+            value={useAppStore(state => state.selectedTimeRange)}
             onChange={(e) => useAppStore.getState().setTimeRange(e.target.value as any)}
           >
             <option value="1h">1 Hora</option>

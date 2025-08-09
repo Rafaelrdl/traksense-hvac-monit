@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useMemo } from 'react';
 import { HVACAsset, Sensor, Alert, SimulationScenario, TelemetryPoint } from '../types/hvac';
 import { simEngine } from '../lib/simulation';
 
@@ -17,6 +18,7 @@ interface AppState {
   // Real-time simulation
   isSimulationRunning: boolean;
   lastUpdateTime: Date | null;
+  refreshInterval: NodeJS.Timeout | null;
   
   // Actions
   setSelectedAsset: (assetId: string | null) => void;
@@ -44,6 +46,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   
   isSimulationRunning: false,
   lastUpdateTime: null,
+  refreshInterval: null,
   
   // Actions
   setSelectedAsset: (assetId) => set({ selectedAssetId: assetId }),
@@ -53,14 +56,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
   
   startSimulation: () => {
-    if (!get().isSimulationRunning) {
+    const state = get();
+    if (!state.isSimulationRunning) {
+      // Clear any existing interval
+      if (state.refreshInterval) {
+        clearInterval(state.refreshInterval);
+      }
+      
       simEngine.startRealTimeSimulation(3000); // 3 second intervals
-      set({ isSimulationRunning: true });
       
       // Set up periodic data refresh
       const refreshInterval = setInterval(() => {
-        const state = get();
-        if (!state.isSimulationRunning) {
+        const currentState = get();
+        if (!currentState.isSimulationRunning) {
           clearInterval(refreshInterval);
           return;
         }
@@ -72,12 +80,27 @@ export const useAppStore = create<AppState>((set, get) => ({
           lastUpdateTime: new Date()
         });
       }, 3000);
+      
+      set({ 
+        isSimulationRunning: true,
+        refreshInterval
+      });
     }
   },
   
   stopSimulation: () => {
+    const state = get();
     simEngine.stop();
-    set({ isSimulationRunning: false });
+    
+    // Clear the refresh interval
+    if (state.refreshInterval) {
+      clearInterval(state.refreshInterval);
+    }
+    
+    set({ 
+      isSimulationRunning: false,
+      refreshInterval: null
+    });
   },
   
   setScenario: (scenarioId) => {
@@ -119,14 +142,17 @@ export const useSelectedAsset = () => {
 // Get time range in milliseconds for data queries
 export const useTimeRangeMs = () => {
   const range = useAppStore(state => state.selectedTimeRange);
-  const now = Date.now();
   
-  switch (range) {
-    case '1h': return { start: new Date(now - 60 * 60 * 1000), end: new Date(now) };
-    case '6h': return { start: new Date(now - 6 * 60 * 60 * 1000), end: new Date(now) };
-    case '24h': return { start: new Date(now - 24 * 60 * 60 * 1000), end: new Date(now) };
-    case '7d': return { start: new Date(now - 7 * 24 * 60 * 60 * 1000), end: new Date(now) };
-    case '30d': return { start: new Date(now - 30 * 24 * 60 * 60 * 1000), end: new Date(now) };
-    default: return { start: new Date(now - 24 * 60 * 60 * 1000), end: new Date(now) };
-  }
+  return useMemo(() => {
+    const now = Date.now();
+    
+    switch (range) {
+      case '1h': return { start: new Date(now - 60 * 60 * 1000), end: new Date(now) };
+      case '6h': return { start: new Date(now - 6 * 60 * 60 * 1000), end: new Date(now) };
+      case '24h': return { start: new Date(now - 24 * 60 * 60 * 1000), end: new Date(now) };
+      case '7d': return { start: new Date(now - 7 * 24 * 60 * 60 * 1000), end: new Date(now) };
+      case '30d': return { start: new Date(now - 30 * 24 * 60 * 60 * 1000), end: new Date(now) };
+      default: return { start: new Date(now - 24 * 60 * 60 * 1000), end: new Date(now) };
+    }
+  }, [range]);
 };

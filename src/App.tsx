@@ -11,19 +11,21 @@ import { useAppStore } from './store/app';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('overview');
-  const { selectedAssetId, startSimulation, isSimulationRunning } = useAppStore();
+  const selectedAssetId = useAppStore(state => state.selectedAssetId);
 
   // Start simulation on app load
   useEffect(() => {
+    const { startSimulation, isSimulationRunning, stopSimulation } = useAppStore.getState();
+    
     if (!isSimulationRunning) {
       startSimulation();
     }
 
     // Cleanup on unmount
     return () => {
-      useAppStore.getState().stopSimulation();
+      stopSimulation();
     };
-  }, [startSimulation, isSimulationRunning]);
+  }, []); // Empty dependency array to run only once
 
   const handleNavigation = (page: string) => {
     setCurrentPage(page);

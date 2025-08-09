@@ -1,13 +1,22 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/app';
 import { Bell, ExternalLink, Clock, Building } from 'lucide-react';
 
 export const TopBar: React.FC = () => {
   const alerts = useAppStore(state => state.alerts);
   const lastUpdateTime = useAppStore(state => state.lastUpdateTime);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // Update current time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, []);
   
   const activeAlerts = alerts.filter(alert => !alert.resolved && !alert.acknowledged);
-  const now = new Date();
 
   return (
     <div className="h-16 bg-primary text-primary-foreground px-6 flex items-center justify-between border-b">
@@ -36,7 +45,7 @@ export const TopBar: React.FC = () => {
         <div className="flex items-center space-x-2">
           <Clock className="w-4 h-4 opacity-75" />
           <span>
-            {now.toLocaleTimeString('pt-BR', { 
+            {currentTime.toLocaleTimeString('pt-BR', { 
               hour: '2-digit', 
               minute: '2-digit',
               second: '2-digit'
