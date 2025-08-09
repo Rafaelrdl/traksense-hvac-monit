@@ -3,6 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { DashboardWidget } from '../../types/dashboard';
 import { useDashboardStore } from '../../store/dashboard';
+import { cn } from '../../lib/utils';
 import { WidgetConfig } from './WidgetConfig';
 import { KPICard } from '../ui/KPICard';
 import { LineChartTemp } from '../charts/LineChartTemp';

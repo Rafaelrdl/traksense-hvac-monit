@@ -65,7 +65,7 @@ export const HorizontalNav: React.FC<HorizontalNavProps> = ({ currentPage, onNav
 
 export const MobileNav: React.FC<HorizontalNavProps> = ({ currentPage, onNavigate }) => {
   return (
-    <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide" aria-label="Seções">
+    <nav className="flex flex-col gap-2" aria-label="Seções">
       {NAV_ITEMS.map((item) => {
         const isActive = currentPage === item.id;
         const Icon = item.icon;
@@ -75,15 +75,16 @@ export const MobileNav: React.FC<HorizontalNavProps> = ({ currentPage, onNavigat
             key={item.id}
             onClick={() => onNavigate(item.id)}
             className={`
-              flex items-center gap-1 px-2 py-2 rounded-lg text-sm transition
+              flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition text-left w-full
               ${isActive 
-                ? "bg-white text-teal-800 shadow-sm" 
-                : "text-slate-700 hover:bg-slate-100/50"
+                ? "bg-teal-100 text-teal-800 font-medium" 
+                : "text-slate-700 hover:bg-slate-100"
               }
             `}
             aria-current={isActive ? "page" : undefined}
           >
-            <Icon className="size-4" aria-hidden />
+            <Icon className="size-5" aria-hidden />
+            <span>{item.label}</span>
           </button>
         );
       })}
