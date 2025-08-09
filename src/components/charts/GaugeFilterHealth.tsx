@@ -71,7 +71,7 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
         name: 'Saúde do Filtro',
         type: 'gauge',
         center: ['50%', '55%'],
-        radius: '75%',
+        radius: '80%',
         startAngle: 200,
         endAngle: -20,
         min: 0,
@@ -82,9 +82,11 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
         },
         progress: {
           show: true,
-          width: 18,
+          width: 20,
           itemStyle: {
-            color: getHealthColor(safeHealthScore)
+            color: getHealthColor(safeHealthScore),
+            shadowBlur: 10,
+            shadowColor: `${getHealthColor(safeHealthScore)}40`
           }
         },
         pointer: {
@@ -92,16 +94,16 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
         },
         axisLine: {
           lineStyle: {
-            width: 18,
+            width: 20,
             color: [
-              [0.6, 'rgba(224, 90, 71, 0.2)'],
-              [0.8, 'rgba(245, 195, 77, 0.2)'],
-              [1, 'rgba(46, 139, 87, 0.2)']
+              [0.6, 'rgba(224, 90, 71, 0.15)'],
+              [0.8, 'rgba(245, 195, 77, 0.15)'],
+              [1, 'rgba(46, 139, 87, 0.15)']
             ]
           }
         },
         axisTick: {
-          distance: -32,
+          distance: -35,
           splitNumber: 5,
           lineStyle: {
             width: 1,
@@ -109,9 +111,9 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
           }
         },
         axisLabel: {
-          distance: -18,
+          distance: -20,
           color: '#666',
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: '500'
         },
         anchor: {
@@ -129,60 +131,10 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
             name: 'Score'
           }
         ]
-      },
-      // Inner gauge for ΔP reading
-      {
-        name: 'Delta P',
-        type: 'gauge',
-        center: ['50%', '55%'],
-        radius: '50%',
-        startAngle: 200,
-        endAngle: -20,
-        min: 0,
-        max: 400,
-        splitNumber: 4,
-        axisLine: {
-          lineStyle: {
-            width: 4,
-            color: [
-              [0.625, 'rgba(46, 139, 87, 0.3)'], // 0-250 Pa
-              [0.75, 'rgba(245, 195, 77, 0.3)'],  // 250-300 Pa
-              [1, 'rgba(224, 90, 71, 0.3)']      // 300-400 Pa
-            ]
-          }
-        },
-        axisTick: {
-          show: false
-        },
-        axisLabel: {
-          show: false
-        },
-        pointer: {
-          width: 2,
-          length: '65%',
-          itemStyle: {
-            color: '#076A75',
-            shadowBlur: 4,
-            shadowColor: 'rgba(7, 106, 117, 0.3)'
-          }
-        },
-        title: {
-          show: false
-        },
-        detail: {
-          show: false
-        },
-        data: [
-          {
-            value: safeDpFilter,
-            name: 'ΔP'
-          }
-        ]
       }
     ],
-    // Add custom graphics for better layout
     graphic: [
-      // Background circle for main score
+      // Background circle for main content
       {
         type: 'circle',
         left: '50%',
@@ -190,51 +142,55 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
         shape: {
           cx: 0,
           cy: 0,
-          r: 50
+          r: 65
         },
         style: {
-          fill: 'rgba(255, 255, 255, 0.9)',
-          stroke: 'rgba(7, 106, 117, 0.1)',
+          fill: 'rgba(255, 255, 255, 0.95)',
+          stroke: 'rgba(7, 106, 117, 0.08)',
           lineWidth: 1,
-          shadowBlur: 8,
-          shadowColor: 'rgba(0, 0, 0, 0.1)'
+          shadowBlur: 12,
+          shadowColor: 'rgba(0, 0, 0, 0.08)'
         }
       },
       // Main score display
       {
-        top: '48%',
-        style: {
-        top: '48%',
-          fontSize: 28,
-          text: `${safeHealthScore.toFixed(0)}`,
-          fontSize: 28,),
-          textAlign: 'center',
-          fontFamily: 'Inter'
-          textAlign: 'center',
-          fontFamily: 'Inter'
-      {
+        type: 'text',
         left: '50%',
-      {
+        top: '48%',
         style: {
-          text: '/100',
+          text: `${safeHealthScore.toFixed(0)}`,
+          fontSize: 32,
+          fontWeight: 'bold',
+          fill: getHealthColor(safeHealthScore),
+          textAlign: 'center',
+          fontFamily: 'Inter'
+        }
+      },
+      // Score denominator
+      {
+        type: 'text',
+        left: '50%',
         top: '56%',
-          fill: '#999',
+        style: {
           text: '/100',
           fontSize: 14,
           fill: '#999',
-      },
-      // Status label
+          textAlign: 'center',
+          fontFamily: 'Inter'
         }
       },
-        left: '50%',
-      {%',
+      // Status label
+      {
         type: 'text',
-          text: getHealthLabel(safeHealthScore),
+        left: '50%',
         top: '64%',
         style: {
+          text: getHealthLabel(safeHealthScore),
+          fontSize: 13,
           fill: getHealthColor(safeHealthScore),
           textAlign: 'center',
           fontWeight: '600',
+          fontFamily: 'Inter'
         }
       },
       // ΔP reading
@@ -246,13 +202,9 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
           text: `ΔP: ${safeDpFilter.toFixed(0)} Pa`,
           fontSize: 12,
           fill: '#076A75',
+          textAlign: 'center',
+          fontFamily: 'Inter'
         }
-      },
-      // Days until change
-      {
-        type: 'text',
-        left: '50%',
-        top: '88%',
       },
       // Days until change
       {
@@ -262,6 +214,12 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
         style: {
           text: `Troca sugerida em ${safeDaysUntilChange} dias`,
           fontSize: 11,
+          fill: '#999',
+          textAlign: 'center',
+          fontFamily: 'Inter'
+        }
+      }
+    ]
   };
 
   try {
