@@ -56,11 +56,15 @@ export type SensorType =
   | 'energy_kwh'
   | 'power_factor'
   | 'superheat'
-  | 'subcool'
+  | 'subcooling'
   | 'vibration'
   | 'noise'
   | 'compressor_state'
-  | 'valve_position';
+  | 'valve_position'
+  | 'cop'
+  | 'eer'
+  | 'maintenance'
+  | 'maintenance_reminder';
 
 export interface TelemetryPoint {
   sensorId: string;
@@ -83,6 +87,8 @@ export interface Alert {
   resolved: boolean;
   resolvedAt?: Date;
   ruleName: string;
+  sensorValue?: number;
+  sensorUnit?: string;
 }
 
 export interface AlertRule {
@@ -128,6 +134,21 @@ export interface SimulationScenario {
     refrigerantLeak?: boolean;
     fanFailure?: boolean;
     compressorEfficiency?: number; // 0-1 factor
+    loadIncrease?: number; // multiplier
+    efficiencyDecrease?: number; // multiplier
+    airflowReduction?: number; // multiplier
+    powerIncrease?: number; // multiplier
+    superheatIncrease?: number; // multiplier
+    subcoolingDecrease?: number; // multiplier
+    bearingWear?: boolean;
+    vibrationIncrease?: number; // multiplier
+    airflowDecrease?: number; // multiplier
+    noiseIncrease?: number; // multiplier
+    voltageFluctuation?: boolean;
+    currentIncrease?: number; // multiplier
+    maintenanceOverdue?: boolean;
+    generalDegradation?: number; // multiplier
+    alertFrequencyIncrease?: number; // multiplier
   };
 }
 
