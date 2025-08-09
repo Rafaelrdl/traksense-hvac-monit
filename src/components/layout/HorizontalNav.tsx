@@ -1,35 +1,34 @@
 import React from 'react';
-import type { LucideIcon } from 'lucide-react';
+import { 
 import { 
   LayoutGrid, 
-  PanelsTopLeft, 
-  AirVent, 
-  Activity, 
-  BellRing, 
   Wrench, 
-  FileText, 
   Settings 
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { cn 
 
-type NavItem = { 
-  id: string; 
-  label: string; 
-  icon: LucideIcon; 
-  path: string;
+  id: stri
+  icon: Luci
 };
+const NAV_ITEMS: NavIt
+  { id: 'custom-dashboard', label
 
-const NAV_ITEMS: NavItem[] = [
-  { id: 'overview', label: 'Visão Geral', icon: LayoutGrid, path: '/overview' },
-  { id: 'custom-dashboard', label: 'Dashboard Custom', icon: PanelsTopLeft, path: '/custom-dashboard' },
-  { id: 'assets', label: 'Ativos (HVAC)', icon: AirVent, path: '/assets' },
-  { id: 'sensors', label: 'Sensores & Telemetria', icon: Activity, path: '/sensors' },
-  { id: 'alerts', label: 'Alertas & Regras', icon: BellRing, path: '/alerts' },
-  { id: 'maintenance', label: 'Manutenção', icon: Wrench, path: '/maintenance' },
-  { id: 'reports', label: 'Relatórios', icon: FileText, path: '/reports' },
-  { id: 'settings', label: 'Configurações', icon: Settings, path: '/settings' }
-];
+  { id: 'maintena
+  { id: 'setti
+
+  currentPage: strin
+}
+ex
+
+    <nav 
+        "flex gap-2",
+          ? "flex-col space-y-1" // Mobile: vertical layout
+      )}
+      style={!isMobile ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefin
+      {NAV_ITEMS.map((item) => {
+        const isActive = currentPage === item.id;
+        return (
+            key={item.id}
+  
 
 interface HorizontalNavProps {
   currentPage: string;
@@ -37,18 +36,11 @@ interface HorizontalNavProps {
 }
 
 export const HorizontalNav: React.FC<HorizontalNavProps> = ({ currentPage, onNavigate }) => {
-  const isMobile = useIsMobile();
-  
   return (
     <nav 
-      className={cn(
-        "flex gap-2",
-        isMobile 
-          ? "flex-col space-y-1" // Mobile: vertical layout
-          : "items-center overflow-x-auto scrollbar-hide h-12 py-2" // Desktop: horizontal layout
-      )}
+      className="flex items-center gap-2 overflow-x-auto scrollbar-hide h-12 py-2" 
       aria-label="Seções"
-      style={!isMobile ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefined}
+      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
     >
       {NAV_ITEMS.map((item) => {
         const Icon = item.icon;
@@ -60,26 +52,17 @@ export const HorizontalNav: React.FC<HorizontalNavProps> = ({ currentPage, onNav
             onClick={() => onNavigate(item.id)}
             aria-current={isActive ? 'page' : undefined}
             className={cn(
-              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-              isMobile 
-                ? "w-full min-h-[44px] justify-start" // Mobile: full width, left aligned
-                : "whitespace-nowrap shrink-0 min-h-[40px]", // Desktop: compact
+              "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 whitespace-nowrap shrink-0",
+              "min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
               isActive 
-                ? isMobile
-                  ? "bg-primary text-primary-foreground font-semibold" // Mobile active state
-                  : "bg-white text-teal-800 shadow-sm ring-teal-200 font-semibold" // Desktop active state
-                : isMobile
-                  ? "text-slate-700 hover:bg-slate-100" // Mobile inactive state
-                  : "text-slate-600 hover:bg-white/70 hover:text-teal-700" // Desktop inactive state
+                ? "bg-white text-teal-800 shadow-sm ring-teal-200 font-semibold" 
+                : "text-slate-600 hover:bg-white/70 hover:text-teal-700"
             )}
           >
             <Icon className="size-4 shrink-0" aria-hidden="true" />
-            <span className={isMobile ? "block" : "hidden md:inline"}>
-              {item.label}
-            </span>
+            <span className="hidden md:inline">{item.label}</span>
           </button>
-        );
+
       })}
-    </nav>
+
   );
-};
