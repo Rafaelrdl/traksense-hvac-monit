@@ -682,31 +682,27 @@ export class SimulationEngine {
         assetTag: 'CHILL-001',
         severity: 'Medium' as Alert['severity'],
         type: 'pressure_discharge',
-        message: 'High discharge pressure - Check condenser: 1642 kPa (Warning: 1600 kPa)',
-        ruleName: 'pressure_monitoring',
-        sensorValue: 1642,
-        sensorUnit: 'kPa'
       }
-    ];
+        ruleName: 'pressure_monitoring',
     
-    alertTemplates.forEach((template, index) => {
+        sensorUnit: 'kPa'
+      const alertTime = new Date(now.getTime() - (Math.random() * 72 * 60 * 60 * 1000));
+      
+      this.alerts.push({
+        id: `initial-alert-${index + 1}`,
       const alertTime = new Date(now.getTime() - (Math.random() * 72 * 60 * 60 * 1000));
       
       this.alerts.push({
         id: `initial-alert-${index + 1}`,
         ...template,
-        timestamp: alertTime,
-        acknowledged: Math.random() > 0.4,
-        acknowledgedAt: Math.random() > 0.4 ? new Date(alertTime.getTime() + Math.random() * 24 * 60 * 60 * 1000) : undefined,
-        resolved: Math.random() > 0.8
       });
-    });
+        acknowledged: Math.random() > 0.4,
   }
-
+        resolved: Math.random() > 0.8
   private generateSensorValue(sensor: Sensor, timestamp: Date): number {
-    const hour = timestamp.getHours();
+    });
     const dayOfYear = Math.floor((timestamp.getTime() - new Date(timestamp.getFullYear(), 0, 0).getTime()) / 86400000);
-    const asset = this.assets.find(a => a.id === sensor.assetId);
+=> a.id === sensor.assetId);
     
     // Use baseline value from sensor config
     let baseValue = (sensor as any).baseline || ((sensor.min || 0) + (sensor.max || 100)) * 0.5;
@@ -727,7 +723,7 @@ export class SimulationEngine {
         operationalVariance = isBusinessHours ? 0.5 : -1.2;
         noise *= 0.3;
         break;
-        
+        dailyCycle = Math.sin((hour - 16) / 24 * 2 * Math.PI) * 2.5;
       case 'temp_return':
         // Return temperature follows supply but with delay and load influence
         baseValue += isBusinessHours ? 2.5 : -1;
