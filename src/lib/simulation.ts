@@ -298,20 +298,20 @@ export class SimulationEngine {
         description: 'Standard operating conditions with typical load variations',
         active: true,
         parameters: {}
+      },
+      {
         id: 'extreme-heat',
         name: 'Heat Wave',
-        id: 'extreme-heat',ncreased system load',
-        name: 'Heat Wave',
         description: 'High external temperature causing increased system load',
-          externalTemp: 8,
+        active: false,
         parameters: { 
           externalTemp: 8,
           loadIncrease: 1.25,
           efficiencyDecrease: 0.9
+        }
+      },
       {
-      },ogged-filter',
-      { 'Filter Degradation',
-        id: 'clogged-filter',mance',
+        id: 'clogged-filter',
         name: 'Filter Degradation',
         description: 'Progressive filter clogging affecting system performance',
         active: false,
@@ -321,11 +321,11 @@ export class SimulationEngine {
           powerIncrease: 1.15
         }
       },
-      { 'Refrigerant Leak',
+      {
         id: 'refrigerant-leak',
         name: 'Refrigerant Leak',
         description: 'Minor refrigerant leak affecting cooling efficiency',
-        active: false,rue, 
+        active: false,
         parameters: { 
           refrigerantLeak: true, 
           compressorEfficiency: 0.75,
@@ -334,7 +334,7 @@ export class SimulationEngine {
         }
       },
       {
-        id: 'fan-bearing-wear',ues',
+        id: 'fan-bearing-wear',
         name: 'Fan Bearing Wear',
         description: 'Degraded fan bearing causing vibration and performance issues',
         active: false,
@@ -346,7 +346,7 @@ export class SimulationEngine {
         }
       },
       {
-        id: 'power-quality',ns affecting system efficiency',
+        id: 'power-quality',
         name: 'Power Quality Issues',
         description: 'Voltage fluctuations affecting system efficiency',
         active: false,
@@ -356,33 +356,33 @@ export class SimulationEngine {
           currentIncrease: 1.08
         }
       },
-      {tenance Overdue',
+      {
         id: 'maintenance-due',
         name: 'Maintenance Overdue',
         description: 'Multiple systems requiring maintenance attention',
-        active: false,,
+        active: false,
         parameters: {
           maintenanceOverdue: true,
           generalDegradation: 0.95,
           alertFrequencyIncrease: 1.4
         }
-      }ario = this.scenarios[0];
+      }
     ];
     this.activeScenario = this.scenarios[0];
-  }ateHistoricalData() {
+  }
 
   private generateHistoricalData() {
     const historyDays = 30;
     const pointsPerHour = 12; // every 5 minutes
     const now = new Date();
-    tryPoint[] = [];
+    
     this.sensors.forEach(sensor => {
       const data: TelemetryPoint[] = [];
       // Initialize realistic starting conditions based on sensor type and asset age
-      lier = 1;
-      let driftAccumulation = 0;
+      const asset = this.getAssetForSensor(sensor.id);
       let trendMultiplier = 1;
       let driftAccumulation = 0;
+      let equipmentAgeEffect = 1;
       
       // Factor in equipment age and operating hours
       if (asset) {
@@ -399,7 +399,7 @@ export class SimulationEngine {
       
       for (let day = historyDays; day >= 0; day--) {
         const currentDate = new Date(now);
-      for (let day = historyDays; day >= 0; day--) {);
+        currentDate.setDate(currentDate.getDate() - day);
         
         // Add realistic seasonal and weather effects
         const dayOfYear = Math.floor((currentDate.getTime() - new Date(currentDate.getFullYear(), 0, 0).getTime()) / 86400000);
@@ -408,7 +408,8 @@ export class SimulationEngine {
         const isWinter = dayOfYear < 90 || dayOfYear > 300; // Dec to March
         
         // Apply seasonal effects based on sensor type
-        supply', 'temp_return'].includes(sensor.type)) {
+        let seasonalOffset = 0;
+        if (['temp_supply', 'temp_return'].includes(sensor.type)) {
           seasonalOffset = isSummer ? 3 + Math.random() * 4 : (isWinter ? -2 - Math.random() * 3 : 0);
         } else if (['power_kw', 'current', 'energy_kwh'].includes(sensor.type)) {
           seasonalOffset = isSummer ? 0.15 : (isWinter ? 0.08 : 0); // More load in summer
@@ -421,17 +422,14 @@ export class SimulationEngine {
         // Add progressive equipment degradation over the historical period
         if (sensor.type === 'dp_filter') {
           trendMultiplier = 1 + (historyDays - day) * 0.012; // Gradual filter clogging
-        if (sensor.type === 'dp_filter') {
+        } else if (sensor.type === 'vibration') {
           trendMultiplier = 1 + (historyDays - day) * 0.003 * equipmentAgeEffect; // Age-related bearing wear
-        } else if (sensor.type === 'vibration') {{
-          trendMultiplier = Math.max(0.85, 1 - (historyDays - day) * 0.002 * equipmentAgeEffect); // Efficiency degradation
         } else if (sensor.type === 'power_kw') {
-          trendMultiplier = 1 + (historyDays - day) * 0.001 * equipmentAgeEffect; // Slight power increase with age
-        }
-        
+          trendMultiplier = Math.max(0.85, 1 - (historyDays - day) * 0.002 * equipmentAgeEffect); // Efficiency degradation
         }
         
         for (let hour = 0; hour < 24; hour++) {
+          let hourlyLoadMultiplier = 1;
           
           if (asset?.type === 'Chiller' || asset?.type === 'CoolingTower') {
             // Peak cooling in afternoon
@@ -600,51 +598,60 @@ export class SimulationEngine {
       });alAlerts() {
     }); new Date();
   }
+
+  private getAssetForSensor(sensorId: string): HVACAsset | undefined {
+    // Find sensor first, then get its asset
+    const sensor = this.sensors.find(s => s.id === sensorId);
+    return sensor ? this.assets.find(a => a.id === sensor.assetId) : undefined;
+  }
   
   private generateInitialAlerts() {
     const now = new Date();
     
-        assetTag: 'CHILL-001',
     const alertTemplates = [
       {
-        assetId: 'chill-001',ted - Possible refrigerant leak: 11.8 K (Normal: 4-8 K)',
-        assetTag: 'CHILL-001',g',
-        sensorValue: 11.8,
+        assetId: 'chill-001',
+        assetTag: 'CHILL-001',
+        severity: 'High' as Alert['severity'],
         type: 'superheat',
+        message: 'Superheat elevated - Possible refrigerant leak: 11.8 K (Normal: 4-8 K)',
+        ruleName: 'superheat_monitoring',
+        sensorValue: 11.8,
+        sensorUnit: 'K'
       },
       {
-        sensorValue: 11.8,
-        assetTag: 'CHILL-002',
-      },ium' as Alert['severity'],
-      {maintenance',
-        assetId: 'chill-002',3 days - Performance degradation detected',
+        assetId: 'chill-002',
         assetTag: 'CHILL-002',
         severity: 'Medium' as Alert['severity'],
         type: 'maintenance',
-        assetId: 'vrf-002',
+        message: 'Maintenance overdue by 3 days - Performance degradation detected',
         ruleName: 'maintenance_schedule'
-      },as Alert['severity'],
-      {ion',
-        assetId: 'vrf-002',cted - Vibration elevated: 4.8 mm/s RMS (Warning: 4.0 mm/s)',
-        assetTag: 'VRF-002',
-        sensorValue: 4.8,
-        type: 'vibration',
       },
       {
+        assetId: 'vrf-002',
+        assetTag: 'VRF-002',
+        severity: 'Medium' as Alert['severity'],
+        type: 'vibration',
+        message: 'Bearing wear detected - Vibration elevated: 4.8 mm/s RMS (Warning: 4.0 mm/s)',
+        ruleName: 'vibration_monitoring',
         sensorValue: 4.8,
         sensorUnit: 'mm/s'
-      },y'],
-      {ter',
-        assetId: 'ahu-003',t critical - Pressure drop: 287.5 Pa (Limit: 280 Pa)',
-        assetTag: 'AHU-003',
-        sensorValue: 287.5,
-        type: 'dp_filter',
       },
       {
+        assetId: 'ahu-003',
+        assetTag: 'AHU-003',
+        severity: 'High' as Alert['severity'],
+        type: 'dp_filter',
+        message: 'Filter nearly critical - Pressure drop: 287.5 Pa (Limit: 280 Pa)',
+        ruleName: 'filter_monitoring',
         sensorValue: 287.5,
         sensorUnit: 'Pa'
-      },m' as Alert['severity'],
+      },
       {
+        assetId: 'ahu-004',
+        assetTag: 'AHU-004',
+        severity: 'Medium' as Alert['severity'],
+        type: 'temp_supply',
         message: 'Supply temperature deviation - Control valve issue: 18.7°C (Setpoint: 16.0°C)',
         ruleName: 'temp_supply_monitoring',
         sensorValue: 18.7,
@@ -655,16 +662,16 @@ export class SimulationEngine {
         assetTag: 'AHU-001',
         severity: 'Low' as Alert['severity'],
         type: 'power_kw',
-        assetId: 'ahu-001',aseline)',
-        assetTag: 'AHU-001',
-        severity: 'Low' as Alert['severity'],
+        message: 'Power consumption increase detected: 57.2 kW (15% above baseline)',
+        ruleName: 'power_monitoring',
+        sensorValue: 57.2,
         sensorUnit: 'kW'
       },
       {
         assetId: 'vrf-001',
         assetTag: 'VRF-001',
-      },'],
-      {ty',
+        severity: 'Medium' as Alert['severity'],
+        type: 'humidity',
         message: 'High humidity detected in zone - Possible outdoor air damper stuck: 66.8% RH',
         ruleName: 'humidity_monitoring',
         sensorValue: 66.8,
@@ -675,163 +682,23 @@ export class SimulationEngine {
         assetTag: 'CHILL-001',
         severity: 'Medium' as Alert['severity'],
         type: 'pressure_discharge',
-        assetId: 'chill-001',denser: 1642 kPa (Warning: 1600 kPa)',
-        assetTag: 'CHILL-001',
-        severity: 'Medium' as Alert['severity'],
-        type: 'pressure_discharge',
-      },
-      {
-        assetId: 'tower-001',
-        assetTag: 'CT-001',
-      },
-      {
-        message: 'Motor bearing monitoring - Slight increase in vibration: 4.6 mm/s RMS',
-        ruleName: 'vibration_monitoring',
-        severity: 'Low' as Alert['severity'],
-        sensorUnit: 'mm/s'
-      },
-        ruleName: 'vibration_monitoring',
-        assetId: 'ahu-002',
-        assetTag: 'AHU-002',
-      },: 'Low' as Alert['severity'],
-      {
-        assetId: 'ahu-002',eck fan belt: 21.8 km³/h (91% of nominal)',
-        assetTag: 'AHU-002',
-        severity: 'Low' as Alert['severity'],
-        sensorUnit: 'm³/h'
-      },
-      {
-        assetId: 'boiler-001',
-        assetTag: 'BOIL-001',
-        severity: 'Medium' as Alert['severity'],
-        type: 'temp_supply',
-        message: 'Supply temperature fluctuating - Check control valve: 76.3°C (Setpoint: 72.0°C)',
-        ruleName: 'temp_supply_monitoring',
-        sensorValue: 76.3,
-        type: 'temp_supply',
-      },
-        ruleName: 'temp_supply_monitoring',
-        assetId: 'vrf-003',
-        sensorUnit: '°C'
-      },ty'],
-      {
-        message: 'EER efficiency below optimal - System tuning recommended: 9.4 (Target: >10.0)',
-        ruleName: 'efficiency_monitoring',
-        sensorValue: 9.4,
-        sensorUnit: ''
-      },
-      {
-        assetId: 'rtu-002',
-        assetTag: 'RTU-002',
-        severity: 'Low' as Alert['severity'],
-        type: 'current',
-        message: 'Current consumption trending up - Monitor compressor: 78.4 A (82% of max)',
-        ruleName: 'current_monitoring',
-        sensorValue: 78.4,
-        sensorUnit: 'A'
-      },
-      {
-        assetId: 'chill-002',
-        assetTag: 'CHILL-002',
-        severity: 'High' as Alert['severity'],
-        type: 'subcooling',
-        assetId: 'chill-002',rigerant leak suspected: 1.8 K (Minimum: 2.5 K)',
-        assetTag: 'CHILL-002',ing',
-        sensorValue: 1.8,
-        sensorUnit: 'K'
-      },
-      {
-        assetId: 'ahu-003',
-        assetTag: 'AHU-003',
-        severity: 'Medium' as Alert['severity'],
-        type: 'rpm_fan',
-        message: 'Fan speed irregularity - VFD drive issue possible: 1087 RPM (Variable)',
-        ruleName: 'fan_monitoring',
-        severity: 'Medium' as Alert['severity'],
-        sensorUnit: 'RPM'
-      },
-      {
-        assetId: 'rtu-001',
-        assetTag: 'RTU-001',
-      },ty: 'Low' as Alert['severity'],
-      {
-        message: 'Voltage fluctuation detected - Power quality monitoring: 473V (±3% variation)',
-        assetTag: 'RTU-001',
-        severity: 'Low' as Alert['severity'],
-        sensorUnit: 'V'
-      },
-      {
-        assetId: 'tower-001',
-        sensorUnit: 'V'
-        severity: 'Medium' as Alert['severity'],
-        type: 'temp_supply',
-        message: 'Cooling tower approach temperature high - Check fill media: 31.2°C',
-        ruleName: 'approach_temp_monitoring',
-        sensorValue: 31.2,
-        sensorUnit: '°C'
-      },
-      {
-        assetId: 'vrf-002',
-        assetTag: 'VRF-002',
-        severity: 'Low' as Alert['severity'],
-        type: 'compressor_state',
-        message: 'Compressor cycling frequently - Check refrigerant charge',
-        ruleName: 'compressor_monitoring'
-      },
-      {
-        assetId: 'ahu-001',
-        assetTag: 'AHU-001',
-        severity: 'Low' as Alert['severity'],
-        type: 'maintenance_reminder',
-        message: 'Preventive maintenance due in 12 days - Schedule service',
-        ruleName: 'maintenance_reminder'
-      },
-      {
-        assetId: 'chill-001',
-        assetTag: 'CHILL-001',
-        severity: 'Medium' as Alert['severity'],
-        type: 'cop',
-        message: 'COP efficiency declining - System optimization needed: 3.6 (Target: >4.0)',
-        ruleName: 'efficiency_monitoring',
-        sensorValue: 3.6,
-        sensorUnit: ''
-      },
-      {
-        assetId: 'boiler-001',
-        assetTag: 'BOIL-001',
-        severity: 'Low' as Alert['severity'],
-        type: 'pressure_suction',
-        message: 'Water pressure stable but trending low: 165 kPa (Monitor)',
+        message: 'High discharge pressure - Check condenser: 1642 kPa (Warning: 1600 kPa)',
         ruleName: 'pressure_monitoring',
-        sensorValue: 165,
+        sensorValue: 1642,
         sensorUnit: 'kPa'
-      },
-      {
-        assetId: 'rtu-002',
-        assetTag: 'RTU-002',
-        severity: 'Medium' as Alert['severity'],
-        type: 'temp_external',
-        message: 'High ambient temperature affecting performance: 34.7°C (Design: 32°C)',
-        ruleName: 'ambient_monitoring',
-        sensorValue: 34.7,
-        sensorUnit: '°C'
       }
     ];
     
     alertTemplates.forEach((template, index) => {
-      }
-    ];
-    
-    alertTemplates.forEach((template, index) => {
-      const alertTime = new Date(now.getTime() - (Math.random() * 72 * 60 * 60 * 1000)); // Random time in last 72 hours
+      const alertTime = new Date(now.getTime() - (Math.random() * 72 * 60 * 60 * 1000));
       
       this.alerts.push({
         id: `initial-alert-${index + 1}`,
         ...template,
         timestamp: alertTime,
-        acknowledged: Math.random() > 0.4, // 60% acknowledged
+        acknowledged: Math.random() > 0.4,
         acknowledgedAt: Math.random() > 0.4 ? new Date(alertTime.getTime() + Math.random() * 24 * 60 * 60 * 1000) : undefined,
-        resolved: Math.random() > 0.8 // 20% resolved
+        resolved: Math.random() > 0.8
       });
     });
   }
@@ -860,7 +727,7 @@ export class SimulationEngine {
         operationalVariance = isBusinessHours ? 0.5 : -1.2;
         noise *= 0.3;
         break;
-        dailyCycle = Math.sin((hour - 16) / 24 * 2 * Math.PI) * 2.5;
+        
       case 'temp_return':
         // Return temperature follows supply but with delay and load influence
         baseValue += isBusinessHours ? 2.5 : -1;
