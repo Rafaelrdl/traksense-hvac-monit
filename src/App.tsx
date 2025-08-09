@@ -7,6 +7,7 @@ import { SensorsPage } from './components/pages/SensorsPage';
 import { AlertsPage } from './components/pages/AlertsPage';
 import { ReportsPage } from './components/pages/ReportsPage';
 import { MaintenancePage } from './components/pages/MaintenancePage';
+import { SettingsPage } from './components/pages/SettingsPage';
 import { CustomDashboard } from './components/dashboard/CustomDashboard';
 import { useAppStore } from './store/app';
 

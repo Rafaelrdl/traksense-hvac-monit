@@ -208,23 +208,23 @@ export interface MaintenancePart {
 
 export interface MaintenanceSchedule {
   id: string;
-  assetId: string;
-  assetTag: string;
-  maintenanceType: MaintenanceTask['category'];
+  assetId?: string;
+  assetTag?: string;
+  type: MaintenanceTask['category'];
   title: string;
   description: string;
   frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'annually' | 'operating_hours';
   interval: number; // days or hours depending on frequency
-  estimatedDuration: number; // minutes
+  duration: number; // minutes (renamed from estimatedDuration)
   priority: MaintenanceTask['priority'];
-  enabled: boolean;
+  enabled?: boolean;
   lastExecuted?: Date;
-  nextDue: Date;
+  nextDue?: Date;
   assignedTeam?: string;
   instructions?: string;
-  requiredParts?: MaintenancePart[];
-  requiredTools?: string[];
-  safetyRequirements?: string[];
+  parts?: MaintenancePart[]; // renamed from requiredParts
+  tools?: string[]; // renamed from requiredTools
+  safety?: string[]; // renamed from safetyRequirements
 }
 
 export interface MaintenanceHistory {

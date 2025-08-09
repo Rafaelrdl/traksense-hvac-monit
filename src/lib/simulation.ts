@@ -1,5 +1,5 @@
 import { HVACAsset, Sensor, TelemetryPoint, Alert, SimulationScenario, SensorReading, MaintenanceTask, MaintenanceSchedule, MaintenanceHistory } from '../types/hvac';
-import { MaintenanceDataGenerator } from './maintenanceData';
+import { maintenanceDataService } from './maintenanceData';
 
 export class SimulationEngine {
   private assets: HVACAsset[] = [];
@@ -9,7 +9,7 @@ export class SimulationEngine {
   private scenarios: SimulationScenario[] = [];
   private activeScenario: SimulationScenario | null = null;
   private intervalId: NodeJS.Timeout | null = null;
-  private maintenanceData: MaintenanceDataGenerator | null = null;
+  private maintenanceData = maintenanceDataService;
 
   constructor() {
     this.initializeAssets();
@@ -1499,9 +1499,8 @@ export class SimulationEngine {
   }
 
   private initializeMaintenanceData() {
-    const assetIds = this.assets.map(a => a.id);
-    const assetTags = this.assets.map(a => a.tag);
-    this.maintenanceData = new MaintenanceDataGenerator(assetIds, assetTags);
+    // maintenanceDataService is already initialized as a singleton
+    // No need to create a new instance
   }
   
   stop() {
@@ -1527,21 +1526,21 @@ export class SimulationEngine {
   getScenarios() { return this.scenarios; }
   
   // Maintenance getters
-  getMaintenanceTasks() { return this.maintenanceData?.getTasks() || []; }
-  getMaintenanceSchedules() { return this.maintenanceData?.getSchedules() || []; }
-  getMaintenanceHistory() { return this.maintenanceData?.getHistory() || []; }
+  getMaintenanceTasks() { return this.maintenanceData.getTasks(); }
+  getMaintenanceSchedules() { return this.maintenanceData.getSchedules(); }
+  getMaintenanceHistory() { return this.maintenanceData.getHistory(); }
   
   // Maintenance actions
   addMaintenanceTask(task: Omit<MaintenanceTask, 'id' | 'createdDate' | 'createdBy'>) {
-    return this.maintenanceData?.addTask(task);
+    return this.maintenanceData.addTask(task);
   }
   
   updateMaintenanceTask(taskId: string, updates: Partial<MaintenanceTask>) {
-    return this.maintenanceData?.updateTask(taskId, updates);
+    return this.maintenanceData.updateTask(taskId, updates);
   }
   
   completeMaintenanceTask(taskId: string, notes?: string, cost?: number) {
-    return this.maintenanceData?.completeTask(taskId, notes, cost);
+    return this.maintenanceData.completeTask(taskId, notes, cost);
   }
   
   getTelemetryData(sensorId: string, timeRange?: { start: Date; end: Date }) {
