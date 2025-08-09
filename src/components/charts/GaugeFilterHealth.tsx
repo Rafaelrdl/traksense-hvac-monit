@@ -202,42 +202,39 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
       },
       // Main score display
       {
-        type: 'text',
-        left: '50%',
         top: '48%',
         style: {
-          text: `${safeHealthScore.toFixed(0)}`,
+        top: '48%',
           fontSize: 28,
-          fontWeight: 'bold',
-          fill: getHealthColor(safeHealthScore),
+          text: `${safeHealthScore.toFixed(0)}`,
+          fontSize: 28,),
           textAlign: 'center',
           fontFamily: 'Inter'
-        }
-      },
+          textAlign: 'center',
+          fontFamily: 'Inter'
       {
-        type: 'text',
         left: '50%',
-        top: '56%',
+      {
         style: {
+          text: '/100',
+        top: '56%',
+          fill: '#999',
           text: '/100',
           fontSize: 14,
           fill: '#999',
-          textAlign: 'center',
-          fontFamily: 'Inter'
-        }
       },
       // Status label
-      {
-        type: 'text',
+        }
+      },
         left: '50%',
+      {%',
+        type: 'text',
+          text: getHealthLabel(safeHealthScore),
         top: '64%',
         style: {
-          text: getHealthLabel(safeHealthScore),
-          fontSize: 14,
-          fontWeight: '600',
           fill: getHealthColor(safeHealthScore),
           textAlign: 'center',
-          fontFamily: 'Inter'
+          fontWeight: '600',
         }
       },
       // ΔP reading
@@ -249,10 +246,13 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
           text: `ΔP: ${safeDpFilter.toFixed(0)} Pa`,
           fontSize: 12,
           fill: '#076A75',
-          textAlign: 'center',
-          fontWeight: '500',
-          fontFamily: 'Inter'
         }
+      },
+      // Days until change
+      {
+        type: 'text',
+        left: '50%',
+        top: '88%',
       },
       // Days until change
       {
@@ -262,12 +262,6 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
         style: {
           text: `Troca sugerida em ${safeDaysUntilChange} dias`,
           fontSize: 11,
-          fill: '#666',
-          textAlign: 'center',
-          fontFamily: 'Inter'
-        }
-      }
-    ]
   };
 
   try {
