@@ -445,15 +445,15 @@ export class SimulationEngine {
           
           const finalLoadMultiplier = dailyLoadMultiplier * hourlyLoadMultiplier;
           
-          const finalLoadMultiplier = dailyLoadMultiplier * hourlyLoadMultiplier;
-          Date(now);
           for (let point = 0; point < pointsPerHour; point++) {
             const timestamp = new Date(now);
             timestamp.setDate(timestamp.getDate() - day);
             timestamp.setHours(hour, point * 5, 0, 0);
             
             let value = this.generateSensorValue(sensor, timestamp);
-            p_external', 'temp_supply', 'temp_return', 'humidity'].includes(sensor.type)) {
+            
+            // Apply seasonal effects
+            if (['temp_external', 'temp_supply', 'temp_return', 'humidity'].includes(sensor.type)) {
               value += seasonalOffset;
             } else if (['power_kw', 'current', 'energy_kwh'].includes(sensor.type)) {
               value *= (1 + seasonalOffset);
@@ -461,18 +461,18 @@ export class SimulationEngine {
             
             // Apply load multiplier for operational sensors
             if (['power_kw', 'current', 'airflow', 'rpm_fan', 'energy_kwh'].includes(sensor.type)) {
-            // Apply load multiplier for operational sensors
-            }
               value *= finalLoadMultiplier;
-            }adation/improvement over time)
+            }
             
-            
+            // Apply equipment degradation/improvement over time
             value *= trendMultiplier;
-            ) * 0.08;
+            
+            // Apply accumulated drift (slow degradation/improvement over time)
+            driftAccumulation += (Math.random() - 0.5) * 0.08;
             value += driftAccumulation;
             
-            value += driftAccumulation;es
-            h.random() < 0.0008) { // 0.08% chance of significant anomaly
+            // Add occasional anomalies
+            if (Math.random() < 0.0008) { // 0.08% chance of significant anomaly
               const anomalyTypes = ['spike', 'dip', 'step'];
               const anomalyType = anomalyTypes[Math.floor(Math.random() * anomalyTypes.length)];
               
@@ -489,8 +489,8 @@ export class SimulationEngine {
               }
             }
             
-            }random variations (instrumentation noise)
-            oiseLevel = sensor.type === 'vibration' ? 0.03 : 
+            // Add random variations (instrumentation noise)
+            const noiseLevel = sensor.type === 'vibration' ? 0.03 : 
                               sensor.type === 'temp_supply' ? 0.02 : 
                               sensor.type === 'humidity' ? 0.5 : 0.01;
             value += (Math.random() - 0.5) * 2 * noiseLevel * ((sensor as any).baseline || value);
@@ -498,12 +498,12 @@ export class SimulationEngine {
             // Ensure value stays within realistic sensor limits
             value = Math.max(sensor.min || -Infinity, Math.min(sensor.max || Infinity, value));
             
-            value = Math.max(sensor.min || -Infinity, Math.min(sensor.max || Infinity, value));
-            ity: 'good' | 'uncertain' | 'bad' = 'good';
+            // Add data quality variations
+            let quality: 'good' | 'uncertain' | 'bad' = 'good';
             const qualityRandom = Math.random();
             
             if (qualityRandom < 0.005) quality = 'bad';       // 0.5% bad readings
-            certain';  // 1% uncertain readings
+            else if (qualityRandom < 0.015) quality = 'uncertain';  // 1% uncertain readings
             else quality = 'good';                             // 98.5% good readings
             
             // Equipment offline periods (rare but realistic)
@@ -514,89 +514,87 @@ export class SimulationEngine {
             
             data.push({
               sensorId: sensor.id,
-            data.push({
-              sensorId: sensor.id,tic precision
               timestamp,
-            });
+              value: parseFloat(value.toFixed(3)), // Round to realistic precision
               quality
             });
           }
         }
-      }sor.id, data);
+      }
       
       this.telemetryData.set(sensor.id, data);
-      .length - 1];
-      if (lastData) {
+      
+      // Update sensor's last reading
       const lastData = data[data.length - 1];
-      if (lastData) {a.timestamp,
+      if (lastData) {
         sensor.lastReading = {
           timestamp: lastData.timestamp,
           value: lastData.value,
           quality: lastData.quality
         };
       }
-    });cal alert patterns
-    lerts();
-  }
+    });
+    
+    // Generate historical alert patterns
     this.generateHistoricalAlerts();
-  }ts() {
+  }
   
   private generateHistoricalAlerts() {
     const now = new Date();
     
     // Generate some resolved historical alerts
     const historicalAlertTemplates = [
-        type: 'dp_filter',
-        assetId: 'ahu-001',ure drop normalized: 89.2 Pa',
+      {
+        assetId: 'ahu-001',
         assetTag: 'AHU-001',
+        message: 'Filter maintenance completed - Pressure drop normalized: 89.2 Pa',
         severity: 'Medium' as Alert['severity'],
         type: 'dp_filter',
-        message: 'Filter maintenance completed - Pressure drop normalized: 89.2 Pa',
         ruleName: 'dp_filter_monitoring',
         resolved: true
-      },t['severity'],
-      {'temp_supply',
-        assetId: 'vrf-001',trol restored - System rebalanced',
-        assetTag: 'VRF-001',onitoring',
+      },
+      {
+        assetId: 'vrf-001',
+        assetTag: 'VRF-001',
+        message: 'Temperature control restored - System rebalanced',
         severity: 'Low' as Alert['severity'],
         type: 'temp_supply',
-        message: 'Temperature control restored - System rebalanced',
         ruleName: 'temp_supply_monitoring',
         resolved: true
-      },Alert['severity'],
+      },
       {
         assetId: 'chill-002',
         assetTag: 'CHILL-002',
+        message: 'Refrigerant leak detected and repaired - System recharged',
         severity: 'High' as Alert['severity'],
         type: 'refrigerant',
-        message: 'Refrigerant leak detected and repaired - System recharged',
         ruleName: 'refrigerant_monitoring',
-        resolved: true-002',
+        resolved: true
       },
       {
         assetId: 'ahu-002',
         assetTag: 'AHU-002',
+        message: 'Bearing replacement completed - Vibration normalized',
         severity: 'Medium' as Alert['severity'],
         type: 'vibration',
-        message: 'Bearing replacement completed - Vibration normalized',
         ruleName: 'vibration_monitoring',
-        resolved: trueindex) => {
-      }tTime() - (Math.random() * 14 * 24 * 60 * 60 * 1000)); // Random time in last 2 weeks
-    ];Time() + Math.random() * 48 * 60 * 60 * 1000); // Resolved within 48 hours
+        resolved: true
+      }
+    ];
       
     historicalAlertTemplates.forEach((template, index) => {
       const alertTime = new Date(now.getTime() - (Math.random() * 14 * 24 * 60 * 60 * 1000)); // Random time in last 2 weeks
       const resolveTime = new Date(alertTime.getTime() + Math.random() * 48 * 60 * 60 * 1000); // Resolved within 48 hours
-      mestamp: alertTime,
+      
       this.alerts.push({
-        id: `historical-alert-${index + 1}`,* 6 * 60 * 60 * 1000),
+        id: `historical-alert-${index + 1}`,
         ...template,
         timestamp: alertTime,
         acknowledged: true,
         acknowledgedAt: new Date(alertTime.getTime() + Math.random() * 6 * 60 * 60 * 1000),
         resolvedAt: resolveTime
-      });alAlerts() {
-    }); new Date();
+      });
+    });
   }
 
   private getAssetForSensor(sensorId: string): HVACAsset | undefined {
@@ -682,27 +680,31 @@ export class SimulationEngine {
         assetTag: 'CHILL-001',
         severity: 'Medium' as Alert['severity'],
         type: 'pressure_discharge',
-      }
+        message: 'High discharge pressure - Condenser fouling suspected: 1876 kPa (Normal: 1200-1600 kPa)',
         ruleName: 'pressure_monitoring',
-    
+        sensorValue: 1876,
         sensorUnit: 'kPa'
-      const alertTime = new Date(now.getTime() - (Math.random() * 72 * 60 * 60 * 1000));
-      
-      this.alerts.push({
-        id: `initial-alert-${index + 1}`,
+      }
+    ];
+    
+    alertTemplates.forEach((template, index) => {
       const alertTime = new Date(now.getTime() - (Math.random() * 72 * 60 * 60 * 1000));
       
       this.alerts.push({
         id: `initial-alert-${index + 1}`,
         ...template,
-      });
+        timestamp: alertTime,
         acknowledged: Math.random() > 0.4,
-  }
+        acknowledgedAt: Math.random() > 0.4 ? new Date(alertTime.getTime() + Math.random() * 24 * 60 * 60 * 1000) : undefined,
         resolved: Math.random() > 0.8
-  private generateSensorValue(sensor: Sensor, timestamp: Date): number {
+      });
     });
+  }
+  
+  private generateSensorValue(sensor: Sensor, timestamp: Date): number {
+    const hour = timestamp.getHours();
     const dayOfYear = Math.floor((timestamp.getTime() - new Date(timestamp.getFullYear(), 0, 0).getTime()) / 86400000);
-=> a.id === sensor.assetId);
+    const asset = this.assets.find(a => a.id === sensor.assetId);
     
     // Use baseline value from sensor config
     let baseValue = (sensor as any).baseline || ((sensor.min || 0) + (sensor.max || 100)) * 0.5;
@@ -723,7 +725,7 @@ export class SimulationEngine {
         operationalVariance = isBusinessHours ? 0.5 : -1.2;
         noise *= 0.3;
         break;
-        dailyCycle = Math.sin((hour - 16) / 24 * 2 * Math.PI) * 2.5;
+      
       case 'temp_return':
         // Return temperature follows supply but with delay and load influence
         baseValue += isBusinessHours ? 2.5 : -1;
