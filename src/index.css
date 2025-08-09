@@ -118,4 +118,13 @@ body {
     @apply ring-2 ring-accent ring-offset-2;
     --tw-ring-offset-color: var(--sidebar-bg);
   }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }

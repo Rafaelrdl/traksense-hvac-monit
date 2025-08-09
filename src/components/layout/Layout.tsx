@@ -1,7 +1,5 @@
 import React from 'react';
-import { TopBar } from './TopBar';
-import { TrakSenseSidebar } from './TrakSenseSidebar';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { Header } from './Header';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,23 +8,15 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigate }) => {
-  const isMobile = useIsMobile();
-
   return (
-    <div className="h-screen flex flex-col bg-background">
-      {/* Top Bar with integrated mobile trigger */}
-      <TopBar currentPage={currentPage} onNavigate={onNavigate} />
+    <div className="min-h-screen bg-[#F4FAFB]">
+      {/* Header with integrated horizontal navigation */}
+      <Header currentPage={currentPage} onNavigate={onNavigate} />
       
-      {/* Main Content Area */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar - only renders on desktop */}
-        <TrakSenseSidebar currentPage={currentPage} onNavigate={onNavigate} />
-        
-        {/* Main Content - takes full width on mobile when sidebar is not rendered */}
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
-      </div>
+      {/* Main Content - Full width */}
+      <main className="mx-auto max-w-[1400px] px-6 py-6">
+        {children}
+      </main>
     </div>
   );
 };
