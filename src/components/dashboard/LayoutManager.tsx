@@ -16,7 +16,7 @@ import {
 export const LayoutManager: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [newLayoutName, setNewLayoutName] = useState('');
-  const [copyFromLayoutId, setCopyFromLayoutId] = useState<string>('');
+  const [copyFromLayoutId, setCopyFromLayoutId] = useState<string>('blank');
   
   const { 
     layouts, 
@@ -31,9 +31,10 @@ export const LayoutManager: React.FC = () => {
 
   const handleCreateLayout = () => {
     if (newLayoutName.trim()) {
-      createLayout(newLayoutName.trim(), copyFromLayoutId || undefined);
+      const copyFromId = copyFromLayoutId === 'blank' ? undefined : copyFromLayoutId || undefined;
+      createLayout(newLayoutName.trim(), copyFromId);
       setNewLayoutName('');
-      setCopyFromLayoutId('');
+      setCopyFromLayoutId('blank');
       setOpen(false);
     }
   };
@@ -103,7 +104,7 @@ export const LayoutManager: React.FC = () => {
                       <SelectValue placeholder="Selecione um layout para copiar" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Layout em branco</SelectItem>
+                      <SelectItem value="blank">Layout em branco</SelectItem>
                       {layouts.map(layout => (
                         <SelectItem key={layout.id} value={layout.id}>
                           {layout.name}
