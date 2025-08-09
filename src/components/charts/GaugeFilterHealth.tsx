@@ -70,7 +70,8 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
       {
         name: 'Saúde do Filtro',
         type: 'gauge',
-        center: ['50%', '60%'],
+        center: ['50%', '55%'],
+        radius: '75%',
         startAngle: 200,
         endAngle: -20,
         min: 0,
@@ -81,33 +82,37 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
         },
         progress: {
           show: true,
-          width: 30
+          width: 18,
+          itemStyle: {
+            color: getHealthColor(safeHealthScore)
+          }
         },
         pointer: {
           show: false
         },
         axisLine: {
           lineStyle: {
-            width: 30,
+            width: 18,
             color: [
-              [0.6, '#E05A47'],
-              [0.8, '#F5C34D'],
-              [1, '#2E8B57']
+              [0.6, 'rgba(224, 90, 71, 0.2)'],
+              [0.8, 'rgba(245, 195, 77, 0.2)'],
+              [1, 'rgba(46, 139, 87, 0.2)']
             ]
           }
         },
         axisTick: {
-          distance: -45,
+          distance: -32,
           splitNumber: 5,
           lineStyle: {
-            width: 2,
+            width: 1,
             color: '#999'
           }
         },
         axisLabel: {
-          distance: -20,
-          color: '#999',
-          fontSize: 12
+          distance: -18,
+          color: '#666',
+          fontSize: 10,
+          fontWeight: '500'
         },
         anchor: {
           show: false
@@ -116,15 +121,7 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
           show: false
         },
         detail: {
-          valueAnimation: true,
-          width: '60%',
-          lineHeight: 40,
-          borderRadius: 8,
-          offsetCenter: [0, '-15%'],
-          fontSize: 24,
-          fontWeight: 'bold',
-          formatter: '{value}/100',
-          color: 'inherit'
+          show: false
         },
         data: [
           {
@@ -133,12 +130,12 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
           }
         ]
       },
-      // Secondary gauge for ΔP reading
+      // Inner gauge for ΔP reading
       {
         name: 'Delta P',
         type: 'gauge',
-        center: ['50%', '60%'],
-        radius: '40%',
+        center: ['50%', '55%'],
+        radius: '50%',
         startAngle: 200,
         endAngle: -20,
         min: 0,
@@ -146,11 +143,11 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
         splitNumber: 4,
         axisLine: {
           lineStyle: {
-            width: 6,
+            width: 4,
             color: [
-              [0.625, '#2E8B57'], // 0-250 Pa
-              [0.75, '#F5C34D'],  // 250-300 Pa
-              [1, '#E05A47']      // 300-400 Pa
+              [0.625, 'rgba(46, 139, 87, 0.3)'], // 0-250 Pa
+              [0.75, 'rgba(245, 195, 77, 0.3)'],  // 250-300 Pa
+              [1, 'rgba(224, 90, 71, 0.3)']      // 300-400 Pa
             ]
           }
         },
@@ -161,10 +158,12 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
           show: false
         },
         pointer: {
-          width: 3,
-          length: '60%',
+          width: 2,
+          length: '65%',
           itemStyle: {
-            color: '#076A75'
+            color: '#076A75',
+            shadowBlur: 4,
+            shadowColor: 'rgba(7, 106, 117, 0.3)'
           }
         },
         title: {
@@ -181,41 +180,91 @@ export const GaugeFilterHealth: React.FC<GaugeFilterHealthProps> = ({
         ]
       }
     ],
-    // Add labels
+    // Add custom graphics for better layout
     graphic: [
+      // Background circle for main score
+      {
+        type: 'circle',
+        left: '50%',
+        top: '55%',
+        shape: {
+          cx: 0,
+          cy: 0,
+          r: 50
+        },
+        style: {
+          fill: 'rgba(255, 255, 255, 0.9)',
+          stroke: 'rgba(7, 106, 117, 0.1)',
+          lineWidth: 1,
+          shadowBlur: 8,
+          shadowColor: 'rgba(0, 0, 0, 0.1)'
+        }
+      },
+      // Main score display
       {
         type: 'text',
         left: '50%',
-        top: '85%',
+        top: '48%',
         style: {
-          text: getHealthLabel(safeHealthScore),
-          fontSize: 18,
+          text: `${safeHealthScore.toFixed(0)}`,
+          fontSize: 28,
           fontWeight: 'bold',
           fill: getHealthColor(safeHealthScore),
-          textAlign: 'center'
+          textAlign: 'center',
+          fontFamily: 'Inter'
         }
       },
       {
         type: 'text',
         left: '50%',
-        top: '92%',
+        top: '56%',
         style: {
-          text: `Troca sugerida em ${safeDaysUntilChange} dias`,
-          fontSize: 12,
-          fill: '#666',
-          textAlign: 'center'
+          text: '/100',
+          fontSize: 14,
+          fill: '#999',
+          textAlign: 'center',
+          fontFamily: 'Inter'
         }
       },
+      // Status label
       {
         type: 'text',
-        left: '30%',
-        top: '45%',
+        left: '50%',
+        top: '64%',
+        style: {
+          text: getHealthLabel(safeHealthScore),
+          fontSize: 14,
+          fontWeight: '600',
+          fill: getHealthColor(safeHealthScore),
+          textAlign: 'center',
+          fontFamily: 'Inter'
+        }
+      },
+      // ΔP reading
+      {
+        type: 'text',
+        left: '50%',
+        top: '82%',
         style: {
           text: `ΔP: ${safeDpFilter.toFixed(0)} Pa`,
-          fontSize: 11,
+          fontSize: 12,
           fill: '#076A75',
           textAlign: 'center',
-          fontWeight: 'bold'
+          fontWeight: '500',
+          fontFamily: 'Inter'
+        }
+      },
+      // Days until change
+      {
+        type: 'text',
+        left: '50%',
+        top: '88%',
+        style: {
+          text: `Troca sugerida em ${safeDaysUntilChange} dias`,
+          fontSize: 11,
+          fill: '#666',
+          textAlign: 'center',
+          fontFamily: 'Inter'
         }
       }
     ]
