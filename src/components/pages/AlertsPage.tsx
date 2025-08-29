@@ -229,7 +229,7 @@ export const AlertsPage: React.FC = () => {
             Interface de construção de regras em desenvolvimento
           </p>
           <p className="text-sm text-muted-foreground mt-2">
-            Exemplo: "ΔP filtro > 250 Pa por 10 min → severidade Alta"
+            Exemplo: "ΔP filtro &gt; 250 Pa por 10 min → severidade Alta"
           </p>
         </div>
       </div>

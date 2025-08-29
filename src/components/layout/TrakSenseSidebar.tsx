@@ -3,7 +3,7 @@ import {
   LayoutGrid, 
   PanelsTopLeft, 
   AirVent, 
-  Activity, 
+  Activity,
   BellRing, 
   Wrench, 
   FileText, 
@@ -60,12 +60,12 @@ function NavigationMenu({ currentPage, onNavigate, onItemClick }: TrakSenseSideb
             aria-current={isActive ? 'page' : undefined}
             className={cn(
               "w-full flex items-center gap-3 px-3 py-2.5 rounded-full text-left transition-all duration-150",
-              "min-h-[44px] text-sidebar hover:text-white",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+              "min-h-[44px] text-white/90 hover:text-white",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#006b76]",
               isActive && [
-                "bg-sidebar-item-active text-white font-medium"
+                "bg-[var(--sidebar-item-active-bg)] text-white font-medium"
               ],
-              !isActive && "hover:bg-sidebar-item-active/50"
+              !isActive && "hover:bg-[var(--sidebar-item-active-bg)]/50"
             )}
             style={isActive ? { '--tw-ring-offset-color': 'var(--sidebar-bg)' } as React.CSSProperties : undefined}
           >
@@ -86,10 +86,10 @@ function SystemStatus({ className }: { className?: string }) {
         className="rounded-lg p-3"
         style={{ backgroundColor: 'color-mix(in oklab, var(--sidebar-bg) 85%, white)' }}
       >
-        <div className="text-xs text-sidebar-muted mb-1">Sistema</div>
+        <div className="text-xs text-white/60 mb-1">Sistema</div>
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-          <span className="text-sm text-sidebar">Online</span>
+          <span className="text-sm text-white/90">Online</span>
         </div>
       </div>
     </div>
@@ -118,17 +118,17 @@ function MobileSidebar({ currentPage, onNavigate }: TrakSenseSidebarProps) {
       </SheetTrigger>
       <SheetContent 
         side="left" 
-        className="w-[240px] p-0 bg-sidebar border-r border-sidebar-divider"
+        className="w-[240px] p-0 bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-divider)]"
       >
         <div className="flex h-full flex-col">
           {/* Header with close button */}
-          <div className="flex items-center justify-between p-4 border-b border-sidebar-divider">
-            <span className="text-lg font-semibold text-sidebar">Menu</span>
+          <div className="flex items-center justify-between p-4 border-b border-[var(--sidebar-divider)]">
+            <span className="text-lg font-semibold text-white/90">Menu</span>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setOpen(false)}
-              className="text-sidebar hover:bg-sidebar-item-active h-8 w-8"
+              className="text-white/90 hover:bg-[var(--sidebar-item-active-bg)] h-8 w-8"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -171,7 +171,7 @@ function DesktopSidebar({ currentPage, onNavigate }: TrakSenseSidebarProps) {
   return (
     <div 
       className={cn(
-        "bg-sidebar text-sidebar transition-all duration-300 h-full flex-shrink-0 border-r border-primary/20",
+        "bg-[var(--sidebar-bg)] text-white/90 transition-all duration-300 h-full flex-shrink-0 border-r border-primary/20",
         "flex flex-col", // Always visible on desktop
         sidebarCollapsed ? "w-16" : "w-60"
       )}
@@ -181,7 +181,7 @@ function DesktopSidebar({ currentPage, onNavigate }: TrakSenseSidebarProps) {
       <div className="p-4 border-b border-primary/20">
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-primary-foreground/10 transition-colors text-sidebar hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-primary-foreground/10 transition-colors text-white/90 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#006b76]"
           title={sidebarCollapsed ? 'Expandir menu (Ctrl+\\)' : 'Recolher menu (Ctrl+\\)'}
         >
           {sidebarCollapsed ? (
@@ -209,10 +209,10 @@ function DesktopSidebar({ currentPage, onNavigate }: TrakSenseSidebarProps) {
                     title={item.label}
                     className={cn(
                       "w-full flex items-center justify-center p-3 rounded-lg transition-all duration-150",
-                      "min-h-[44px] text-sidebar hover:text-white",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-                      isActive && "bg-sidebar-item-active text-white",
-                      !isActive && "hover:bg-sidebar-item-active/50"
+                      "min-h-[44px] text-white/90 hover:text-white",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#006b76]",
+                      isActive && "bg-[var(--sidebar-item-active-bg)] text-white",
+                      !isActive && "hover:bg-[var(--sidebar-item-active-bg)]/50"
                     )}
                   >
                     <Icon className="h-[18px] w-[18px]" />

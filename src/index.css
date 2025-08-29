@@ -86,39 +86,6 @@ body {
 }
 
 @layer utilities {
-  .bg-sidebar {
-    background-color: var(--sidebar-bg);
-  }
-  
-  .text-sidebar {
-    color: var(--surface-1);
-  }
-  
-  .text-sidebar-muted {
-    color: color-mix(in oklab, var(--surface-1) 70%, transparent);
-  }
-  
-  .bg-sidebar-item-active {
-    background-color: var(--sidebar-item-active-bg);
-  }
-  
-  .ring-accent {
-    --tw-ring-color: var(--accent-ring);
-  }
-  
-  .border-sidebar-divider {
-    border-color: var(--sidebar-divider);
-  }
-  
-  .active-pill {
-    @apply bg-sidebar-item-active text-white font-medium rounded-full;
-  }
-  
-  .active-pill:focus-visible {
-    @apply ring-2 ring-accent ring-offset-2;
-    --tw-ring-offset-color: var(--sidebar-bg);
-  }
-  
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;

@@ -91,6 +91,13 @@ const defaultTheme = {
         overlay: "var(--color-bg-overlay)",
       },
       "focus-ring": "var(--color-focus-ring)",
+      "sidebar-item-active": "var(--color-sidebar-item-active)",
+      sidebar: {
+        DEFAULT: "var(--sidebar-bg)",
+        item: {
+          active: "var(--color-sidebar-item-active)"
+        }
+      }
     },
     borderRadius: {
       sm: "var(--radius-sm)",
