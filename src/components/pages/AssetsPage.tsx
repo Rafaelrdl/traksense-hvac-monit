@@ -109,6 +109,37 @@ export const AssetsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-card rounded-lg p-4 border">
+          <div className="text-2xl font-bold text-foreground">
+            {assets.filter(a => a.status === 'OK').length}
+          </div>
+          <div className="text-sm text-muted-foreground">Ativos Normais</div>
+        </div>
+        
+        <div className="bg-card rounded-lg p-4 border">
+          <div className="text-2xl font-bold text-yellow-600">
+            {assets.filter(a => a.status === 'Maintenance').length}
+          </div>
+          <div className="text-sm text-muted-foreground">Em Manutenção</div>
+        </div>
+        
+        <div className="bg-card rounded-lg p-4 border">
+          <div className="text-2xl font-bold text-orange-600">
+            {assets.filter(a => a.status === 'Alert').length}
+          </div>
+          <div className="text-sm text-muted-foreground">Com Alertas</div>
+        </div>
+        
+        <div className="bg-card rounded-lg p-4 border">
+          <div className="text-2xl font-bold text-red-600">
+            {assets.filter(a => a.status === 'Stopped').length}
+          </div>
+          <div className="text-sm text-muted-foreground">Parados</div>
+        </div>
+      </div>
+
       {/* Assets Table */}
       <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -213,37 +244,6 @@ export const AssetsPage: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-card rounded-lg p-4 border">
-          <div className="text-2xl font-bold text-foreground">
-            {assets.filter(a => a.status === 'OK').length}
-          </div>
-          <div className="text-sm text-muted-foreground">Ativos Normais</div>
-        </div>
-        
-        <div className="bg-card rounded-lg p-4 border">
-          <div className="text-2xl font-bold text-yellow-600">
-            {assets.filter(a => a.status === 'Maintenance').length}
-          </div>
-          <div className="text-sm text-muted-foreground">Em Manutenção</div>
-        </div>
-        
-        <div className="bg-card rounded-lg p-4 border">
-          <div className="text-2xl font-bold text-orange-600">
-            {assets.filter(a => a.status === 'Alert').length}
-          </div>
-          <div className="text-sm text-muted-foreground">Com Alertas</div>
-        </div>
-        
-        <div className="bg-card rounded-lg p-4 border">
-          <div className="text-2xl font-bold text-red-600">
-            {assets.filter(a => a.status === 'Stopped').length}
-          </div>
-          <div className="text-sm text-muted-foreground">Parados</div>
-        </div>
       </div>
     </div>
   );
