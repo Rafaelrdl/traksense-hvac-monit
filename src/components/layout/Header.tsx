@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/app';
 import { useAuthStore } from '../../store/auth';
-import { Bell, Clock, Building, Menu, LogOut, User, ChevronDown, Settings, UserCog, Users } from 'lucide-react';
+import { Bell, Clock, Menu, LogOut, User, ChevronDown, Settings, UserCog, Users } from 'lucide-react';
+import logoImage from '@/assets/images/LOGO.png';
 import { HorizontalNav, MobileNav } from './HorizontalNav';
 import { EditProfileDialog } from '../auth/EditProfileDialog';
 import { TeamManagementDialog } from '../auth/TeamManagementDialog';
@@ -88,10 +89,14 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
             
             {/* Logo and Brand */}
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-primary-foreground/20 rounded-lg flex items-center justify-center">
-                <Building className="w-5 h-5" />
-              </div>
-              <h1 className="text-xl font-bold">TrakSense</h1>
+              <img 
+                src={logoImage} 
+                alt="TrakSense Logo" 
+                className="w-8 h-8 object-contain"
+              />
+              <h1 className="text-lg md:text-xl font-bold tracking-tight">
+                <span className="font-sans">Trak</span><span className="font-sans">Sense</span>
+              </h1>
             </div>
             
             {/* Tenant/Site Selector */}
@@ -139,9 +144,8 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
             {user && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    className="flex items-center space-x-2 text-primary-foreground hover:bg-primary-foreground/10"
+                  <button 
+                    className="flex items-center space-x-2 px-3 py-2 rounded-md text-white/90 hover:text-white hover:bg-white/10 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
                   >
                     <div className="w-8 h-8 rounded-full bg-primary-foreground/20 flex items-center justify-center">
                       <User className="w-4 h-4" />
@@ -151,7 +155,7 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
                       <span className="text-xs opacity-75">{user.role}</span>
                     </div>
                     <ChevronDown className="w-4 h-4 opacity-75" />
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>

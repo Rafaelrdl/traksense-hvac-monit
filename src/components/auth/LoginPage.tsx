@@ -19,6 +19,7 @@ import {
   ArrowRight,
   CheckCircle2
 } from 'lucide-react';
+import logoImage from '@/assets/images/LOGO.png';
 import { useAuthStore, getDemoUsers } from '../../store/auth';
 import { toast } from 'sonner';
 
@@ -98,11 +99,15 @@ export const LoginPage: React.FC = () => {
         {/* Logo and Header */}
         <div className="text-center space-y-4 animate-in fade-in slide-in-from-top duration-700">
           <div className="mx-auto w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-2xl shadow-black/20 transform hover:scale-105 transition-transform duration-300">
-            <Activity className="w-10 h-10 text-[#076A75]" strokeWidth={2.5} />
+            <img 
+              src={logoImage} 
+              alt="TrakSense Logo" 
+              className="w-12 h-12 object-contain"
+            />
           </div>
           <div className="space-y-2">
             <h1 className="text-4xl font-bold text-white tracking-tight flex items-center justify-center gap-2">
-              TrakSense
+              <span className="font-sans">Trak</span><span className="font-sans">Sense</span>
               <Sparkles className="w-6 h-6 text-[#93E6EE] animate-pulse" />
             </h1>
             <p className="text-[#93E6EE] text-base font-medium">
@@ -345,7 +350,7 @@ export const LoginPage: React.FC = () => {
             </a>
           </div>
           <p className="text-white/50 text-sm font-medium">
-            © 2024 TrakSense. Transformando dados HVAC em decisões inteligentes.
+            © 2024 <span className="font-sans font-bold">Trak</span><span className="font-sans font-bold">Sense</span>. Transformando dados HVAC em decisões inteligentes.
           </p>
           <div className="flex items-center justify-center gap-2 text-xs text-white/40">
             <Shield className="w-3 h-3" />
