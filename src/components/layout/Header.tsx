@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/app';
 import { useAuthStore } from '../../store/auth';
-import { Bell, ExternalLink, Clock, Building, Menu, LogOut, User, ChevronDown } from 'lucide-react';
+import { Bell, Clock, Building, Menu, LogOut, User, ChevronDown, Settings } from 'lucide-react';
 import { HorizontalNav, MobileNav } from './HorizontalNav';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -138,15 +138,7 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
                     className="flex items-center space-x-2 text-primary-foreground hover:bg-primary-foreground/10"
                   >
                     <div className="w-8 h-8 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-                      {user.avatar ? (
-                        <img 
-                          src={user.avatar} 
-                          alt={user.name}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                      ) : (
-                        <User className="w-4 h-4" />
-                      )}
+                      <User className="w-4 h-4" />
                     </div>
                     <div className="hidden md:flex flex-col items-start text-left">
                       <span className="text-sm font-medium">{user.name}</span>
@@ -177,16 +169,22 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
                       variant="secondary" 
                       className="capitalize"
                     >
-                      {user.role === 'technician' ? 'Técnico' : 
-                       user.role === 'operator' ? 'Operador' :
+                      {user.role === 'operator' ? 'Operador' :
                        user.role === 'viewer' ? 'Visualizador' : 
                        user.role === 'admin' ? 'Administrador' : user.role}
                     </Badge>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
+                    onClick={() => onNavigate('settings')}
+                    className="cursor-pointer"
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Configurações</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
                     onClick={logout}
-                    className="text-destructive focus:text-destructive"
+                    className="text-destructive focus:text-destructive cursor-pointer"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Sair</span>
@@ -195,24 +193,14 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
               </DropdownMenu>
             )}
 
-            {/* TrakNor Integration Button */}
-            <a 
-              href="#" 
-              className="flex items-center space-x-2 px-3 py-1.5 rounded-md bg-primary-foreground/10 hover:bg-primary-foreground/20 transition-colors text-sm"
-              title="Integração em breve"
-              onClick={(e) => e.preventDefault()}
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span className="hidden sm:inline">TrakNor</span>
-            </a>
           </div>
         </div>
       </div>
 
-      {/* Navigation Bar - Only visible on desktop */}
+      {/* Navigation Bar - Responsive horizontal navigation */}
       {!isMobile && (
         <div className="bg-teal-50/80 backdrop-blur border-b border-teal-100">
-          <div className="mx-auto max-w-[1400px] px-6 py-2">
+          <div className="mx-auto max-w-[1400px] px-4 sm:px-6 py-2">
             <HorizontalNav currentPage={currentPage} onNavigate={onNavigate} />
           </div>
         </div>
