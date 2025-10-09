@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/app';
 import { useAuthStore } from '../../store/auth';
-import { Bell, Clock, Building, Menu, LogOut, User, ChevronDown, Settings } from 'lucide-react';
+import { Bell, Clock, Building, Menu, LogOut, User, ChevronDown, Settings, UserCog, Users } from 'lucide-react';
 import { HorizontalNav, MobileNav } from './HorizontalNav';
+import { EditProfileDialog } from '../auth/EditProfileDialog';
+import { TeamManagementDialog } from '../auth/TeamManagementDialog';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { 
@@ -27,6 +29,8 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
   const { user, logout } = useAuthStore();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [isTeamManagementOpen, setIsTeamManagementOpen] = useState(false);
   const isMobile = useIsMobile();
   
   // Update current time every second
@@ -156,15 +160,6 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="text-xs">
-                    <div className="flex items-center space-x-2">
-                      <Building className="w-4 h-4" />
-                      <div>
-                        <div className="font-medium">{user.site}</div>
-                        <div className="text-muted-foreground">{user.tenant}</div>
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs">
                     <Badge 
                       variant="secondary" 
                       className="capitalize"
@@ -175,6 +170,22 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
                     </Badge>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => setIsEditProfileOpen(true)}
+                    className="cursor-pointer"
+                  >
+                    <UserCog className="mr-2 h-4 w-4" />
+                    <span>Editar Perfil</span>
+                  </DropdownMenuItem>
+                  {user.role === 'admin' && (
+                    <DropdownMenuItem 
+                      onClick={() => setIsTeamManagementOpen(true)}
+                      className="cursor-pointer"
+                    >
+                      <Users className="mr-2 h-4 w-4" />
+                      <span>Equipe</span>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem 
                     onClick={() => onNavigate('settings')}
                     className="cursor-pointer"
@@ -205,6 +216,18 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
           </div>
         </div>
       )}
+
+      {/* Edit Profile Dialog */}
+      <EditProfileDialog 
+        open={isEditProfileOpen} 
+        onOpenChange={setIsEditProfileOpen} 
+      />
+
+      {/* Team Management Dialog */}
+      <TeamManagementDialog 
+        open={isTeamManagementOpen} 
+        onOpenChange={setIsTeamManagementOpen} 
+      />
     </header>
   );
 };
