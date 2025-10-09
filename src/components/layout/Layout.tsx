@@ -1,5 +1,6 @@
 import React from 'react';
 import { Header } from './Header';
+import { Toaster } from '@/components/ui/sonner';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -17,6 +18,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigat
       <main className="mx-auto max-w-[1400px] px-6 py-6">
         {children}
       </main>
+
+      {/* Toast notifications */}
+      <Toaster />
     </div>
   );
 };

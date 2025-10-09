@@ -1,9 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/app';
-import { Bell, ExternalLink, Clock, Building, Menu } from 'lucide-react';
+import { useAuthStore } from '../../store/auth';
+import { Bell, ExternalLink, Clock, Building, Menu, LogOut, User, ChevronDown } from 'lucide-react';
 import { HorizontalNav, MobileNav } from './HorizontalNav';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface HeaderProps {
@@ -14,6 +24,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
   const alerts = useAppStore(state => state.alerts);
   const lastUpdateTime = useAppStore(state => state.lastUpdateTime);
+  const { user, logout } = useAuthStore();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
@@ -80,11 +91,7 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
             {/* Tenant/Site Selector */}
             <div className="hidden md:flex items-center space-x-2 text-sm opacity-90">
               <span>|</span>
-              <select className="bg-transparent border-none text-primary-foreground focus:outline-none cursor-pointer">
-                <option value="hospital-central" className="text-slate-900">Hospital Central</option>
-                <option value="datacenter-01" className="text-slate-900">Datacenter 01</option>
-                <option value="shopping-plaza" className="text-slate-900">Shopping Plaza</option>
-              </select>
+              <span>{user?.site || 'Site não definido'}</span>
             </div>
           </div>
 
@@ -121,6 +128,72 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
                 </div>
               )}
             </div>
+
+            {/* User Menu */}
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    className="flex items-center space-x-2 text-primary-foreground hover:bg-primary-foreground/10"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-primary-foreground/20 flex items-center justify-center">
+                      {user.avatar ? (
+                        <img 
+                          src={user.avatar} 
+                          alt={user.name}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                      ) : (
+                        <User className="w-4 h-4" />
+                      )}
+                    </div>
+                    <div className="hidden md:flex flex-col items-start text-left">
+                      <span className="text-sm font-medium">{user.name}</span>
+                      <span className="text-xs opacity-75">{user.role}</span>
+                    </div>
+                    <ChevronDown className="w-4 h-4 opacity-75" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user.name}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-xs">
+                    <div className="flex items-center space-x-2">
+                      <Building className="w-4 h-4" />
+                      <div>
+                        <div className="font-medium">{user.site}</div>
+                        <div className="text-muted-foreground">{user.tenant}</div>
+                      </div>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs">
+                    <Badge 
+                      variant="secondary" 
+                      className="capitalize"
+                    >
+                      {user.role === 'technician' ? 'Técnico' : 
+                       user.role === 'operator' ? 'Operador' :
+                       user.role === 'viewer' ? 'Visualizador' : 
+                       user.role === 'admin' ? 'Administrador' : user.role}
+                    </Badge>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={logout}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sair</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             {/* TrakNor Integration Button */}
             <a 

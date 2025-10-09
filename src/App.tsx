@@ -9,6 +9,7 @@ import { ReportsPage } from './components/pages/ReportsPage';
 import { MaintenancePage } from './components/pages/MaintenancePage';
 import { SettingsPage } from './components/pages/SettingsPage';
 import { CustomDashboard } from './components/dashboard/CustomDashboard';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { useAppStore } from './store/app';
 
 function App() {
@@ -66,9 +67,11 @@ function App() {
   };
 
   return (
-    <Layout currentPage={currentPage} onNavigate={handleNavigation}>
-      {renderPage()}
-    </Layout>
+    <ProtectedRoute>
+      <Layout currentPage={currentPage} onNavigate={handleNavigation}>
+        {renderPage()}
+      </Layout>
+    </ProtectedRoute>
   );
 }
 
