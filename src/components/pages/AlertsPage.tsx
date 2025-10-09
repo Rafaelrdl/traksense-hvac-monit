@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../../store/app';
-import { AlertTriangle, Bell, CheckCircle, Clock, Settings } from 'lucide-react';
+import { AlertTriangle, Bell, CheckCircle, Clock } from 'lucide-react';
 
 export const AlertsPage: React.FC = () => {
-  const { alerts, acknowledgeAlert, scenarios, setScenario } = useAppStore();
+  const { alerts, acknowledgeAlert } = useAppStore();
   const [filterStatus, setFilterStatus] = useState<string>('active');
 
   const filteredAlerts = alerts.filter(alert => {
@@ -96,30 +96,6 @@ export const AlertsPage: React.FC = () => {
             </div>
             <Clock className="w-5 h-5 text-primary" />
           </div>
-        </div>
-      </div>
-
-      {/* Scenario Selector */}
-      <div className="bg-card rounded-xl p-6 border shadow-sm">
-        <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
-          <Settings className="w-5 h-5" />
-          <span>Cenários de Simulação</span>
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          {scenarios.map(scenario => (
-            <button
-              key={scenario.id}
-              onClick={() => setScenario(scenario.id)}
-              className={`p-3 rounded-lg border text-left transition-colors ${
-                scenario.active 
-                  ? 'bg-primary text-primary-foreground border-primary' 
-                  : 'hover:bg-muted border-border'
-              }`}
-            >
-              <div className="font-medium text-sm">{scenario.name}</div>
-              <div className="text-xs opacity-75 mt-1">{scenario.description}</div>
-            </button>
-          ))}
         </div>
       </div>
 
@@ -219,19 +195,6 @@ export const AlertsPage: React.FC = () => {
             ))}
           </div>
         )}
-      </div>
-
-      {/* Rule Builder Mock */}
-      <div className="bg-card rounded-xl p-6 border shadow-sm">
-        <h3 className="text-lg font-semibold mb-4">Construtor de Regras (Mock)</h3>
-        <div className="bg-muted/30 rounded-lg p-4 text-center">
-          <p className="text-muted-foreground">
-            Interface de construção de regras em desenvolvimento
-          </p>
-          <p className="text-sm text-muted-foreground mt-2">
-            Exemplo: "ΔP filtro &gt; 250 Pa por 10 min → severidade Alta"
-          </p>
-        </div>
       </div>
     </div>
   );

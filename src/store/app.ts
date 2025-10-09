@@ -35,6 +35,9 @@ interface AppState {
   refreshData: () => void;
   acknowledgeAlert: (alertId: string) => void;
   
+  // Asset actions
+  addAsset: (asset: Omit<HVACAsset, 'id' | 'healthScore' | 'powerConsumption' | 'status' | 'operatingHours' | 'lastMaintenance'>) => void;
+  
   // Maintenance actions
   addMaintenanceTask: (task: Omit<MaintenanceTask, 'id' | 'createdDate' | 'createdBy'>) => void;
   updateMaintenanceTask: (taskId: string, updates: Partial<MaintenanceTask>) => void;
@@ -162,6 +165,22 @@ export const useAppStore = create<AppState>((set, get) => ({
         : alert
     );
     set({ alerts });
+  },
+
+  // Asset actions
+  addAsset: (assetData) => {
+    const newAsset: HVACAsset = {
+      ...assetData,
+      id: `asset-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      healthScore: 100, // New asset starts with perfect health
+      powerConsumption: 0, // Will be calculated by simulation
+      status: 'OK',
+      operatingHours: 0,
+      lastMaintenance: new Date(),
+    };
+    
+    const currentAssets = get().assets;
+    set({ assets: [...currentAssets, newAsset] });
   },
 
   // Maintenance actions

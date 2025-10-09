@@ -5,6 +5,7 @@ import { Bell, Clock, Building, Menu, LogOut, User, ChevronDown, Settings, UserC
 import { HorizontalNav, MobileNav } from './HorizontalNav';
 import { EditProfileDialog } from '../auth/EditProfileDialog';
 import { TeamManagementDialog } from '../auth/TeamManagementDialog';
+import { PreferencesDialog } from '../auth/PreferencesDialog';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { 
@@ -31,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isTeamManagementOpen, setIsTeamManagementOpen] = useState(false);
+  const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const isMobile = useIsMobile();
   
   // Update current time every second
@@ -187,11 +189,11 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem 
-                    onClick={() => onNavigate('settings')}
+                    onClick={() => setIsPreferencesOpen(true)}
                     className="cursor-pointer"
                   >
                     <Settings className="mr-2 h-4 w-4" />
-                    <span>Configurações</span>
+                    <span>Preferências</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={logout}
@@ -227,6 +229,12 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
       <TeamManagementDialog 
         open={isTeamManagementOpen} 
         onOpenChange={setIsTeamManagementOpen} 
+      />
+
+      {/* Preferences Dialog */}
+      <PreferencesDialog 
+        open={isPreferencesOpen} 
+        onOpenChange={setIsPreferencesOpen} 
       />
     </header>
   );

@@ -5,8 +5,8 @@ import {
   PanelsTopLeft, 
   AirVent, 
   Activity, 
+  Zap,
   BellRing, 
-  Wrench, 
   FileText,
   ChevronLeft,
   ChevronRight,
@@ -32,8 +32,8 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'custom-dashboard', label: 'Dashboard Custom', icon: PanelsTopLeft, path: '/custom-dashboard' },
   { id: 'assets', label: 'Ativos (HVAC)', icon: AirVent, path: '/assets' },
   { id: 'sensors', label: 'Sensores & Telemetria', icon: Activity, path: '/sensors' },
-  { id: 'alerts', label: 'Alertas & Regras', icon: BellRing, path: '/alerts' },
-  { id: 'maintenance', label: 'Manutenção', icon: Wrench, path: '/maintenance' },
+  { id: 'rules', label: 'Regras', icon: Zap, path: '/rules' },
+  { id: 'alerts', label: 'Alertas', icon: BellRing, path: '/alerts' },
   { id: 'reports', label: 'Relatórios', icon: FileText, path: '/reports' }
 ];
 
@@ -65,29 +65,29 @@ export const HorizontalNav: React.FC<HorizontalNavProps> = ({ currentPage, onNav
     
     // Breakpoints for different screen sizes
     if (width >= 1400) {
-      // Extra large screens - show all
+      // Extra large screens - show all (6 items)
       setVisibleItems(NAV_ITEMS);
       setHiddenItems([]);
       setShowDropdown(false);
     } else if (width >= 1200) {
-      // Large screens - show 7 items
-      setVisibleItems(NAV_ITEMS.slice(0, 7));
-      setHiddenItems(NAV_ITEMS.slice(7));
-      setShowDropdown(true);
+      // Large screens - show all (6 items)
+      setVisibleItems(NAV_ITEMS);
+      setHiddenItems([]);
+      setShowDropdown(false);
     } else if (width >= 1024) {
-      // Medium screens - show 6 items
-      setVisibleItems(NAV_ITEMS.slice(0, 6));
-      setHiddenItems(NAV_ITEMS.slice(6));
-      setShowDropdown(true);
-    } else if (width >= 768) {
-      // Tablet - show 5 items
+      // Medium screens - show 5 items
       setVisibleItems(NAV_ITEMS.slice(0, 5));
       setHiddenItems(NAV_ITEMS.slice(5));
       setShowDropdown(true);
-    } else {
-      // Small tablets - show 4 items with icons only
+    } else if (width >= 768) {
+      // Tablet - show 4 items
       setVisibleItems(NAV_ITEMS.slice(0, 4));
       setHiddenItems(NAV_ITEMS.slice(4));
+      setShowDropdown(true);
+    } else {
+      // Small tablets - show 3 items with icons only
+      setVisibleItems(NAV_ITEMS.slice(0, 3));
+      setHiddenItems(NAV_ITEMS.slice(3));
       setShowDropdown(true);
     }
   };

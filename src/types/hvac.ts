@@ -13,7 +13,14 @@ export interface HVACAsset {
     voltage?: number;
     maxCurrent?: number;
     refrigerant?: string;
+    brand?: string; // Marca
+    model?: string; // Modelo
+    serialNumber?: string; // Número de Série
   };
+  // Informações de Localização
+  company?: string; // Empresa
+  sector?: string; // Setor
+  subsector?: string; // Subsetor
 }
 
 export interface SensorReading {

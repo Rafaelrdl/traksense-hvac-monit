@@ -2,9 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { useAppStore } from '../../store/app';
 import { HVACAsset } from '../../types/hvac';
 import { Search, ExternalLink, Filter, Heart, Zap, AlertCircle } from 'lucide-react';
+import { AddAssetDialog } from '../assets/AddAssetDialog';
 
 export const AssetsPage: React.FC = () => {
-  const { assets, setSelectedAsset } = useAppStore();
+  const { assets, setSelectedAsset, addAsset } = useAppStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -56,6 +57,7 @@ export const AssetsPage: React.FC = () => {
           <span className="text-sm text-muted-foreground">
             {filteredAssets.length} de {assets.length} ativos
           </span>
+          <AddAssetDialog onAddAsset={addAsset} />
         </div>
       </div>
 
