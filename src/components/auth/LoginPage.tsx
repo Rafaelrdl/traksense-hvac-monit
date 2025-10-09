@@ -4,7 +4,21 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Eye, EyeOff, Lock, Mail, Building2, Users, Activity, AlertCircle } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { 
+  Eye, 
+  EyeOff, 
+  Lock, 
+  Mail, 
+  Building2, 
+  Users, 
+  Activity, 
+  AlertCircle,
+  Shield,
+  Sparkles,
+  ArrowRight,
+  CheckCircle2
+} from 'lucide-react';
 import { useAuthStore, getDemoUsers } from '../../store/auth';
 import { toast } from 'sonner';
 
@@ -68,39 +82,67 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F4FAFB] via-[#EDF7F8] to-[#E6F4F5] flex items-center justify-center p-4">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-20 left-20 w-32 h-32 bg-[#076A75] rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-20 w-40 h-40 bg-[#1A7983] rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#2E868F] rounded-full blur-3xl"></div>
+    <div className="min-h-screen bg-gradient-to-br from-[#0A4952] via-[#076A75] to-[#0D5B64] flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated Background Pattern */}
+      <div className="absolute inset-0">
+        {/* Grid Pattern */}
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-20"></div>
+        
+        {/* Floating Orbs */}
+        <div className="absolute top-20 left-20 w-96 h-96 bg-[#2E868F] rounded-full blur-3xl opacity-20 animate-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-80 h-80 bg-[#1A7983] rounded-full blur-3xl opacity-15 animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/3 w-72 h-72 bg-[#076A75] rounded-full blur-3xl opacity-10 animate-pulse delay-2000"></div>
       </div>
 
-      <div className="relative z-10 w-full max-w-md space-y-6">
+      <div className="relative z-10 w-full max-w-md space-y-8">
         {/* Logo and Header */}
-        <div className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 bg-[#076A75] rounded-2xl flex items-center justify-center shadow-lg">
-            <Activity className="w-8 h-8 text-white" />
+        <div className="text-center space-y-4 animate-in fade-in slide-in-from-top duration-700">
+          <div className="mx-auto w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-2xl shadow-black/20 transform hover:scale-105 transition-transform duration-300">
+            <Activity className="w-10 h-10 text-[#076A75]" strokeWidth={2.5} />
           </div>
-          <div>
-            <h1 className="text-3xl font-bold text-[#0b3a3f]">TrakSense</h1>
-            <p className="text-[#3c5b5f] mt-2">
-              Monitoramento HVAC em tempo real
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold text-white tracking-tight flex items-center justify-center gap-2">
+              TrakSense
+              <Sparkles className="w-6 h-6 text-[#93E6EE] animate-pulse" />
+            </h1>
+            <p className="text-[#93E6EE] text-base font-medium">
+              Monitoramento HVAC Inteligente
             </p>
+            <div className="flex items-center justify-center gap-6 text-sm text-white/70 mt-4">
+              <div className="flex items-center gap-1.5">
+                <Shield className="w-4 h-4" />
+                <span>Seguro</span>
+              </div>
+              <div className="w-1 h-1 bg-white/30 rounded-full"></div>
+              <div className="flex items-center gap-1.5">
+                <Activity className="w-4 h-4" />
+                <span>Real-time</span>
+              </div>
+              <div className="w-1 h-1 bg-white/30 rounded-full"></div>
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4" />
+                <span>IoT</span>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Login Form */}
-        <Card className="border-0 shadow-xl bg-white/95 backdrop-blur-sm">
-          <CardHeader className="space-y-4">
-            <h2 className="text-xl font-semibold text-center text-[#0b3a3f]">
-              Acesse sua conta
-            </h2>
+        <Card className="border-0 shadow-2xl bg-white backdrop-blur-xl overflow-hidden animate-in fade-in slide-in-from-bottom duration-700">
+          <CardHeader className="space-y-4 pb-6 bg-gradient-to-b from-[#F4FAFB] to-white">
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-bold text-[#0b3a3f]">
+                Bem-vindo de volta
+              </h2>
+              <p className="text-sm text-[#609DA3]">
+                Entre com suas credenciais para continuar
+              </p>
+            </div>
             
             {error && (
-              <Alert className="border-red-200 bg-red-50">
-                <AlertCircle className="h-4 w-4 text-red-600" />
-                <AlertDescription className="text-red-800">
+              <Alert className="border-red-200 bg-red-50/80 backdrop-blur-sm animate-in slide-in-from-top">
+                <AlertCircle className="h-4 h-4 text-red-600" />
+                <AlertDescription className="text-red-800 font-medium">
                   {error}
                 </AlertDescription>
               </Alert>
@@ -108,71 +150,97 @@ export const LoginPage: React.FC = () => {
           </CardHeader>
 
           <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5 px-6 py-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-[#0b3a3f]">
+                <label className="text-sm font-semibold text-[#0b3a3f] flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5" />
                   Email
                 </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#609DA3]" />
+                <div className="relative group">
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 transition-colors">
+                    <Mail className="w-5 h-5 text-[#93BDC2] group-focus-within:text-[#076A75]" />
+                  </div>
                   <Input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="seu@email.com"
-                    className="pl-10 border-[#93BDC2] focus:border-[#076A75] focus:ring-[#076A75]/20"
+                    className="pl-11 h-12 border-2 border-[#D4E5E7] bg-[#F9FCFD] focus:border-[#076A75] focus:bg-white focus:ring-4 focus:ring-[#076A75]/10 transition-all duration-200 placeholder:text-[#93BDC2]"
                     required
+                    autoComplete="email"
                   />
+                  {email && (
+                    <CheckCircle2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-green-500" />
+                  )}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-[#0b3a3f]">
-                  Senha
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#609DA3]" />
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-[#0b3a3f] flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5" />
+                    Senha
+                  </label>
+                  <button
+                    type="button"
+                    className="text-xs text-[#076A75] hover:text-[#0A4952] font-medium hover:underline transition-colors"
+                  >
+                    Esqueceu a senha?
+                  </button>
+                </div>
+                <div className="relative group">
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 transition-colors">
+                    <Lock className="w-5 h-5 text-[#93BDC2] group-focus-within:text-[#076A75]" />
+                  </div>
                   <Input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Digite sua senha"
-                    className="pl-10 pr-10 border-[#93BDC2] focus:border-[#076A75] focus:ring-[#076A75]/20"
+                    className="pl-11 pr-11 h-12 border-2 border-[#D4E5E7] bg-[#F9FCFD] focus:border-[#076A75] focus:bg-white focus:ring-4 focus:ring-[#076A75]/10 transition-all duration-200 placeholder:text-[#93BDC2]"
                     required
+                    autoComplete="current-password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#609DA3] hover:text-[#076A75] transition-colors"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#93BDC2] hover:text-[#076A75] transition-colors p-1 hover:bg-[#076A75]/5 rounded"
+                    aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
+
+              <div className="flex items-center gap-2 text-xs text-[#609DA3] bg-[#F4FAFB] p-3 rounded-lg border border-[#D4E5E7]">
+                <Shield className="w-4 h-4 flex-shrink-0" />
+                <span>Suas credenciais são protegidas com criptografia de ponta a ponta</span>
+              </div>
             </CardContent>
 
-            <CardFooter className="flex flex-col space-y-4">
+            <CardFooter className="flex flex-col space-y-4 px-6 pb-6">
               <Button
                 type="submit"
                 disabled={isLoading || !email || !password}
-                className="w-full bg-[#076A75] hover:bg-[#056A75] text-white font-medium py-2.5 transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="w-full bg-gradient-to-r from-[#076A75] to-[#0A4952] hover:from-[#0A4952] hover:to-[#076A75] text-white font-semibold h-12 text-base transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 group"
               >
                 {isLoading ? (
                   <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>Entrando...</span>
+                    <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Autenticando...</span>
                   </div>
                 ) : (
-                  'Entrar'
+                  <div className="flex items-center justify-center gap-2">
+                    <span>Entrar na plataforma</span>
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </div>
                 )}
               </Button>
 
-              <div className="relative w-full">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-[#B7C9CA]"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-[#3c5b5f]">ou</span>
+              <div className="relative w-full py-2">
+                <Separator className="bg-[#D4E5E7]" />
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-3">
+                  <span className="text-xs font-medium text-[#93BDC2] uppercase tracking-wider">Demonstração</span>
                 </div>
               </div>
 
@@ -180,9 +248,11 @@ export const LoginPage: React.FC = () => {
                 type="button"
                 variant="outline"
                 onClick={() => setShowDemoUsers(!showDemoUsers)}
-                className="w-full border-[#93BDC2] text-[#076A75] hover:bg-[#076A75]/5 hover:border-[#076A75] transition-all duration-200"
+                className="w-full border-2 border-[#D4E5E7] text-[#076A75] hover:bg-[#F4FAFB] hover:border-[#076A75] h-11 font-semibold transition-all duration-200 group"
               >
-                {showDemoUsers ? 'Ocultar' : 'Ver'} contas de demonstração
+                <Users className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
+                {showDemoUsers ? 'Ocultar' : 'Acessar'} contas demo
+                <ArrowRight className={`w-4 h-4 ml-2 transition-transform ${showDemoUsers ? 'rotate-90' : ''}`} />
               </Button>
             </CardFooter>
           </form>
@@ -190,53 +260,97 @@ export const LoginPage: React.FC = () => {
 
         {/* Demo Users */}
         {showDemoUsers && (
-          <Card className="border-0 shadow-lg bg-white/95 backdrop-blur-sm">
-            <CardHeader>
-              <h3 className="text-lg font-semibold text-[#0b3a3f]">
-                Contas de Demonstração
-              </h3>
-              <p className="text-sm text-[#3c5b5f]">
-                Clique em uma conta para preencher automaticamente
-              </p>
+          <Card className="border-0 shadow-2xl bg-white backdrop-blur-xl overflow-hidden animate-in fade-in slide-in-from-bottom duration-500">
+            <CardHeader className="bg-gradient-to-b from-[#F4FAFB] to-white pb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-[#076A75]/10 rounded-lg flex items-center justify-center">
+                  <Users className="w-4 h-4 text-[#076A75]" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-[#0b3a3f]">
+                    Contas de Demonstração
+                  </h3>
+                  <p className="text-sm text-[#609DA3]">
+                    Clique para autenticar automaticamente
+                  </p>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {demoUsers.map((user) => (
+            <CardContent className="space-y-2.5 p-4">
+              {demoUsers.map((user, index) => (
                 <button
                   key={user.email}
                   onClick={() => handleDemoLogin(user.email, user.role)}
-                  className="w-full p-3 rounded-lg border border-[#B7C9CA] hover:border-[#076A75] hover:bg-[#076A75]/5 transition-all duration-200 text-left group"
+                  className="w-full p-4 rounded-xl border-2 border-[#D4E5E7] hover:border-[#076A75] hover:shadow-lg bg-white hover:bg-gradient-to-r hover:from-[#F4FAFB] hover:to-white transition-all duration-300 text-left group relative overflow-hidden animate-in slide-in-from-left"
+                  style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  <div className="flex items-center justify-between">
+                  {/* Hover Effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#076A75]/0 via-[#076A75]/5 to-[#076A75]/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                  
+                  <div className="flex items-center justify-between relative z-10">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-[#076A75]/10 rounded-full flex items-center justify-center group-hover:bg-[#076A75]/20 transition-colors">
+                      <div className={`w-12 h-12 ${getRoleColor(user.role).split(' ')[0]} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
                         {getRoleIcon(user.role)}
                       </div>
-                      <div>
-                        <div className="font-medium text-[#0b3a3f]">{user.name}</div>
-                        <div className="text-sm text-[#3c5b5f]">{user.email}</div>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <Building2 className="w-3 h-3 text-[#609DA3]" />
-                          <span className="text-xs text-[#609DA3]">{user.site}</span>
+                      <div className="flex-1">
+                        <div className="font-semibold text-[#0b3a3f] group-hover:text-[#076A75] transition-colors">
+                          {user.name}
+                        </div>
+                        <div className="text-sm text-[#609DA3] flex items-center gap-1.5 mt-0.5">
+                          <Mail className="w-3 h-3" />
+                          {user.email}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <Building2 className="w-3 h-3 text-[#93BDC2]" />
+                          <span className="text-xs text-[#93BDC2] font-medium">{user.site}</span>
                         </div>
                       </div>
                     </div>
-                    <Badge className={`${getRoleColor(user.role)} capitalize`}>
-                      {user.role === 'technician' ? 'técnico' : 
-                       user.role === 'operator' ? 'operador' :
-                       user.role === 'viewer' ? 'visualizador' : user.role}
-                    </Badge>
+                    <div className="flex flex-col items-end gap-2">
+                      <Badge className={`${getRoleColor(user.role)} capitalize font-semibold px-3 py-1 shadow-sm`}>
+                        {user.role === 'operator' ? 'operador' :
+                         user.role === 'viewer' ? 'visualizador' : 
+                         user.role === 'admin' ? 'admin' : user.role}
+                      </Badge>
+                      <ArrowRight className="w-5 h-5 text-[#93BDC2] group-hover:text-[#076A75] group-hover:translate-x-1 transition-all" />
+                    </div>
                   </div>
                 </button>
               ))}
             </CardContent>
+            <CardFooter className="bg-[#F4FAFB] border-t border-[#D4E5E7] p-4">
+              <div className="flex items-start gap-2 text-xs text-[#609DA3]">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <p>
+                  <strong className="text-[#0b3a3f]">Ambiente de demonstração:</strong> As senhas são preenchidas automaticamente para facilitar o teste da plataforma.
+                </p>
+              </div>
+            </CardFooter>
           </Card>
         )}
 
         {/* Footer */}
-        <div className="text-center text-sm text-[#3c5b5f]">
-          <p>
-            © 2024 TrakSense. Transformando dados HVAC em decisões.
+        <div className="text-center space-y-3 animate-in fade-in duration-1000">
+          <div className="flex items-center justify-center gap-6 text-sm text-white/60">
+            <a href="#" className="hover:text-white transition-colors hover:underline">
+              Sobre
+            </a>
+            <div className="w-1 h-1 bg-white/30 rounded-full"></div>
+            <a href="#" className="hover:text-white transition-colors hover:underline">
+              Suporte
+            </a>
+            <div className="w-1 h-1 bg-white/30 rounded-full"></div>
+            <a href="#" className="hover:text-white transition-colors hover:underline">
+              Documentação
+            </a>
+          </div>
+          <p className="text-white/50 text-sm font-medium">
+            © 2024 TrakSense. Transformando dados HVAC em decisões inteligentes.
           </p>
+          <div className="flex items-center justify-center gap-2 text-xs text-white/40">
+            <Shield className="w-3 h-3" />
+            <span>Plataforma segura e confiável</span>
+          </div>
         </div>
       </div>
     </div>

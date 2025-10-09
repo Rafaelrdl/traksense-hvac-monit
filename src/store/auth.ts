@@ -2,18 +2,17 @@ import { create } from 'zustand';
 
 export interface User {
   id: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'operator' | 'viewer';
   site?: string;
+  tenant?: string;
 }
-interface AuthState {
-  isAuthenticated:
-  error: string 
-  // Actions
- 
 
-// Demo users for tes
-  'admin@traksense.c
-    user: {
-      email: 'admin@t
+interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
   error: string | null;
   
   // Actions
@@ -26,72 +25,48 @@ interface AuthState {
 const DEMO_USERS: Record<string, { password: string; user: User }> = {
   'admin@traksense.com': {
     password: 'admin123',
-      role:
-      site: 'D
-    }
-  'viewer@traksense.com': {
     user: {
+      id: '1',
+      email: 'admin@traksense.com',
+      name: 'Admin TrakSense',
+      role: 'admin',
+      site: 'Data Center Principal',
+      tenant: 'traksense'
+    }
+  },
+  'viewer@traksense.com': {
+    password: 'viewer123',
+    user: {
+      id: '2',
       email: 'viewer@traksense.com',
+      name: 'Visualizador',
       role: 'viewer',
       site: 'Fábrica Industrial',
+      tenant: 'traksense'
     }
   }
-export const useAuthStore = c
-    // Try to restore user f
-      const
-    } catch {
-    }
-  isAuthenticated: (() => {
-      const stored = lo
-    } catch {
-    }
-  isLoading: false,
-
-    
-    // Simulate API delay
-
-    
-      set({ 
-        error: 'Email ou senha inv
-      return false;
-
-    try {
-    } catch {
-    }
-    s
-    
-      error: null
-
-  },
-  logout: () =
-      localStorage.removeItem('traks
-      // Ignore localSto
-
-      user: null,
-      error: null
-  },
-  cle
-
-ex
-
-    role: user.role,
-    tenant: user
 };
 
-
-
-
-
-
+export const useAuthStore = create<AuthState>((set) => ({
+  user: (() => {
+    // Try to restore user from localStorage
+    try {
+      const stored = localStorage.getItem('traksense:user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
   })(),
-
-
-
-
-
-
-
-
+  
+  isAuthenticated: (() => {
+    try {
+      const stored = localStorage.getItem('traksense:user');
+      return !!stored;
+    } catch {
+      return false;
+    }
+  })(),
+  
   isLoading: false,
   error: null,
 
