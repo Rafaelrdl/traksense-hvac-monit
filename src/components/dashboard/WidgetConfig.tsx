@@ -57,8 +57,8 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
           </p>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 px-6">
-          <div className="space-y-6 py-6">
+        <ScrollArea className="flex-1 overflow-y-auto">
+          <div className="space-y-6 py-6 px-6">
             {/* Informações Básicas */}
             <div className="space-y-4">
               <h3 className="font-semibold text-base text-foreground flex items-center gap-2 pb-3 border-b">
