@@ -463,7 +463,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       case 'chart-area':
       case 'chart-spline':
         // Se for overview e temos dados de consumo histórico, renderizar gráfico real
-        if (isOverview && widget.id === 'overview-consumption-trend' && data?.energyData) {
+        if (isOverview && widget.id === 'overview-consumption-trend' && data?.energyData && data.energyData.length > 0) {
           return (
             <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
               <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
@@ -474,7 +474,76 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
           );
         }
         
-        // Se for overview, gerar dados mockados
+        // Se for overview e widget de histórico de consumo, gerar dados mockados de barras (como na imagem)
+        if (isOverview && widget.id === 'overview-consumption-trend') {
+          // Gerar 24 horas de dados mockados realistas que variam ao longo do tempo
+          const now = new Date();
+          const currentHour = now.getHours();
+          const currentMinute = now.getMinutes();
+          
+          // Padrão de consumo: mais alto durante horário comercial (8h-18h)
+          const generateHourlyConsumption = (hour: number) => {
+            const baseConsumption = 300;
+            let multiplier = 1.0;
+            
+            // Horário comercial: 8h-18h (consumo alto)
+            if (hour >= 8 && hour < 18) {
+              multiplier = 1.4 + (Math.sin((hour - 8) / 10 * Math.PI) * 0.3);
+            } 
+            // Madrugada: 0h-6h (consumo baixo)
+            else if (hour >= 0 && hour < 6) {
+              multiplier = 0.8 + (Math.random() * 0.1);
+            }
+            // Noite: 18h-24h (consumo médio decrescente)
+            else {
+              multiplier = 1.2 - ((hour - 18) / 6 * 0.3);
+            }
+            
+            // Adicionar variação aleatória realista
+            const randomVariation = (Math.random() - 0.5) * 0.2;
+            return Math.round(baseConsumption * (multiplier + randomVariation));
+          };
+          
+          // Criar array de 24 horas começando da hora atual e voltando
+          const hourlyData = Array.from({ length: 24 }, (_, i) => {
+            const hour = (currentHour - (23 - i) + 24) % 24;
+            const timestamp = new Date(now);
+            timestamp.setHours(hour, 0, 0, 0);
+            
+            return {
+              timestamp,
+              value: generateHourlyConsumption(hour),
+              sensorId: 'mock-energy-sensor',
+              quality: 'good' as const
+            };
+          });
+          
+          // Calcular total
+          const total = hourlyData.reduce((sum, d) => sum + d.value, 0);
+          const totalFormatted = (total / 1000).toFixed(1); // Converter para MWh
+          const percentageOfGoal = ((total / 6000) * 100).toFixed(1); // Meta fictícia de 6000 kWh
+          
+          return (
+            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold">{widget.title}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Energia (kWh)</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-orange-600">
+                    Total Hoje: {totalFormatted} MWh ({percentageOfGoal}% da meta)
+                  </p>
+                </div>
+              </div>
+              <ChartWrapper title="" height={250}>
+                <BarChartEnergy data={hourlyData} height={250} />
+              </ChartWrapper>
+            </div>
+          );
+        }
+        
+        // Se for overview mas não for o widget específico, gerar linha mockada genérica
         if (isOverview) {
           const hours = Array.from({ length: 24 }, (_, i) => i);
           return (
@@ -523,23 +592,70 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       case 'chart-bar':
       case 'chart-bar-horizontal':
       case 'chart-column':
-        // Se for overview e widget de consumo por equipamento com dados reais
-        if (isOverview && widget.id === 'overview-consumption-bar' && data?.assets && data.assets.length > 0) {
+        // Se for overview e widget de consumo por equipamento, gerar dados mockados que variam
+        if (isOverview && widget.id === 'overview-consumption-bar') {
+          const now = new Date();
+          const seed = Math.floor(now.getTime() / 60000); // Atualiza a cada minuto
+          
+          // Equipamentos com consumo base diferente
+          const mockEquipments = [
+            { tag: 'AHU-001', baseConsumption: 1200 },
+            { tag: 'Chiller-01', baseConsumption: 900 },
+            { tag: 'VRF-002', baseConsumption: 550 },
+            { tag: 'RTU-001', baseConsumption: 430 },
+            { tag: 'Boiler-01', baseConsumption: 310 },
+            { tag: 'CT-001', baseConsumption: 270 }
+          ];
+          
+          // Gerar valores que variam de forma realista baseado no tempo
+          const generateRealisticValue = (base: number, index: number) => {
+            const hour = now.getHours();
+            const minute = now.getMinutes();
+            
+            // Variação horária (mais consumo durante horário comercial)
+            let hourMultiplier = 1.0;
+            if (hour >= 8 && hour < 18) {
+              hourMultiplier = 1.2 + (Math.sin((hour - 8) / 10 * Math.PI) * 0.2);
+            } else if (hour >= 0 && hour < 6) {
+              hourMultiplier = 0.7;
+            } else {
+              hourMultiplier = 0.9;
+            }
+            
+            // Variação por minuto (simulando flutuações)
+            const minuteVariation = Math.sin((minute + index * 10) / 60 * Math.PI * 2) * 0.1;
+            
+            // Variação aleatória suave (muda a cada minuto)
+            const randomSeed = (seed + index) % 100;
+            const randomVariation = (Math.sin(randomSeed) * 0.15);
+            
+            return Math.round(base * (hourMultiplier + minuteVariation + randomVariation));
+          };
+          
+          const mockData = mockEquipments.map((equipment, i) => ({
+            tag: equipment.tag,
+            consumption: generateRealisticValue(equipment.baseConsumption, i)
+          }));
+          
+          const maxValue = Math.max(...mockData.map(d => d.consumption));
+          
           return (
             <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
               <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
               <div className="flex-1 flex items-end justify-between gap-2 px-4">
-                {data.assets.slice(0, 6).map((asset: any, i: number) => {
-                  const maxConsumption = Math.max(...data.assets.map((a: any) => a.powerConsumption));
-                  const height = (asset.powerConsumption / maxConsumption) * 100;
+                {mockData.map((item, i) => {
+                  const height = (item.consumption / maxValue) * 100;
                   return (
                     <div key={i} className="flex flex-col items-center gap-1 flex-1">
-                      <div className="text-xs font-medium text-center mb-1">{asset.powerConsumption.toFixed(0)}kWh</div>
+                      <div className="text-xs font-medium text-center mb-1">{item.consumption}kWh</div>
                       <div 
-                        className="w-full rounded-t-md transition-all bg-blue-500"
-                        style={{ height: `${height}%` }}
+                        className="w-full rounded-t-md transition-all"
+                        style={{ 
+                          height: `${height}%`,
+                          backgroundColor: widget.config?.color || '#3b82f6'
+                        }}
                       />
-                      <span className="text-xs text-muted-foreground truncate w-full text-center">{asset.tag}</span>
+                      <span className="text-xs text-muted-foreground truncate w-full text-center">{item.tag}</span>
                     </div>
                   );
                 })}
@@ -548,9 +664,9 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
           );
         }
         
-        // Se for overview, gerar dados mockados realistas
+        // Se for overview mas não for o widget específico, gerar dados estáticos genéricos
         if (isOverview) {
-          const mockEquipments = ['AHU-001', 'Chiller-01', 'VRF-002', 'RTU-001', 'Boiler-01', 'CT-001'];
+          const mockEquipments = ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5', 'Item 6'];
           const mockValues = [1250, 920, 580, 450, 320, 280];
           const maxValue = Math.max(...mockValues);
           
@@ -562,7 +678,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
                   const height = (mockValues[i] / maxValue) * 100;
                   return (
                     <div key={i} className="flex flex-col items-center gap-1 flex-1">
-                      <div className="text-xs font-medium text-center mb-1">{mockValues[i]}kWh</div>
+                      <div className="text-xs font-medium text-center mb-1">{mockValues[i]}</div>
                       <div 
                         className="w-full rounded-t-md transition-all"
                         style={{ 

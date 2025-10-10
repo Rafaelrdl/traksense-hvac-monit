@@ -118,21 +118,6 @@ export const BarChartEnergy: React.FC<BarChartEnergyProps> = ({
           ]
         }
       }
-    ],
-    // Add summary text
-    graphic: [
-      {
-        type: 'text',
-        left: '50%',
-        top: '5%',
-        style: {
-          text: `Total Hoje: ${totalConsumption.toFixed(1)} kWh (${targetPercentage}% da meta)`,
-          fontSize: 14,
-          fontWeight: 'bold',
-          fill: totalConsumption > target ? '#E05A47' : '#076A75',
-          textAlign: 'center'
-        }
-      }
     ]
   };
 
