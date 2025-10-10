@@ -2,7 +2,7 @@ export interface DashboardWidget {
   id: string;
   type: WidgetType;
   title: string;
-  size: 'small' | 'medium' | 'large';
+  size: 'col-1' | 'col-2' | 'col-3' | 'col-4' | 'col-5' | 'col-6' | 'small' | 'medium' | 'large'; // Mantém compatibilidade com old sizes
   position: {
     x: number;
     y: number;
@@ -33,6 +33,7 @@ export interface DashboardWidget {
 
 export type WidgetType = 
   // Cards simples
+  | 'card-kpi'             // Card KPI estilo Overview (com ícone e tendência)
   | 'card-value'           // Card com valor único
   | 'card-stat'            // Card com estatística e trend
   | 'card-progress'        // Card com barra de progresso

@@ -19,87 +19,93 @@ interface OverviewState {
 const defaultWidgets: DashboardWidget[] = [
   // ============ Linha 1: KPIs de Confiabilidade ============
   {
-    id: 'overview-mttf',
-    type: 'card-stat',
-    title: 'MTTF (Mean Time To Failure)',
-    size: 'small',
+    id: 'overview-uptime',
+    type: 'card-kpi',
+    title: 'Uptime Dispositivos',
+    size: 'col-2',
     position: { x: 0, y: 0 },
     config: {
-      label: 'MTTF',
-      unit: 'horas',
-      color: '#8b5cf6',
-      decimals: 0,
-      showTrend: true
-    }
-  },
-  {
-    id: 'overview-availability',
-    type: 'card-progress',
-    title: 'Disponibilidade de Equipamentos',
-    size: 'small',
-    position: { x: 1, y: 0 },
-    config: {
-      label: 'Disponibilidade',
+      label: 'Uptime Dispositivos',
       unit: '%',
       color: '#10b981',
-      decimals: 1,
-      target: 99.5
+      iconColor: '#10b981',
+      icon: 'activity',
+      decimals: 1
     }
   },
   {
     id: 'overview-active-alerts',
-    type: 'card-value',
-    title: 'Alertas Ativos',
-    size: 'small',
-    position: { x: 2, y: 0 },
+    type: 'card-kpi',
+    title: 'Ativos com Alerta',
+    size: 'col-2',
+    position: { x: 1, y: 0 },
     config: {
-      label: 'Alertas Ativos',
+      label: 'Ativos com Alerta',
       unit: '',
       color: '#f59e0b',
-      decimals: 0,
-      showIcon: true
+      iconColor: '#ef4444',
+      icon: 'alert',
+      decimals: 0
+    }
+  },
+  {
+    id: 'overview-consumption',
+    type: 'card-kpi',
+    title: 'Consumo Hoje',
+    size: 'col-2',
+    position: { x: 2, y: 0 },
+    config: {
+      label: 'Consumo Hoje',
+      unit: 'kWh',
+      color: '#10b981',
+      iconColor: '#10b981',
+      icon: 'energy',
+      decimals: 0
     }
   },
   {
     id: 'overview-health-score',
-    type: 'card-gauge',
-    title: 'Health Score Geral',
-    size: 'small',
+    type: 'card-kpi',
+    title: 'Saúde Média HVAC',
+    size: 'col-2',
     position: { x: 3, y: 0 },
     config: {
-      label: 'Health Score',
+      label: 'Saúde Média HVAC',
       unit: '%',
-      color: '#10b981',
-      decimals: 1,
-      minValue: 0,
-      maxValue: 100
+      color: '#f59e0b',
+      iconColor: '#f59e0b',
+      icon: 'health',
+      decimals: 1
     }
   },
   {
-    id: 'overview-sensor-availability',
-    type: 'card-stat',
-    title: 'Disponibilidade de Sensores',
-    size: 'small',
+    id: 'overview-mttf',
+    type: 'card-kpi',
+    title: 'MTBF',
+    size: 'col-2',
     position: { x: 4, y: 0 },
     config: {
-      label: 'Sensores Online',
-      unit: '%',
-      color: '#3b82f6',
-      decimals: 1,
-      showTrend: true
+      label: 'MTBF',
+      unit: 'h',
+      color: '#10b981',
+      iconColor: '#10b981',
+      icon: 'clock',
+      decimals: 0
     }
   },
   {
-    id: 'overview-equipment-online',
-    type: 'card-value',
-    title: 'Equipamentos em Operação',
-    size: 'small',
+    id: 'overview-mttr',
+    type: 'card-kpi',
+    title: 'MTTR',
+    size: 'col-2',
     position: { x: 5, y: 0 },
     config: {
-      label: 'Em Operação',
-      unit: '/total',
-      color: '#10b981',
-      decimals: 0
+      label: 'MTTR',
+      unit: 'h',
+      color: '#ef4444',
+      iconColor: '#ef4444',
+      icon: 'wrench',
+      decimals: 1
     }
   },
 
@@ -108,7 +114,7 @@ const defaultWidgets: DashboardWidget[] = [
     id: 'overview-consumption-bar',
     type: 'chart-bar',
     title: 'Consumo por Equipamento',
-    size: 'medium',
+    size: 'col-3',
     position: { x: 0, y: 1 },
     config: {
       label: 'Consumo Energético (kWh)',
@@ -121,7 +127,7 @@ const defaultWidgets: DashboardWidget[] = [
     id: 'overview-consumption-trend',
     type: 'chart-line',
     title: 'Histórico de Consumo',
-    size: 'medium',
+    size: 'col-3',
     position: { x: 3, y: 1 },
     config: {
       label: 'Consumo ao Longo do Tempo',
@@ -136,7 +142,7 @@ const defaultWidgets: DashboardWidget[] = [
     id: 'overview-alerts-table',
     type: 'table-alerts',
     title: 'Últimos Alertas',
-    size: 'large',
+    size: 'col-6',
     position: { x: 0, y: 2 },
     config: {
       label: 'Alertas Mais Recentes',
@@ -151,7 +157,7 @@ const defaultWidgets: DashboardWidget[] = [
     id: 'overview-consumption-distribution',
     type: 'chart-pie',
     title: 'Distribuição de Consumo',
-    size: 'medium',
+    size: 'col-3',
     position: { x: 0, y: 3 },
     config: {
       label: 'Consumo por Tipo de Ativo',
@@ -163,7 +169,7 @@ const defaultWidgets: DashboardWidget[] = [
     id: 'overview-alerts-heatmap',
     type: 'heatmap-time',
     title: 'Mapa de Calor de Alertas',
-    size: 'medium',
+    size: 'col-3',
     position: { x: 3, y: 3 },
     config: {
       label: 'Densidade de Alertas (7 dias)',
@@ -187,7 +193,7 @@ export const useOverviewStore = create<OverviewState>()(
           title: getWidgetTitle(widgetType),
           size: getWidgetDefaultSize(widgetType),
           position,
-          config: {}
+          config: getWidgetDefaultConfig(widgetType)
         };
 
         set(state => ({
@@ -223,7 +229,17 @@ export const useOverviewStore = create<OverviewState>()(
     }),
     {
       name: 'traksense-overview-storage',
-      version: 1
+      version: 4, // Incrementado para forçar reset e carregar novos widgets KPI
+      migrate: (persistedState: any, version: number) => {
+        // Se for versão antiga (< v4), resetar para widgets padrão com novos cards KPI
+        if (version < 4) {
+          return {
+            widgets: defaultWidgets,
+            editMode: false
+          };
+        }
+        return persistedState as OverviewState;
+      }
     }
   )
 );
@@ -256,10 +272,162 @@ function getWidgetTitle(widgetType: WidgetType): string {
 }
 
 function getWidgetDefaultSize(widgetType: WidgetType): DashboardWidget['size'] {
-  if (widgetType.startsWith('card-')) return 'small';
-  if (widgetType.startsWith('table-')) return 'large';
-  if (widgetType === 'heatmap-time' || widgetType === 'heatmap-matrix') return 'large';
-  if (widgetType === 'timeline') return 'large';
-  if (widgetType.startsWith('indicator-')) return 'small';
-  return 'medium';
+  // Cards simples e indicadores: 2 colunas (pequeno)
+  if (widgetType.startsWith('card-')) return 'col-2';
+  if (widgetType.startsWith('indicator-')) return 'col-1';
+  
+  // Tabelas, heatmaps, timeline: 6 colunas (largura total)
+  if (widgetType.startsWith('table-')) return 'col-6';
+  if (widgetType === 'heatmap-time' || widgetType === 'heatmap-matrix') return 'col-6';
+  if (widgetType === 'timeline') return 'col-6';
+  
+  // Gráficos: 3 colunas (médio)
+  if (widgetType.startsWith('chart-')) return 'col-3';
+  if (widgetType.startsWith('gauge-')) return 'col-2';
+  
+  // Padrão: 3 colunas
+  return 'col-3';
+}
+
+function getWidgetDefaultConfig(widgetType: WidgetType): Record<string, any> {
+  // Configurações padrão inteligentes para cada tipo de widget
+  const configs: Record<string, Record<string, any>> = {
+    'card-kpi': {
+      label: 'KPI',
+      unit: '%',
+      color: '#3b82f6',
+      iconColor: '#3b82f6',
+      icon: 'activity',
+      decimals: 1
+    },
+    'card-stat': {
+      label: 'KPI',
+      unit: '%',
+      color: '#3b82f6',
+      decimals: 1,
+      showTrend: true
+    },
+    'card-progress': {
+      label: 'Progresso',
+      unit: '%',
+      color: '#10b981',
+      decimals: 1,
+      target: 95
+    },
+    'card-value': {
+      label: 'Valor',
+      unit: '',
+      color: '#f59e0b',
+      decimals: 0,
+      showIcon: true
+    },
+    'card-gauge': {
+      label: 'Medidor',
+      unit: '%',
+      color: '#10b981',
+      decimals: 1,
+      minValue: 0,
+      maxValue: 100
+    },
+    'chart-bar': {
+      label: 'Consumo Energético',
+      chartType: 'bar',
+      timeRange: '24h',
+      showLegend: true
+    },
+    'chart-line': {
+      label: 'Tendência',
+      chartType: 'line',
+      timeRange: '24h',
+      showLegend: true
+    },
+    'chart-pie': {
+      label: 'Distribuição',
+      chartType: 'pie',
+      showPercentage: true
+    },
+    'chart-donut': {
+      label: 'Status',
+      chartType: 'donut',
+      showPercentage: true
+    },
+    'chart-area': {
+      label: 'Área',
+      chartType: 'area',
+      timeRange: '7d',
+      showLegend: true
+    },
+    'chart-line-multi': {
+      label: 'Comparativo',
+      chartType: 'line',
+      timeRange: '24h',
+      showLegend: true
+    },
+    'chart-bar-horizontal': {
+      label: 'Alertas por Severidade',
+      chartType: 'bar-horizontal',
+      showLegend: true
+    },
+    'table-alerts': {
+      label: 'Alertas',
+      showIcon: true,
+      maxRows: 10,
+      sortBy: 'timestamp'
+    },
+    'heatmap-time': {
+      label: 'Densidade de Alertas',
+      timeRange: '7d',
+      showLegend: true
+    },
+    'heatmap-matrix': {
+      label: 'Matriz de Alertas',
+      timeRange: '7d',
+      showLegend: true
+    },
+    'timeline': {
+      label: 'Timeline',
+      maxItems: 10,
+      showIcon: true
+    },
+    'gauge-circular': {
+      label: 'Eficiência',
+      unit: '%',
+      color: '#3b82f6',
+      decimals: 1,
+      minValue: 0,
+      maxValue: 100
+    },
+    'gauge-semi': {
+      label: 'Performance',
+      unit: '%',
+      color: '#10b981',
+      decimals: 1,
+      minValue: 0,
+      maxValue: 100
+    },
+    'indicator-led': {
+      label: 'Status',
+      color: '#10b981',
+      onValue: 'Online',
+      offValue: 'Offline'
+    },
+    'indicator-traffic': {
+      label: 'Semáforo',
+      greenThreshold: 80,
+      yellowThreshold: 50
+    },
+    'indicator-battery': {
+      label: 'Bateria',
+      unit: '%',
+      lowThreshold: 20
+    },
+    'indicator-signal': {
+      label: 'Sinal',
+      unit: 'dBm',
+      goodThreshold: -70,
+      fairThreshold: -85
+    }
+  };
+
+  return configs[widgetType] || { label: 'Widget', showLegend: true };
 }

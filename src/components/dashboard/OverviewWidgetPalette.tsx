@@ -17,7 +17,57 @@ interface OverviewWidgetDefinition {
 
 // Widgets focados em gestão executiva e monitoramento estratégico
 const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
-  // ============ KPIs de Confiabilidade ============
+  // ============ Cards KPI (Estilo Overview) ============
+  {
+    id: 'card-kpi',
+    name: 'Uptime Dispositivos',
+    description: 'Percentual de disponibilidade com tendência',
+    category: 'reliability',
+    icon: <Activity className="w-5 h-5 text-green-600" />,
+    defaultSize: 'small'
+  },
+  {
+    id: 'card-kpi',
+    name: 'Ativos com Alerta',
+    description: 'Quantidade de alertas ativos no momento',
+    category: 'reliability',
+    icon: <AlertTriangle className="w-5 h-5 text-red-600" />,
+    defaultSize: 'small'
+  },
+  {
+    id: 'card-kpi',
+    name: 'Consumo Hoje',
+    description: 'Consumo energético do dia com variação',
+    category: 'energy',
+    icon: <Zap className="w-5 h-5 text-green-600" />,
+    defaultSize: 'small'
+  },
+  {
+    id: 'card-kpi',
+    name: 'Saúde Média HVAC',
+    description: 'Score consolidado de health com tendência',
+    category: 'reliability',
+    icon: <Heart className="w-5 h-5 text-yellow-600" />,
+    defaultSize: 'small'
+  },
+  {
+    id: 'card-kpi',
+    name: 'MTBF',
+    description: 'Mean Time Between Failures com melhoria',
+    category: 'reliability',
+    icon: <Clock className="w-5 h-5 text-green-600" />,
+    defaultSize: 'small'
+  },
+  {
+    id: 'card-kpi',
+    name: 'MTTR',
+    description: 'Mean Time To Repair com redução',
+    category: 'operations',
+    icon: <Wrench className="w-5 h-5 text-red-600" />,
+    defaultSize: 'small'
+  },
+  
+  // ============ KPIs de Confiabilidade (Antigos) ============
   {
     id: 'card-stat',
     name: 'MTTF (Mean Time To Failure)',

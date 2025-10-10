@@ -18,7 +18,7 @@ import { DraggableWidget } from '../dashboard/DraggableWidget';
 import { OverviewWidgetPalette } from '../dashboard/OverviewWidgetPalette';
 import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
-import { Edit3, RotateCcw, Info } from 'lucide-react';
+import { Edit3, RotateCcw } from 'lucide-react';
 import { WidgetType } from '../../types/dashboard';
 
 export const EditableOverviewPage: React.FC = () => {
@@ -218,18 +218,6 @@ export const EditableOverviewPage: React.FC = () => {
               <RotateCcw className="w-4 h-4" />
               Restaurar Padrão
             </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Info Banner (only in view mode) */}
-      {!editMode && (
-        <div className="bg-accent/50 border border-accent rounded-lg p-3 flex items-start gap-3">
-          <Info className="w-5 h-5 text-accent-foreground mt-0.5 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm text-accent-foreground">
-              <strong>Dica:</strong> Ative o modo de edição no canto superior direito para personalizar este dashboard com os widgets que você precisa.
-            </p>
           </div>
         </div>
       )}
