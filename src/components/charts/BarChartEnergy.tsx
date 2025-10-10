@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { TelemetryPoint } from '../../types/hvac';
 
@@ -29,7 +29,7 @@ export const BarChartEnergy: React.FC<BarChartEnergyProps> = ({
   }
 
   // Group data by hour and sum energy consumption
-  const hourlyData = React.useMemo(() => {
+  const hourlyData = useMemo(() => {
     const hours: { [key: number]: number } = {};
     
     data.forEach(point => {

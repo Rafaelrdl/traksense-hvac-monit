@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { TelemetryPoint } from '../../types/hvac';
 
@@ -52,7 +52,7 @@ export const ScatterPerformance: React.FC<ScatterPerformanceProps> = ({ data, he
   }
 
   // Calculate regression line
-  const calculateRegression = React.useMemo(() => {
+  const calculateRegression = useMemo(() => {
     if (validData.length < 2) return null;
 
     const n = validData.length;

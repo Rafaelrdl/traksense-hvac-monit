@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   DndContext,
   DragEndEvent,
@@ -32,8 +32,8 @@ export const CustomDashboard: React.FC = () => {
   const { layouts, currentLayoutId, editMode, setEditMode, setCurrentLayout, createLayout, deleteLayout } = useDashboardStore();
   const { assets, sensors, alerts } = useAppStore();
   const timeRange = useTimeRangeMs();
-  const [showNewLayoutDialog, setShowNewLayoutDialog] = React.useState(false);
-  const [newLayoutName, setNewLayoutName] = React.useState('');
+  const [showNewLayoutDialog, setShowNewLayoutDialog] = useState(false);
+  const [newLayoutName, setNewLayoutName] = useState('');
   
   const currentLayout = layouts.find(l => l.id === currentLayoutId);
   

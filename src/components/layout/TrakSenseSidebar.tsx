@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutGrid, 
   PanelsTopLeft, 
@@ -98,7 +98,7 @@ function SystemStatus({ className }: { className?: string }) {
 
 // Mobile Sidebar Sheet
 function MobileSidebar({ currentPage, onNavigate }: TrakSenseSidebarProps) {
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
 
   const handleItemClick = () => {
     setOpen(false);
@@ -156,7 +156,7 @@ function DesktopSidebar({ currentPage, onNavigate }: TrakSenseSidebarProps) {
   const { sidebarCollapsed, setSidebarCollapsed } = useAppStore();
 
   // Keyboard shortcut: Ctrl/Cmd + \ to toggle sidebar
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === '\\' && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
