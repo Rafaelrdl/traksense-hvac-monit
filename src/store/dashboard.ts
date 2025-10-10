@@ -24,96 +24,7 @@ const defaultLayout: DashboardLayout = {
   id: 'default',
   name: 'Padrão',
   isDefault: true,
-  widgets: [
-    {
-      id: 'uptime-1',
-      type: 'kpi',
-      title: 'Uptime Dispositivos',
-      size: 'small',
-      position: { x: 0, y: 0 },
-      props: { metricType: 'uptime' }
-    },
-    {
-      id: 'alerts-1',
-      type: 'kpi',
-      title: 'Ativos com Alerta',
-      size: 'small',
-      position: { x: 1, y: 0 },
-      props: { metricType: 'alerts' }
-    },
-    {
-      id: 'consumption-1',
-      type: 'kpi',
-      title: 'Consumo Hoje',
-      size: 'small',
-      position: { x: 2, y: 0 },
-      props: { metricType: 'consumption' }
-    },
-    {
-      id: 'health-1',
-      type: 'kpi',
-      title: 'Saúde Média HVAC',
-      size: 'small',
-      position: { x: 3, y: 0 },
-      props: { metricType: 'health' }
-    },
-    {
-      id: 'mtbf-1',
-      type: 'kpi',
-      title: 'MTBF',
-      size: 'small',
-      position: { x: 4, y: 0 },
-      props: { metricType: 'mtbf' }
-    },
-    {
-      id: 'mttr-1',
-      type: 'kpi',
-      title: 'MTTR',
-      size: 'small',
-      position: { x: 5, y: 0 },
-      props: { metricType: 'mttr' }
-    },
-    {
-      id: 'temp-chart-1',
-      type: 'chart',
-      title: 'Tendências de Temperatura (AHU-001)',
-      size: 'medium',
-      position: { x: 0, y: 1 },
-      props: { chartType: 'temperature' }
-    },
-    {
-      id: 'energy-chart-1',
-      type: 'chart',
-      title: 'Consumo Energético (Hoje)',
-      size: 'medium',
-      position: { x: 3, y: 1 },
-      props: { chartType: 'energy' }
-    },
-    {
-      id: 'filter-gauge-1',
-      type: 'gauge',
-      title: 'Saúde do Filtro (AHU-001)',
-      size: 'medium',
-      position: { x: 0, y: 2 },
-      props: { gaugeType: 'filter' }
-    },
-    {
-      id: 'alerts-heatmap-1',
-      type: 'chart',
-      title: 'Densidade de Alertas (Últimos 7 dias)',
-      size: 'medium',
-      position: { x: 3, y: 2 },
-      props: { chartType: 'alertsHeatmap' }
-    },
-    {
-      id: 'alerts-table-1',
-      type: 'table',
-      title: 'Alertas Ativos Principais',
-      size: 'large',
-      position: { x: 0, y: 3 },
-      props: { tableType: 'alerts' }
-    }
-  ]
+  widgets: []  // ✅ Dashboard começa vazio - usuário adiciona widgets manualmente
 };
 
 export const useDashboardStore = create<DashboardState>((set, get) => ({
@@ -171,11 +82,11 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
         const widgetId = `widget-${Date.now()}`;
         const widget: DashboardWidget = {
           id: widgetId,
-          type: getWidgetCategory(widgetType),
+          type: widgetType,  // ✅ Mantém o tipo original (card-value, chart-line, etc)
           title: getWidgetTitle(widgetType),
           size: getWidgetDefaultSize(widgetType),
           position,
-          props: { metricType: widgetType }
+          config: {}  // ✅ Inicializa config vazio
         };
 
         set(state => ({
@@ -234,36 +145,27 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   );
 
 // Helper functions
-function getWidgetCategory(widgetType: WidgetType): DashboardWidget['type'] {
-  if (widgetType.includes('kpi')) return 'kpi';
-  if (widgetType.includes('chart') || widgetType.includes('heatmap')) return 'chart';
-  if (widgetType.includes('gauge')) return 'gauge';
-  if (widgetType.includes('table')) return 'table';
-  if (widgetType === 'maintenance-overview') return 'maintenance';
-  return 'kpi';
-}
-
 function getWidgetTitle(widgetType: WidgetType): string {
-  const titles: Record<WidgetType, string> = {
-    'uptime-kpi': 'Uptime Dispositivos',
-    'alerts-kpi': 'Ativos com Alerta',
-    'consumption-kpi': 'Consumo Hoje',
-    'health-kpi': 'Saúde Média HVAC',
-    'mtbf-kpi': 'MTBF',
-    'mttr-kpi': 'MTTR',
-    'temperature-chart': 'Tendências de Temperatura',
-    'energy-chart': 'Consumo Energético',
-    'filter-gauge': 'Saúde do Filtro',
-    'alerts-heatmap': 'Densidade de Alertas',
-    'alerts-table': 'Alertas Ativos',
-    'maintenance-overview': 'Visão Geral Manutenção'
-  };
-  return titles[widgetType] || 'Widget';
+  // Converte widget type em título legível
+  const formatted = widgetType
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+  return formatted;
 }
 
 function getWidgetDefaultSize(widgetType: WidgetType): DashboardWidget['size'] {
-  if (widgetType.includes('kpi')) return 'small';
-  if (widgetType.includes('table')) return 'large';
-  if (widgetType === 'maintenance-overview') return 'medium';
+  // Cards são pequenos
+  if (widgetType.startsWith('card-')) return 'small';
+  
+  // Tabelas e alguns charts são grandes
+  if (widgetType.startsWith('table-')) return 'large';
+  if (widgetType === 'heatmap-time' || widgetType === 'heatmap-matrix') return 'large';
+  if (widgetType === 'timeline') return 'large';
+  
+  // Indicadores simples são pequenos
+  if (widgetType.startsWith('indicator-')) return 'small';
+  
+  // Resto é médio (charts, gauges, etc)
   return 'medium';
 }
