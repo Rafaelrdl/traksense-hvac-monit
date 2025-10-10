@@ -34,6 +34,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
   const editMode = useDashboardStore(state => state.editMode);
   const removeWidget = useDashboardStore(state => state.removeWidget);
   const [configOpen, setConfigOpen] = useState(false);
+  const [toggleState, setToggleState] = useState(false);
   
   const {
     attributes,
@@ -193,7 +194,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         );
 
       case 'card-toggle':
-        const [toggleState, setToggleState] = React.useState(false);
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col items-center justify-center gap-4">
             <h3 className="text-sm font-medium text-muted-foreground">{widget.config?.label || widget.title}</h3>
@@ -584,128 +584,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
           </div>
         );
 
-      // ============ WIDGETS LEGADOS (compatibilidade) ============
-      case 'uptime':
-        return (
-          <KPICard
-            label="Uptime Dispositivos"
-            value={data?.kpis?.uptime || 0}
-            unit="%"
-            status={data?.kpis?.uptime >= 95 ? 'good' : data?.kpis?.uptime >= 90 ? 'warning' : 'critical'}
-            icon={<Activity className="w-4 h-4" />}
-          />
-        );
-      
-      case 'alerts':
-        return (
-          <KPICard
-            label="Ativos com Alerta"
-            value={data?.kpis?.activeAlerts || 0}
-            status={data?.kpis?.activeAlerts === 0 ? 'good' : data?.kpis?.activeAlerts <= 2 ? 'warning' : 'critical'}
-            icon={<AlertTriangle className="w-4 h-4" />}
-          />
-        );
-      
-      case 'consumption':
-        return (
-          <KPICard
-            label="Consumo Hoje"
-            value={data?.kpis?.consumption || 0}
-            unit="kWh"
-            change={-3.2}
-            changeLabel="vs ontem"
-            status="good"
-            icon={<Zap className="w-4 h-4" />}
-          />
-        );
-      
-      case 'health':
-        return (
-          <KPICard
-            label="Saúde Média HVAC"
-            value={data?.kpis?.avgHealth || 0}
-            unit="%"
-            change={2.1}
-            changeLabel="última semana"
-            status={parseFloat(data?.kpis?.avgHealth || '0') >= 80 ? 'good' : parseFloat(data?.kpis?.avgHealth || '0') >= 60 ? 'warning' : 'critical'}
-            icon={<Heart className="w-4 h-4" />}
-          />
-        );
-      
-      case 'mtbf':
-        return (
-          <KPICard
-            label="MTBF"
-            value={data?.kpis?.mtbf || 0}
-            unit="h"
-            change={5.3}
-            changeLabel="melhoria"
-            status="good"
-            icon={<Clock className="w-4 h-4" />}
-          />
-        );
-      
-      case 'mttr':
-        return (
-          <KPICard
-            label="MTTR"
-            value={data?.kpis?.mttr || 0}
-            unit="h"
-            change={-12.1}
-            changeLabel="redução"
-            status="good"
-            icon={<Wrench className="w-4 h-4" />}
-          />
-        );
-      
-      case 'temperature':
-        return (
-          <div className="bg-card rounded-xl p-6 border shadow-sm h-full">
-            <h3 className="text-lg font-semibold mb-4">Tendências de Temperatura (AHU-001)</h3>
-            <ChartWrapper title="Temperatura" height={300}>
-              <LineChartTemp data={data?.temperatureData || { supply: [], return: [], setpoint: [] }} height={300} />
-            </ChartWrapper>
-          </div>
-        );
-      
-      case 'energy':
-        return (
-          <div className="bg-card rounded-xl p-6 border shadow-sm h-full">
-            <h3 className="text-lg font-semibold mb-4">Consumo Energético (Hoje)</h3>
-            <ChartWrapper title="Consumo Energético" height={300}>
-              <BarChartEnergy data={data?.energyData || []} height={300} />
-            </ChartWrapper>
-          </div>
-        );
-      
-      case 'filter':
-        return (
-          <div className="bg-card rounded-xl p-6 border shadow-sm h-full">
-            <h3 className="text-lg font-semibold mb-4">Saúde do Filtro (AHU-001)</h3>
-            <ChartWrapper title="Saúde do Filtro" height={300}>
-              <GaugeFilterHealth 
-                healthScore={data?.filterData?.healthScore || 85}
-                dpFilter={data?.filterData?.dpFilter || 150}
-                daysUntilChange={data?.filterData?.daysUntilChange || 30}
-                height={300}
-              />
-            </ChartWrapper>
-          </div>
-        );
-      
-      case 'alertsHeatmap':
-        return (
-          <div className="bg-card rounded-xl p-6 border shadow-sm h-full">
-            <h3 className="text-lg font-semibold mb-4">Densidade de Alertas (Últimos 7 dias)</h3>
-            <ChartWrapper title="Alertas" height={200}>
-              <HeatmapAlarms data={data?.alertHeatmapData || []} height={200} />
-            </ChartWrapper>
-          </div>
-        );
-      
-      case 'maintenance-overview':
-        return <MaintenanceWidget />;
-      
       default:
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex items-center justify-center">
