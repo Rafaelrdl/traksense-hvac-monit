@@ -642,7 +642,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
           return (
             <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
               <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
-              <div className="flex-1 flex items-end justify-between gap-2 px-4">
+              <div className="flex-1 flex items-end justify-between gap-2 px-4" style={{ minHeight: '200px' }}>
                 {mockData.map((item, i) => {
                   const height = (item.consumption / maxValue) * 100;
                   return (
@@ -673,7 +673,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
           return (
             <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
               <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
-              <div className="flex-1 flex items-end justify-between gap-2 px-4">
+              <div className="flex-1 flex items-end justify-between gap-2 px-4" style={{ minHeight: '200px' }}>
                 {mockEquipments.map((equipment, i) => {
                   const height = (mockValues[i] / maxValue) * 100;
                   return (
@@ -698,7 +698,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
             <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
-            <div className="flex-1 flex items-end justify-between gap-2 px-4">
+            <div className="flex-1 flex items-end justify-between gap-2 px-4" style={{ minHeight: '200px' }}>
               {[...Array(7)].map((_, i) => {
                 const height = 30 + Math.random() * 70;
                 return (
