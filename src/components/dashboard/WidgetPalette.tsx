@@ -136,33 +136,33 @@ export const WidgetPalette: React.FC<WidgetPaletteProps> = ({ layoutId }) => {
           Adicionar Widget
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="!max-w-[95vw] sm:!max-w-[90vw] md:!max-w-[85vw] lg:!max-w-6xl max-h-[90vh] overflow-hidden flex flex-col p-6">
         <DialogHeader>
-          <DialogTitle>Adicionar Widget</DialogTitle>
+          <DialogTitle className="text-xl">Adicionar Widget</DialogTitle>
         </DialogHeader>
-        <div className="space-y-6">
+        <div className="space-y-6 overflow-y-auto pr-2 flex-1 -mx-1 px-1">
           {Object.entries(groupedWidgets).map(([category, widgets]) => (
             <div key={category}>
-              <h3 className="text-lg font-medium mb-3 capitalize">
+              <h3 className="text-lg font-semibold mb-3 capitalize sticky top-0 bg-background py-2 z-10">
                 {category === 'kpi' ? 'KPIs' : 
                  category === 'charts' ? 'Gráficos' : 
                  category === 'maintenance' ? 'Manutenção' : 'Tabelas'}
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {widgets.map(widget => {
                   const IconComponent = widget.icon;
                   return (
                     <button
                       key={widget.id}
                       onClick={() => handleAddWidget(widget.id)}
-                      className="flex items-start gap-3 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors text-left"
+                      className="flex items-start gap-3 p-4 border border-border rounded-lg hover:bg-muted/50 hover:border-primary/50 transition-all text-left group"
                     >
-                      <div className="p-2 bg-primary/10 rounded-md">
+                      <div className="p-2 bg-primary/10 rounded-md group-hover:bg-primary/20 transition-colors">
                         <IconComponent className="w-5 h-5 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm">{widget.name}</h4>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <h4 className="font-medium text-sm group-hover:text-primary transition-colors">{widget.name}</h4>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                           {widget.description}
                         </p>
                       </div>

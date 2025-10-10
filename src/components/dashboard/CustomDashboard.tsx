@@ -29,9 +29,11 @@ import {
 } from 'lucide-react';
 
 export const CustomDashboard: React.FC = () => {
-  const { layouts, currentLayoutId, editMode, setEditMode } = useDashboardStore();
+  const { layouts, currentLayoutId, editMode, setEditMode, setCurrentLayout, createLayout, deleteLayout } = useDashboardStore();
   const { assets, sensors, alerts } = useAppStore();
   const timeRange = useTimeRangeMs();
+  const [showNewLayoutDialog, setShowNewLayoutDialog] = React.useState(false);
+  const [newLayoutName, setNewLayoutName] = React.useState('');
   
   const currentLayout = layouts.find(l => l.id === currentLayoutId);
   
@@ -195,41 +197,23 @@ export const CustomDashboard: React.FC = () => {
     );
   }
 
+  const handleCreateLayout = () => {
+    if (newLayoutName.trim()) {
+      createLayout(newLayoutName.trim());
+      setNewLayoutName('');
+      setShowNewLayoutDialog(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard Customizável</h1>
-          <p className="text-muted-foreground">
-            Layout atual: <span className="font-medium">{currentLayout.name}</span>
-          </p>
+          <h1 className="text-2xl font-bold text-foreground">Dashboards</h1>
         </div>
         
         <div className="flex items-center gap-4">
-          {/* Edit Mode Toggle */}
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-muted-foreground">Editar:</label>
-            <Switch checked={editMode} onCheckedChange={setEditMode} />
-          </div>
-          
-          {editMode && (
-            <div className="flex items-center gap-2">
-              <WidgetPalette layoutId={currentLayoutId} />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setEditMode(false)}
-                className="gap-2"
-              >
-                <Save className="w-4 h-4" />
-                Salvar
-              </Button>
-            </div>
-          )}
-          
-          <LayoutManager />
-          
           {/* Time Range Selector */}
           <div className="flex items-center space-x-2">
             <label className="text-sm text-muted-foreground">Período:</label>
@@ -245,19 +229,103 @@ export const CustomDashboard: React.FC = () => {
               <option value="30d">30 Dias</option>
             </select>
           </div>
+          
+          {/* Edit Mode Toggle */}
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-muted-foreground">Editar:</label>
+            <Switch checked={editMode} onCheckedChange={setEditMode} />
+          </div>
         </div>
       </div>
 
-      {/* Help Text in Edit Mode */}
-      {editMode && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-blue-800">
-            <Edit3 className="w-5 h-5" />
-            <span className="font-medium">Modo de Edição Ativo</span>
+      {/* Horizontal Layout Navigation */}
+      <div className="border-b border-border">
+        <div className="flex items-center gap-1 overflow-x-auto">
+          {layouts.map((layout) => (
+            <button
+              key={layout.id}
+              onClick={() => setCurrentLayout(layout.id)}
+              className={`px-4 py-2 text-sm font-light whitespace-nowrap transition-colors border-b-2 ${
+                layout.id === currentLayoutId
+                  ? 'border-primary text-primary font-normal'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+              }`}
+            >
+              {layout.name}
+            </button>
+          ))}
+          
+          {/* Add New Layout Button */}
+          <button
+            onClick={() => setShowNewLayoutDialog(true)}
+            className="px-4 py-2 text-sm font-light text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap flex items-center gap-1"
+          >
+            <span className="text-lg">+</span>
+            <span>Nova Tela</span>
+          </button>
+        </div>
+      </div>
+
+      {/* New Layout Dialog */}
+      {showNewLayoutDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowNewLayoutDialog(false)}>
+          <div className="bg-background rounded-lg p-6 max-w-md w-full mx-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-xl font-semibold mb-4">Criar Nova Tela</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Nome da Tela</label>
+                <input
+                  type="text"
+                  value={newLayoutName}
+                  onChange={(e) => setNewLayoutName(e.target.value)}
+                  placeholder="Ex: Produção, Qualidade, Manutenção..."
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreateLayout()}
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowNewLayoutDialog(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleCreateLayout} disabled={!newLayoutName.trim()}>
+                  Criar
+                </Button>
+              </div>
+            </div>
           </div>
-          <p className="text-blue-700 text-sm mt-1">
-            Arraste os widgets para reorganizar, clique no botão X para remover ou use "Adicionar Widget" para inserir novos elementos.
-          </p>
+        </div>
+      )}
+
+      {/* Edit Mode Actions */}
+      {editMode && (
+        <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 text-blue-800">
+              <Edit3 className="w-5 h-5" />
+              <span className="font-medium">Modo de Edição Ativo</span>
+            </div>
+            <span className="text-blue-700 text-sm">
+              Arraste widgets para reorganizar ou clique no X para remover
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <WidgetPalette layoutId={currentLayoutId} />
+            {!currentLayout?.isDefault && layouts.length > 1 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  if (confirm(`Tem certeza que deseja excluir a tela "${currentLayout?.name}"?`)) {
+                    deleteLayout(currentLayoutId);
+                  }
+                }}
+                className="gap-2"
+              >
+                Excluir Tela
+              </Button>
+            )}
+          </div>
         </div>
       )}
 
