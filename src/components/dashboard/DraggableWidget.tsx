@@ -646,16 +646,17 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
                 {mockData.map((item, i) => {
                   const height = (item.consumption / maxValue) * 100;
                   return (
-                    <div key={i} className="flex flex-col items-center gap-1 flex-1">
-                      <div className="text-xs font-medium text-center mb-1">{item.consumption}kWh</div>
+                    <div key={i} className="flex flex-col items-center justify-end gap-1 flex-1 h-full">
+                      <div className="text-xs font-medium text-center">{item.consumption}kWh</div>
                       <div 
-                        className="w-full rounded-t-md transition-all"
+                        className="w-full rounded-t-md transition-all bg-blue-500"
                         style={{ 
                           height: `${height}%`,
+                          minHeight: '4px',
                           backgroundColor: widget.config?.color || '#3b82f6'
                         }}
                       />
-                      <span className="text-xs text-muted-foreground truncate w-full text-center">{item.tag}</span>
+                      <span className="text-xs text-muted-foreground truncate w-full text-center mt-1">{item.tag}</span>
                     </div>
                   );
                 })}
@@ -677,16 +678,17 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
                 {mockEquipments.map((equipment, i) => {
                   const height = (mockValues[i] / maxValue) * 100;
                   return (
-                    <div key={i} className="flex flex-col items-center gap-1 flex-1">
-                      <div className="text-xs font-medium text-center mb-1">{mockValues[i]}</div>
+                    <div key={i} className="flex flex-col items-center justify-end gap-1 flex-1 h-full">
+                      <div className="text-xs font-medium text-center">{mockValues[i]}</div>
                       <div 
-                        className="w-full rounded-t-md transition-all"
+                        className="w-full rounded-t-md transition-all bg-blue-500"
                         style={{ 
                           height: `${height}%`,
+                          minHeight: '4px',
                           backgroundColor: widget.config?.color || '#3b82f6'
                         }}
                       />
-                      <span className="text-xs text-muted-foreground truncate w-full text-center">{equipment}</span>
+                      <span className="text-xs text-muted-foreground truncate w-full text-center mt-1">{equipment}</span>
                     </div>
                   );
                 })}
@@ -701,16 +703,19 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
             <div className="flex-1 flex items-end justify-between gap-2 px-4" style={{ minHeight: '200px' }}>
               {[...Array(7)].map((_, i) => {
                 const height = 30 + Math.random() * 70;
+                const value = Math.floor(300 + Math.random() * 700);
                 return (
-                  <div key={i} className="flex flex-col items-center gap-1 flex-1">
+                  <div key={i} className="flex flex-col items-center justify-end gap-1 flex-1 h-full">
+                    <div className="text-xs font-medium text-center">{value}</div>
                     <div 
-                      className="w-full rounded-t-md transition-all"
+                      className="w-full rounded-t-md transition-all bg-blue-500"
                       style={{ 
                         height: `${height}%`,
+                        minHeight: '4px',
                         backgroundColor: widget.config?.color || '#3b82f6'
                       }}
                     />
-                    <span className="text-xs text-muted-foreground">{i + 1}</span>
+                    <span className="text-xs text-muted-foreground mt-1">{i + 1}</span>
                   </div>
                 );
               })}
