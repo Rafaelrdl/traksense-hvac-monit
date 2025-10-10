@@ -4,6 +4,7 @@ import { simEngine } from '../../lib/simulation';
 import { LineChartTemp } from '../charts/LineChartTemp';
 import { ScatterPerformance } from '../charts/ScatterPerformance';
 import { KPICard } from '../ui/KPICard';
+import { JE02SensorDetail } from './JE02SensorDetail';
 import { 
   ArrowLeft, 
   ExternalLink, 
@@ -20,7 +21,7 @@ export const AssetDetailPage: React.FC = () => {
   const selectedAsset = useSelectedAsset();
   const timeRange = useTimeRangeMs();
   const [selectedMetrics, setSelectedMetrics] = useState(['temp_supply', 'temp_return', 'power_kw']);
-  const [activeTab, setActiveTab] = useState('telemetry');
+  const [activeTab, setActiveTab] = useState('je02');
 
   if (!selectedAsset) {
     return (
@@ -186,8 +187,9 @@ export const AssetDetailPage: React.FC = () => {
 
       {/* Tabs */}
       <div className="border-b border-border">
-        <nav className="flex space-x-8">
+        <nav className="flex space-x-8 overflow-x-auto">
           {[
+            { id: 'je02', label: 'Monitoramento' },
             { id: 'telemetry', label: 'Telemetria' },
             { id: 'performance', label: 'Performance' },
             { id: 'maintenance', label: 'Manutenção' },
@@ -258,6 +260,10 @@ export const AssetDetailPage: React.FC = () => {
             )}
           </div>
         </div>
+      )}
+
+      {activeTab === 'je02' && (
+        <JE02SensorDetail assetId={selectedAsset.id} />
       )}
 
       {activeTab === 'performance' && (

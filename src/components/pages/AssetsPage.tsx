@@ -76,36 +76,21 @@ export const AssetsPage: React.FC = () => {
             />
           </div>
 
-          {/* Type Filter */}
+          {/* Status Filter */}
           <div className="flex items-center space-x-2">
             <Filter className="w-4 h-4 text-muted-foreground" />
             <select
               className="px-3 py-2 border border-input rounded-lg bg-background text-sm"
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
             >
-              <option value="all">Todos os tipos</option>
-              <option value="AHU">AHU</option>
-              <option value="Chiller">Chiller</option>
-              <option value="VRF">VRF</option>
-              <option value="RTU">RTU</option>
-              <option value="Boiler">Boiler</option>
-              <option value="CoolingTower">Cooling Tower</option>
+              <option value="all">Todos os status</option>
+              <option value="OK">OK</option>
+              <option value="Maintenance">Manutenção</option>
+              <option value="Alert">Alerta</option>
+              <option value="Stopped">Parado</option>
             </select>
           </div>
-
-          {/* Status Filter */}
-          <select
-            className="px-3 py-2 border border-input rounded-lg bg-background text-sm"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-          >
-            <option value="all">Todos os status</option>
-            <option value="OK">OK</option>
-            <option value="Maintenance">Manutenção</option>
-            <option value="Alert">Alerta</option>
-            <option value="Stopped">Parado</option>
-          </select>
         </div>
       </div>
 

@@ -3,10 +3,16 @@ import { useAppStore } from '../../store/app';
 import { Activity, Wifi, WifiOff, TrendingUp } from 'lucide-react';
 
 export const SensorsPage: React.FC = () => {
-  const { sensors } = useAppStore();
+  const { sensors, assets } = useAppStore();
 
   const onlineSensors = sensors.filter(s => s.online);
   const offlineSensors = sensors.filter(s => !s.online);
+
+  // Helper function to get asset name by ID
+  const getAssetName = (assetId: string) => {
+    const asset = assets.find(a => a.id === assetId);
+    return asset ? asset.tag : assetId.toUpperCase();
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -71,7 +77,7 @@ export const SensorsPage: React.FC = () => {
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left py-3 px-6 font-medium text-muted-foreground">Sensor</th>
-                <th className="text-left py-3 px-6 font-medium text-muted-foreground">Ativo</th>
+                <th className="text-left py-3 px-6 font-medium text-muted-foreground">Equipamento</th>
                 <th className="text-left py-3 px-6 font-medium text-muted-foreground">Tipo</th>
                 <th className="text-left py-3 px-6 font-medium text-muted-foreground">Última Leitura</th>
                 <th className="text-left py-3 px-6 font-medium text-muted-foreground">Status</th>
@@ -87,7 +93,9 @@ export const SensorsPage: React.FC = () => {
                       <span className="font-medium">{sensor.tag}</span>
                     </div>
                   </td>
-                  <td className="py-3 px-6 text-sm">{sensor.assetId.toUpperCase()}</td>
+                  <td className="py-3 px-6">
+                    <span className="text-sm font-medium text-primary">{getAssetName(sensor.assetId)}</span>
+                  </td>
                   <td className="py-3 px-6 text-sm">{sensor.type.replace('_', ' ')}</td>
                   <td className="py-3 px-6 text-sm">
                     {sensor.lastReading ? (

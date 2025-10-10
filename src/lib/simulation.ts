@@ -22,273 +22,308 @@ export class SimulationEngine {
 
   private initializeAssets() {
     this.assets = [
+      // Oncocentro AHUs - 7 units with JE02 sensors
       {
-        id: 'ahu-001',
+        id: 'ahu-001-onco',
         tag: 'AHU-001',
         type: 'AHU',
-        location: 'North Wing - Level 2',
-        healthScore: 87,
-        powerConsumption: 52.3,
+        location: 'Oncologia - Quimioterapia',
+        healthScore: 92,
+        powerConsumption: 48.5,
         status: 'OK',
-        operatingHours: 12450,
-        lastMaintenance: new Date('2024-01-15'),
-        specifications: { capacity: 50, voltage: 480, maxCurrent: 125 }
+        operatingHours: 8234,
+        lastMaintenance: new Date('2024-02-15'),
+        specifications: { 
+          capacity: 12.0,
+          brand: 'Trane',
+          model: 'AeroSuite AHU-25',
+          serialNumber: 'TRN-AHU-001-9C1F3',
+          voltage: 380,
+          maxCurrent: 22,
+          refrigerant: 'R-410A'
+        }
       },
       {
-        id: 'chill-001',
-        tag: 'CHILL-001',
-        type: 'Chiller',
-        location: 'Mechanical Room A',
-        healthScore: 72,
-        powerConsumption: 289.3,
-        status: 'Alert',
-        operatingHours: 8765,
-        lastMaintenance: new Date('2023-11-20'),
-        specifications: { capacity: 500, voltage: 4160, refrigerant: 'R-134a' }
-      },
-      {
-        id: 'vrf-003',
-        tag: 'VRF-003',
-        type: 'VRF',
-        location: 'South Wing - Offices',
-        healthScore: 94,
-        powerConsumption: 18.7,
-        status: 'OK',
-        operatingHours: 5230,
-        lastMaintenance: new Date('2024-02-10'),
-        specifications: { capacity: 25, voltage: 208, refrigerant: 'R-410A' }
-      },
-      {
-        id: 'ahu-002',
+        id: 'ahu-002-onco',
         tag: 'AHU-002',
         type: 'AHU',
-        location: 'South Wing - Level 1',
-        healthScore: 91,
-        powerConsumption: 44.6,
+        location: 'Laboratório - Análises Clínicas',
+        healthScore: 88,
+        powerConsumption: 61.2,
         status: 'OK',
-        operatingHours: 9876,
-        lastMaintenance: new Date('2024-02-28'),
-        specifications: { capacity: 45, voltage: 480, maxCurrent: 110 }
+        operatingHours: 10567,
+        lastMaintenance: new Date('2024-01-20'),
+        specifications: { 
+          capacity: 15.5,
+          brand: 'Carrier',
+          model: 'OptiClean 40AHU',
+          serialNumber: 'CAR-AHU-002-7B84D',
+          voltage: 220,
+          maxCurrent: 28,
+          refrigerant: 'R-134a'
+        }
       },
       {
-        id: 'chill-002',
-        tag: 'CHILL-002',
-        type: 'Chiller',
-        location: 'Mechanical Room B',
-        healthScore: 65,
-        powerConsumption: 324.8,
-        status: 'Maintenance',
-        operatingHours: 15432,
-        lastMaintenance: new Date('2023-09-15'),
-        specifications: { capacity: 600, voltage: 4160, refrigerant: 'R-134a' }
-      },
-      {
-        id: 'vrf-001',
-        tag: 'VRF-001',
-        type: 'VRF',
-        location: 'East Wing - Conference Rooms',
-        healthScore: 89,
-        powerConsumption: 21.4,
-        status: 'OK',
-        operatingHours: 7654,
-        lastMaintenance: new Date('2024-01-22'),
-        specifications: { capacity: 30, voltage: 208, refrigerant: 'R-410A' }
-      },
-      {
-        id: 'vrf-002',
-        tag: 'VRF-002',
-        type: 'VRF',
-        location: 'West Wing - Executive Offices',
-        healthScore: 76,
-        powerConsumption: 19.1,
-        status: 'Alert',
-        operatingHours: 11234,
-        lastMaintenance: new Date('2023-12-05'),
-        specifications: { capacity: 28, voltage: 208, refrigerant: 'R-410A' }
-      },
-      {
-        id: 'ahu-003',
+        id: 'ahu-003-onco',
         tag: 'AHU-003',
         type: 'AHU',
-        location: 'Data Center - Level 3',
-        healthScore: 83,
-        powerConsumption: 76.2,
+        location: 'Centro Cirúrgico - Sala 1',
+        healthScore: 95,
+        powerConsumption: 42.8,
         status: 'OK',
-        operatingHours: 21876,
-        lastMaintenance: new Date('2024-03-01'),
-        specifications: { capacity: 80, voltage: 480, maxCurrent: 200 }
+        operatingHours: 6890,
+        lastMaintenance: new Date('2024-03-05'),
+        specifications: { 
+          capacity: 10.0,
+          brand: 'Daikin',
+          model: 'SmartFlow AHU 300',
+          serialNumber: 'DAI-AHU-003-2E61A',
+          voltage: 380,
+          maxCurrent: 18,
+          refrigerant: 'R-410A'
+        }
       },
       {
-        id: 'rtu-001',
-        tag: 'RTU-001',
-        type: 'RTU',
-        location: 'Rooftop - Building A',
-        healthScore: 78,
-        powerConsumption: 35.9,
+        id: 'ahu-004-onco',
+        tag: 'AHU-004',
+        type: 'AHU',
+        location: 'UTI - Adulto',
+        healthScore: 90,
+        powerConsumption: 38.4,
+        status: 'OK',
+        operatingHours: 9123,
+        lastMaintenance: new Date('2024-02-10'),
+        specifications: { 
+          capacity: 8.5,
+          brand: 'York',
+          model: 'YMA-Classic 18',
+          serialNumber: 'YOR-AHU-004-5D2C9',
+          voltage: 380,
+          maxCurrent: 16,
+          refrigerant: 'R-407C'
+        }
+      },
+      {
+        id: 'ahu-005-onco',
+        tag: 'AHU-005',
+        type: 'AHU',
+        location: 'Imagem - Ressonância',
+        healthScore: 85,
+        powerConsumption: 78.9,
         status: 'Alert',
-        operatingHours: 18902,
-        lastMaintenance: new Date('2023-10-12'),
-        specifications: { capacity: 40, voltage: 480, maxCurrent: 95 }
-      },
-      {
-        id: 'rtu-002',
-        tag: 'RTU-002',
-        type: 'RTU',
-        location: 'Rooftop - Building B',
-        healthScore: 92,
-        powerConsumption: 31.2,
-        status: 'OK',
-        operatingHours: 6543,
-        lastMaintenance: new Date('2024-02-20'),
-        specifications: { capacity: 35, voltage: 480, maxCurrent: 85 }
-      },
-      {
-        id: 'tower-001',
-        tag: 'CT-001',
-        type: 'CoolingTower',
-        location: 'Rooftop - Central Plant',
-        healthScore: 86,
-        powerConsumption: 12.8,
-        status: 'OK',
-        operatingHours: 14567,
+        operatingHours: 12456,
         lastMaintenance: new Date('2024-01-05'),
-        specifications: { capacity: 750, voltage: 480, maxCurrent: 45 }
+        specifications: { 
+          capacity: 20.0,
+          brand: 'LG',
+          model: 'AirPro AHU 500',
+          serialNumber: 'LGE-AHU-005-A19F7',
+          voltage: 440,
+          maxCurrent: 32,
+          refrigerant: 'R-134a'
+        }
       },
       {
-        id: 'boiler-001',
-        tag: 'BOIL-001',
-        type: 'Boiler',
-        location: 'Mechanical Room C',
-        healthScore: 81,
-        powerConsumption: 145.3,
+        id: 'ahu-006-onco',
+        tag: 'AHU-006',
+        type: 'AHU',
+        location: 'Farmácia - Manipulação',
+        healthScore: 72,
+        powerConsumption: 46.3,
+        status: 'Maintenance',
+        operatingHours: 14789,
+        lastMaintenance: new Date('2023-12-15'),
+        specifications: { 
+          capacity: 11.5,
+          brand: 'Hitachi',
+          model: 'NeoAir 420',
+          serialNumber: 'HIT-AHU-006-CC882',
+          voltage: 220,
+          maxCurrent: 20,
+          refrigerant: 'R-410A'
+        }
+      },
+      {
+        id: 'ahu-007-onco',
+        tag: 'AHU-007',
+        type: 'AHU',
+        location: 'Administrativo - Recepção',
+        healthScore: 93,
+        powerConsumption: 40.5,
         status: 'OK',
-        operatingHours: 11234,
-        lastMaintenance: new Date('2024-01-30'),
-        specifications: { capacity: 300, voltage: 480, maxCurrent: 350 }
+        operatingHours: 7654,
+        lastMaintenance: new Date('2024-02-25'),
+        specifications: { 
+          capacity: 9.0,
+          brand: 'Midea',
+          model: 'ClimaMaster AHU 350',
+          serialNumber: 'MID-AHU-007-8EE76',
+          voltage: 380,
+          maxCurrent: 14,
+          refrigerant: 'R-32'
+        }
       }
     ];
   }
 
   private initializeSensors() {
     this.sensors = [];
-    this.assets.forEach(asset => {
-      // Different sensor configs based on asset type
-      let sensorConfigs: any[] = [];
-      
-      if (asset.type === 'AHU') {
-        const capacityFactor = (asset.specifications.capacity || 50) / 50;
-        sensorConfigs = [
-          { type: 'temp_supply', unit: '°C', min: 12, max: 20, setpoint: 16, baseline: 15.8 + Math.random() * 0.4 },
-          { type: 'temp_return', unit: '°C', min: 22, max: 28, baseline: 23.5 + Math.random() * 1.0 },
-          { type: 'temp_setpoint', unit: '°C', min: 14, max: 18, baseline: 16 },
-          { type: 'humidity', unit: '%', min: 45, max: 65, baseline: 52 + Math.random() * 6 },
-          { type: 'dp_filter', unit: 'Pa', min: 80, max: 350, baseline: 110 + Math.random() * 30 },
-          { type: 'power_kw', unit: 'kW', min: 25 * capacityFactor, max: 85 * capacityFactor, baseline: 48 * capacityFactor + Math.random() * 8 },
-          { type: 'current', unit: 'A', min: 60 * capacityFactor, max: 180 * capacityFactor, baseline: 92 * capacityFactor + Math.random() * 12 },
-          { type: 'vibration', unit: 'mm/s', min: 1.2, max: 8, baseline: 2.1 + Math.random() * 0.8 },
-          { type: 'airflow', unit: 'm³/h', min: 15000 * capacityFactor, max: 35000 * capacityFactor, baseline: 24000 * capacityFactor + Math.random() * 2000 },
-          { type: 'voltage', unit: 'V', min: 460, max: 500, baseline: 478 + Math.random() * 4 },
-          { type: 'rpm_fan', unit: 'RPM', min: 800, max: 1200, baseline: 980 + Math.random() * 40 },
-          { type: 'energy_kwh', unit: 'kWh', min: 0, max: 2000, baseline: 48 * 24 * capacityFactor },
-          { type: 'power_factor', unit: '', min: 0.75, max: 0.95, baseline: 0.85 + Math.random() * 0.05 },
-          { type: 'temp_external', unit: '°C', min: -5, max: 40, baseline: 22 + Math.random() * 8 }
-        ];
-      } else if (asset.type === 'Chiller') {
-        const capacityFactor = (asset.specifications.capacity || 500) / 500;
-        sensorConfigs = [
-          { type: 'temp_supply', unit: '°C', min: 6, max: 12, setpoint: 7, baseline: 7.1 + Math.random() * 0.2 },
-          { type: 'temp_return', unit: '°C', min: 12, max: 18, baseline: 14.2 + Math.random() * 0.6 },
-          { type: 'pressure_suction', unit: 'kPa', min: 350, max: 550, baseline: 435 + Math.random() * 30 },
-          { type: 'pressure_discharge', unit: 'kPa', min: 1200, max: 1800, baseline: 1480 + Math.random() * 40 },
-          { type: 'power_kw', unit: 'kW', min: 180 * capacityFactor, max: 400 * capacityFactor, baseline: 285 * capacityFactor + Math.random() * 20 },
-          { type: 'current', unit: 'A', min: 220 * capacityFactor, max: 480 * capacityFactor, baseline: 340 * capacityFactor + Math.random() * 20 },
-          { type: 'vibration', unit: 'mm/s', min: 1.8, max: 12, baseline: 3.0 + Math.random() * 0.4 },
-          { type: 'superheat', unit: 'K', min: 3, max: 12, baseline: 6.2 + Math.random() * 0.6 },
-          { type: 'subcooling', unit: 'K', min: 2, max: 8, baseline: 4.3 + Math.random() * 0.4 },
-          { type: 'voltage', unit: 'V', min: 4100, max: 4220, baseline: 4155 + Math.random() * 10 },
-          { type: 'cop', unit: '', min: 2.8, max: 5.2, baseline: 4.0 + Math.random() * 0.2 },
-          { type: 'energy_kwh', unit: 'kWh', min: 0, max: 10000, baseline: 285 * 24 * capacityFactor },
-          { type: 'compressor_state', unit: '', min: 0, max: 1, baseline: 1 },
-          { type: 'valve_position', unit: '%', min: 0, max: 100, baseline: 65 + Math.random() * 20 }
-        ];
-      } else if (asset.type === 'VRF') {
-        const capacityFactor = (asset.specifications.capacity || 25) / 25;
-        sensorConfigs = [
-          { type: 'temp_supply', unit: '°C', min: 14, max: 22, setpoint: 18, baseline: 17.8 + Math.random() * 0.4 },
-          { type: 'temp_return', unit: '°C', min: 20, max: 26, baseline: 22.8 + Math.random() * 0.4 },
-          { type: 'humidity', unit: '%', min: 40, max: 60, baseline: 48 + Math.random() * 4 },
-          { type: 'power_kw', unit: 'kW', min: 8 * capacityFactor, max: 35 * capacityFactor, baseline: 19 * capacityFactor + Math.random() * 2 },
-          { type: 'current', unit: 'A', min: 25 * capacityFactor, max: 90 * capacityFactor, baseline: 52 * capacityFactor + Math.random() * 6 },
-          { type: 'vibration', unit: 'mm/s', min: 0.8, max: 6, baseline: 1.6 + Math.random() * 0.4 },
-          { type: 'superheat', unit: 'K', min: 4, max: 10, baseline: 6.8 + Math.random() * 0.4 },
-          { type: 'subcooling', unit: 'K', min: 3, max: 7, baseline: 4.8 + Math.random() * 0.4 },
-          { type: 'voltage', unit: 'V', min: 200, max: 216, baseline: 207 + Math.random() * 2 },
-          { type: 'eer', unit: '', min: 8.5, max: 12.5, baseline: 10.1 + Math.random() * 0.2 },
-          { type: 'energy_kwh', unit: 'kWh', min: 0, max: 800, baseline: 19 * 24 * capacityFactor },
-          { type: 'compressor_state', unit: '', min: 0, max: 1, baseline: 1 }
-        ];
-      } else if (asset.type === 'RTU') {
-        const capacityFactor = (asset.specifications.capacity || 40) / 40;
-        sensorConfigs = [
-          { type: 'temp_supply', unit: '°C', min: 13, max: 19, setpoint: 16, baseline: 15.9 + Math.random() * 0.2 },
-          { type: 'temp_return', unit: '°C', min: 21, max: 27, baseline: 23.8 + Math.random() * 0.4 },
-          { type: 'temp_external', unit: '°C', min: -10, max: 45, baseline: 24 + Math.random() * 10 },
-          { type: 'humidity', unit: '%', min: 40, max: 70, baseline: 54 + Math.random() * 6 },
-          { type: 'dp_filter', unit: 'Pa', min: 60, max: 300, baseline: 95 + Math.random() * 25 },
-          { type: 'power_kw', unit: 'kW', min: 20 * capacityFactor, max: 60 * capacityFactor, baseline: 34 * capacityFactor + Math.random() * 4 },
-          { type: 'current', unit: 'A', min: 45 * capacityFactor, max: 140 * capacityFactor, baseline: 78 * capacityFactor + Math.random() * 8 },
-          { type: 'vibration', unit: 'mm/s', min: 1.5, max: 7, baseline: 2.8 + Math.random() * 0.4 },
-          { type: 'voltage', unit: 'V', min: 460, max: 500, baseline: 479 + Math.random() * 3 },
-          { type: 'rpm_fan', unit: 'RPM', min: 750, max: 1100, baseline: 920 + Math.random() * 30 },
-          { type: 'compressor_state', unit: '', min: 0, max: 1, baseline: 1 },
-          { type: 'energy_kwh', unit: 'kWh', min: 0, max: 1500, baseline: 34 * 24 * capacityFactor }
-        ];
-      } else if (asset.type === 'CoolingTower') {
-        const capacityFactor = (asset.specifications.capacity || 750) / 750;
-        sensorConfigs = [
-          { type: 'temp_supply', unit: '°C', min: 25, max: 35, baseline: 29.2 + Math.random() * 1.6 },
-          { type: 'temp_return', unit: '°C', min: 32, max: 42, baseline: 36.5 + Math.random() * 1.0 },
-          { type: 'temp_external', unit: '°C', min: -5, max: 45, baseline: 26 + Math.random() * 8 },
-          { type: 'humidity', unit: '%', min: 30, max: 90, baseline: 65 + Math.random() * 10 },
-          { type: 'power_kw', unit: 'kW', min: 8 * capacityFactor, max: 25 * capacityFactor, baseline: 12 * capacityFactor + Math.random() * 2 },
-          { type: 'current', unit: 'A', min: 20 * capacityFactor, max: 60 * capacityFactor, baseline: 32 * capacityFactor + Math.random() * 4 },
-          { type: 'vibration', unit: 'mm/s', min: 2.0, max: 10, baseline: 4.2 + Math.random() * 0.6 },
-          { type: 'voltage', unit: 'V', min: 460, max: 500, baseline: 478 + Math.random() * 4 },
-          { type: 'rpm_fan', unit: 'RPM', min: 200, max: 500, baseline: 320 + Math.random() * 40 },
-          { type: 'airflow', unit: 'm³/h', min: 50000 * capacityFactor, max: 120000 * capacityFactor, baseline: 85000 * capacityFactor + Math.random() * 5000 },
-          { type: 'energy_kwh', unit: 'kWh', min: 0, max: 600, baseline: 12 * 24 * capacityFactor }
-        ];
-      } else if (asset.type === 'Boiler') {
-        const capacityFactor = (asset.specifications.capacity || 300) / 300;
-        sensorConfigs = [
-          { type: 'temp_supply', unit: '°C', min: 60, max: 85, baseline: 72 + Math.random() * 3 },
-          { type: 'temp_return', unit: '°C', min: 50, max: 75, baseline: 62 + Math.random() * 3 },
-          { type: 'pressure_suction', unit: 'kPa', min: 100, max: 300, baseline: 180 + Math.random() * 20 },
-          { type: 'power_kw', unit: 'kW', min: 80 * capacityFactor, max: 200 * capacityFactor, baseline: 140 * capacityFactor + Math.random() * 10 },
-          { type: 'current', unit: 'A', min: 150 * capacityFactor, max: 400 * capacityFactor, baseline: 280 * capacityFactor + Math.random() * 15 },
-          { type: 'vibration', unit: 'mm/s', min: 1.0, max: 6, baseline: 2.2 + Math.random() * 0.3 },
-          { type: 'voltage', unit: 'V', min: 460, max: 500, baseline: 478 + Math.random() * 4 },
-          { type: 'energy_kwh', unit: 'kWh', min: 0, max: 5000, baseline: 140 * 24 * capacityFactor },
-          { type: 'compressor_state', unit: '', min: 0, max: 1, baseline: 1 }
-        ];
+    
+    // Only JE02 sensors for Oncocentro AHUs
+    const je02Sensors = [
+      {
+        je02_id: 'JE02-AHU-001',
+        equipment_tag: 'AHU-001',
+        assetId: 'ahu-001-onco',
+        location: 'Oncologia - Quimioterapia',
+        data: { INPUT1: 1, INPUT2: 0, RELE: 1, WRSSI: -60, VAR0: 224, VAR1: 515, CNTSERR: 0, UPTIME: 1234 }
+      },
+      {
+        je02_id: 'JE02-AHU-002',
+        equipment_tag: 'AHU-002',
+        assetId: 'ahu-002-onco',
+        location: 'Laboratório - Análises Clínicas',
+        data: { INPUT1: 1, INPUT2: 0, RELE: 0, WRSSI: -64, VAR0: 231, VAR1: 498, CNTSERR: 0, UPTIME: 2450 }
+      },
+      {
+        je02_id: 'JE02-AHU-003',
+        equipment_tag: 'AHU-003',
+        assetId: 'ahu-003-onco',
+        location: 'Centro Cirúrgico - Sala 1',
+        data: { INPUT1: 1, INPUT2: 0, RELE: 1, WRSSI: -58, VAR0: 218, VAR1: 540, CNTSERR: 1, UPTIME: 3675 }
+      },
+      {
+        je02_id: 'JE02-AHU-004',
+        equipment_tag: 'AHU-004',
+        assetId: 'ahu-004-onco',
+        location: 'UTI - Adulto',
+        data: { INPUT1: 1, INPUT2: 0, RELE: 1, WRSSI: -66, VAR0: 235, VAR1: 520, CNTSERR: 0, UPTIME: 4890 }
+      },
+      {
+        je02_id: 'JE02-AHU-005',
+        equipment_tag: 'AHU-005',
+        assetId: 'ahu-005-onco',
+        location: 'Imagem - Ressonância',
+        data: { INPUT1: 0, INPUT2: 0, RELE: 0, WRSSI: -55, VAR0: 246, VAR1: 585, CNTSERR: 2, UPTIME: 6120 }
+      },
+      {
+        je02_id: 'JE02-AHU-006',
+        equipment_tag: 'AHU-006',
+        assetId: 'ahu-006-onco',
+        location: 'Farmácia - Manipulação',
+        data: { INPUT1: 0, INPUT2: 1, RELE: 0, WRSSI: -72, VAR0: 212, VAR1: 610, CNTSERR: 0, UPTIME: 7300 }
+      },
+      {
+        je02_id: 'JE02-AHU-007',
+        equipment_tag: 'AHU-007',
+        assetId: 'ahu-007-onco',
+        location: 'Administrativo - Recepção',
+        data: { INPUT1: 1, INPUT2: 0, RELE: 1, WRSSI: -59, VAR0: 228, VAR1: 560, CNTSERR: 0, UPTIME: 8510 }
       }
+    ];
 
-      sensorConfigs.forEach(config => {
-        this.sensors.push({
-          id: `${asset.id}-${config.type}`,
-          tag: `${asset.tag}_${config.type.toUpperCase()}`,
-          assetId: asset.id,
-          type: config.type as any,
-          unit: config.unit,
-          location: asset.location,
-          online: Math.random() > 0.008, // 0.8% chance offline (more realistic)
-          lastReading: null,
-          availability: 95.2 + Math.random() * 4.3, // 95-99.5% availability
-          min: config.min,
-          max: config.max,
-          setpoint: config.setpoint,
-          baseline: config.baseline
-        });
+    je02Sensors.forEach(je02 => {
+      // Add INPUT1 sensor (Digital Input 1 - Binary 0 or 1)
+      // Force integer value: 0 or 1 only (no decimals)
+      this.sensors.push({
+        id: `${je02.assetId}-je02-input1`,
+        tag: `${je02.je02_id}_INPUT1`,
+        assetId: je02.assetId,
+        type: 'input1' as any,
+        unit: '',
+        location: je02.location,
+        online: true,
+        lastReading: {
+          value: je02.data.INPUT1 === 1 ? 1 : 0, // Ensure integer 0 or 1
+          timestamp: new Date(),
+          quality: 'good'
+        },
+        availability: 99.5,
+        min: 0,
+        max: 1,
+        setpoint: undefined
+      });
+
+      // Add INPUT2 sensor (Digital Input 2 - Binary 0 or 1)
+      // Force integer value: 0 or 1 only (no decimals)
+      this.sensors.push({
+        id: `${je02.assetId}-je02-input2`,
+        tag: `${je02.je02_id}_INPUT2`,
+        assetId: je02.assetId,
+        type: 'input2' as any,
+        unit: '',
+        location: je02.location,
+        online: true,
+        lastReading: {
+          value: je02.data.INPUT2 === 1 ? 1 : 0, // Ensure integer 0 or 1
+          timestamp: new Date(),
+          quality: 'good'
+        },
+        availability: 99.5,
+        min: 0,
+        max: 1,
+        setpoint: undefined
+      });
+
+      // Add RELE sensor (Relay Output - Binary 0 or 1)
+      // Force integer value: 0 or 1 only (no decimals)
+      this.sensors.push({
+        id: `${je02.assetId}-je02-rele`,
+        tag: `${je02.je02_id}_RELE`,
+        assetId: je02.assetId,
+        type: 'rele' as any,
+        unit: '',
+        location: je02.location,
+        online: true,
+        lastReading: {
+          value: je02.data.RELE === 1 ? 1 : 0, // Ensure integer 0 or 1
+          timestamp: new Date(),
+          quality: 'good'
+        },
+        availability: 99.5,
+        min: 0,
+        max: 1,
+        setpoint: undefined
+      });
+
+      // Add RSSI sensor (WiFi signal strength)
+      this.sensors.push({
+        id: `${je02.assetId}-je02-rssi`,
+        tag: `${je02.je02_id}_RSSI`,
+        assetId: je02.assetId,
+        type: 'rssi' as any,
+        unit: 'dBm',
+        location: je02.location,
+        online: true,
+        lastReading: {
+          value: je02.data.WRSSI,
+          timestamp: new Date(),
+          quality: 'good'
+        },
+        availability: 99.5,
+        min: -80,
+        max: -45,
+        setpoint: undefined
+      });
+
+      // Add UPTIME sensor
+      this.sensors.push({
+        id: `${je02.assetId}-je02-uptime`,
+        tag: `${je02.je02_id}_UPTIME`,
+        assetId: je02.assetId,
+        type: 'uptime' as any,
+        unit: 's',
+        location: je02.location,
+        online: true,
+        lastReading: {
+          value: je02.data.UPTIME,
+          timestamp: new Date(),
+          quality: 'good'
+        },
+        availability: 99.5,
+        min: 0,
+        max: 999999,
+        setpoint: undefined
       });
     });
   }
@@ -455,51 +490,60 @@ export class SimulationEngine {
             
             let value = this.generateSensorValue(sensor, timestamp);
             
-            // Apply seasonal effects
-            if (['temp_external', 'temp_supply', 'temp_return', 'humidity'].includes(sensor.type)) {
-              value += seasonalOffset;
-            } else if (['power_kw', 'current', 'energy_kwh'].includes(sensor.type)) {
-              value *= (1 + seasonalOffset);
-            }
-            
-            // Apply load multiplier for operational sensors
-            if (['power_kw', 'current', 'airflow', 'rpm_fan', 'energy_kwh'].includes(sensor.type)) {
-              value *= finalLoadMultiplier;
-            }
-            
-            // Apply equipment degradation/improvement over time
-            value *= trendMultiplier;
-            
-            // Apply accumulated drift (slow degradation/improvement over time)
-            driftAccumulation += (Math.random() - 0.5) * 0.08;
-            value += driftAccumulation;
-            
-            // Add occasional anomalies
-            if (Math.random() < 0.0008) { // 0.08% chance of significant anomaly
-              const anomalyTypes = ['spike', 'dip', 'step'];
-              const anomalyType = anomalyTypes[Math.floor(Math.random() * anomalyTypes.length)];
-              
-              switch (anomalyType) {
-                case 'spike':
-                  value *= 1.2 + Math.random() * 0.3; // 20-50% spike
-                  break;
-                case 'dip':
-                  value *= 0.5 + Math.random() * 0.3; // 50-80% dip
-                  break;
-                case 'step':
-                  driftAccumulation += (Math.random() - 0.5) * 0.5; // Step change in baseline
-                  break;
+            // Force binary sensors to be exactly 0 or 1 (no decimals)
+            // Skip all calculations for digital I/O sensors
+            if (sensor.tag?.includes('_INPUT1') || sensor.tag?.includes('_INPUT2') || sensor.tag?.includes('_RELE')) {
+              value = value === 1 ? 1 : 0;
+            } else {
+              // Apply seasonal effects
+              if (['temp_external', 'temp_supply', 'temp_return', 'humidity'].includes(sensor.type)) {
+                value += seasonalOffset;
+              } else if (['power_kw', 'current', 'energy_kwh'].includes(sensor.type)) {
+                value *= (1 + seasonalOffset);
               }
+              
+              // Apply load multiplier for operational sensors
+              if (['power_kw', 'current', 'airflow', 'rpm_fan', 'energy_kwh'].includes(sensor.type)) {
+                value *= finalLoadMultiplier;
+              }
+              
+              // Apply equipment degradation/improvement over time
+              value *= trendMultiplier;
+              
+              // Apply accumulated drift (slow degradation/improvement over time)
+              driftAccumulation += (Math.random() - 0.5) * 0.08;
+              value += driftAccumulation;
             }
             
-            // Add random variations (instrumentation noise)
-            const noiseLevel = sensor.type === 'vibration' ? 0.03 : 
-                              sensor.type === 'temp_supply' ? 0.02 : 
-                              sensor.type === 'humidity' ? 0.5 : 0.01;
-            value += (Math.random() - 0.5) * 2 * noiseLevel * ((sensor as any).baseline || value);
-            
-            // Ensure value stays within realistic sensor limits
-            value = Math.max(sensor.min || -Infinity, Math.min(sensor.max || Infinity, value));
+            // Skip anomalies and noise for binary sensors
+            if (!(sensor.tag?.includes('_INPUT1') || sensor.tag?.includes('_INPUT2') || sensor.tag?.includes('_RELE'))) {
+              // Add occasional anomalies
+              if (Math.random() < 0.0008) { // 0.08% chance of significant anomaly
+                const anomalyTypes = ['spike', 'dip', 'step'];
+                const anomalyType = anomalyTypes[Math.floor(Math.random() * anomalyTypes.length)];
+                
+                switch (anomalyType) {
+                  case 'spike':
+                    value *= 1.2 + Math.random() * 0.3; // 20-50% spike
+                    break;
+                  case 'dip':
+                    value *= 0.5 + Math.random() * 0.3; // 50-80% dip
+                    break;
+                  case 'step':
+                    driftAccumulation += (Math.random() - 0.5) * 0.5; // Step change in baseline
+                    break;
+                }
+              }
+              
+              // Add random variations (instrumentation noise)
+              const noiseLevel = sensor.type === 'vibration' ? 0.03 : 
+                                sensor.type === 'temp_supply' ? 0.02 : 
+                                sensor.type === 'humidity' ? 0.5 : 0.01;
+              value += (Math.random() - 0.5) * 2 * noiseLevel * ((sensor as any).baseline || value);
+              
+              // Ensure value stays within realistic sensor limits
+              value = Math.max(sensor.min || -Infinity, Math.min(sensor.max || Infinity, value));
+            }
             
             // Add data quality variations
             let quality: 'good' | 'uncertain' | 'bad' = 'good';
@@ -530,9 +574,16 @@ export class SimulationEngine {
       // Update sensor's last reading
       const lastData = data[data.length - 1];
       if (lastData) {
+        let finalValue = lastData.value;
+        
+        // Force binary sensors to be exactly 0 or 1 (no decimals)
+        if (sensor.tag?.includes('_INPUT1') || sensor.tag?.includes('_INPUT2') || sensor.tag?.includes('_RELE')) {
+          finalValue = finalValue === 1 ? 1 : 0;
+        }
+        
         sensor.lastReading = {
           timestamp: lastData.timestamp,
-          value: lastData.value,
+          value: finalValue,
           quality: lastData.quality
         };
       }
@@ -610,83 +661,36 @@ export class SimulationEngine {
     const now = new Date();
     
     const alertTemplates = [
+      // JE02 Sensor Alerts (Oncocentro)
       {
-        assetId: 'chill-001',
-        assetTag: 'CHILL-001',
+        assetId: 'ahu-006-onco',
+        assetTag: 'AHU-006',
         severity: 'High' as Alert['severity'],
-        type: 'superheat',
-        message: 'Superheat elevated - Possible refrigerant leak: 11.8 K (Normal: 4-8 K)',
-        ruleName: 'superheat_monitoring',
-        sensorValue: 11.8,
-        sensorUnit: 'K'
+        type: 'je02_fault',
+        message: 'Falha detectada pelo sensor JE02 - Equipamento em modo FAULT (INPUT2=1)',
+        ruleName: 'je02_fault_monitoring',
+        sensorValue: 1,
+        sensorUnit: ''
       },
       {
-        assetId: 'chill-002',
-        assetTag: 'CHILL-002',
+        assetId: 'ahu-005-onco',
+        assetTag: 'AHU-005',
         severity: 'Medium' as Alert['severity'],
-        type: 'maintenance',
-        message: 'Maintenance overdue by 3 days - Performance degradation detected',
-        ruleName: 'maintenance_schedule'
+        type: 'je02_errors',
+        message: 'Múltiplos erros de comunicação detectados - CNTSERR: 2',
+        ruleName: 'je02_communication_monitoring',
+        sensorValue: 2,
+        sensorUnit: ''
       },
       {
-        assetId: 'vrf-002',
-        assetTag: 'VRF-002',
-        severity: 'Medium' as Alert['severity'],
-        type: 'vibration',
-        message: 'Bearing wear detected - Vibration elevated: 4.8 mm/s RMS (Warning: 4.0 mm/s)',
-        ruleName: 'vibration_monitoring',
-        sensorValue: 4.8,
-        sensorUnit: 'mm/s'
-      },
-      {
-        assetId: 'ahu-003',
+        assetId: 'ahu-003-onco',
         assetTag: 'AHU-003',
-        severity: 'High' as Alert['severity'],
-        type: 'dp_filter',
-        message: 'Filter nearly critical - Pressure drop: 287.5 Pa (Limit: 280 Pa)',
-        ruleName: 'filter_monitoring',
-        sensorValue: 287.5,
-        sensorUnit: 'Pa'
-      },
-      {
-        assetId: 'ahu-004',
-        assetTag: 'AHU-004',
-        severity: 'Medium' as Alert['severity'],
-        type: 'temp_supply',
-        message: 'Supply temperature deviation - Control valve issue: 18.7°C (Setpoint: 16.0°C)',
-        ruleName: 'temp_supply_monitoring',
-        sensorValue: 18.7,
-        sensorUnit: '°C'
-      },
-      {
-        assetId: 'ahu-001',
-        assetTag: 'AHU-001',
         severity: 'Low' as Alert['severity'],
-        type: 'power_kw',
-        message: 'Power consumption increase detected: 57.2 kW (15% above baseline)',
-        ruleName: 'power_monitoring',
-        sensorValue: 57.2,
-        sensorUnit: 'kW'
-      },
-      {
-        assetId: 'vrf-001',
-        assetTag: 'VRF-001',
-        severity: 'Medium' as Alert['severity'],
-        type: 'humidity',
-        message: 'High humidity detected in zone - Possible outdoor air damper stuck: 66.8% RH',
-        ruleName: 'humidity_monitoring',
-        sensorValue: 66.8,
-        sensorUnit: '%'
-      },
-      {
-        assetId: 'chill-001',
-        assetTag: 'CHILL-001',
-        severity: 'Medium' as Alert['severity'],
-        type: 'pressure_discharge',
-        message: 'High discharge pressure - Condenser fouling suspected: 1876 kPa (Normal: 1200-1600 kPa)',
-        ruleName: 'pressure_monitoring',
-        sensorValue: 1876,
-        sensorUnit: 'kPa'
+        type: 'je02_errors',
+        message: 'Erro de comunicação detectado - CNTSERR: 1',
+        ruleName: 'je02_communication_monitoring',
+        sensorValue: 1,
+        sensorUnit: ''
       }
     ];
     
@@ -708,6 +712,14 @@ export class SimulationEngine {
     const hour = timestamp.getHours();
     const dayOfYear = Math.floor((timestamp.getTime() - new Date(timestamp.getFullYear(), 0, 0).getTime()) / 86400000);
     const asset = this.assets.find(a => a.id === sensor.assetId);
+    
+    // Binary sensors (INPUT1, INPUT2, RELE) - return exact 0 or 1 values
+    // These represent digital inputs/outputs and must be exactly 0 or 1 (no decimals)
+    if (sensor.tag?.includes('_INPUT1') || sensor.tag?.includes('_INPUT2') || sensor.tag?.includes('_RELE')) {
+      // Return the exact lastReading value (0 or 1) without any variation
+      const value = sensor.lastReading?.value ?? 0;
+      return value === 1 ? 1 : 0; // Ensure only 0 or 1
+    }
     
     // Use baseline value from sensor config
     let baseValue = (sensor as any).baseline || ((sensor.min || 0) + (sensor.max || 100)) * 0.5;
@@ -940,7 +952,13 @@ export class SimulationEngine {
       this.sensors.forEach(sensor => {
         if (!sensor.online) return;
         
-        const value = this.generateSensorValue(sensor, now);
+        let value = this.generateSensorValue(sensor, now);
+        
+        // Force binary sensors to be exactly 0 or 1 (no decimals)
+        if (sensor.tag?.includes('_INPUT1') || sensor.tag?.includes('_INPUT2') || sensor.tag?.includes('_RELE')) {
+          value = value === 1 ? 1 : 0;
+        }
+        
         const point: TelemetryPoint = {
           sensorId: sensor.id,
           timestamp: now,
