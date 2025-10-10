@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from './components/layout/Layout';
-import { OverviewPage } from './components/pages/OverviewPage';
+import { EditableOverviewPage } from './components/pages/EditableOverviewPage';
 import { AssetsPage } from './components/pages/AssetsPage';
 import { AssetDetailPage } from './components/pages/AssetDetailPage';
 import { SensorsPage } from './components/pages/SensorsPage';
@@ -47,7 +47,7 @@ function App() {
 
     switch (currentPage) {
       case 'overview':
-        return <OverviewPage />;
+        return <EditableOverviewPage />;
       case 'custom-dashboard':
         return <CustomDashboard />;
       case 'assets':
@@ -65,7 +65,7 @@ function App() {
       case 'settings':
         return <SettingsPage />;
       default:
-        return <OverviewPage />;
+        return <EditableOverviewPage />;
     }
   };
 

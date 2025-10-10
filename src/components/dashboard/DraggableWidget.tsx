@@ -3,6 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { DashboardWidget } from '../../types/dashboard';
 import { useDashboardStore } from '../../store/dashboard';
+import { useOverviewStore } from '../../store/overview';
 import { cn } from '../../lib/utils';
 import { WidgetConfig } from './WidgetConfig';
 import { KPICard } from '../ui/KPICard';
@@ -31,10 +32,44 @@ interface DraggableWidgetProps {
 }
 
 export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layoutId, data }) => {
-  const editMode = useDashboardStore(state => state.editMode);
-  const removeWidget = useDashboardStore(state => state.removeWidget);
+  // Suporta tanto dashboard quanto overview
+  const isOverview = layoutId === 'overview';
+  const editMode = isOverview 
+    ? useOverviewStore(state => state.editMode)
+    : useDashboardStore(state => state.editMode);
+  
   const [configOpen, setConfigOpen] = useState(false);
   const [toggleState, setToggleState] = useState(false);
+
+  // Helper function to get real data for overview widgets based on widget ID
+  const getWidgetData = () => {
+    if (!isOverview || !data) return null;
+
+    // Get assets from data
+    const assets = data.assets || [];
+    const onlineAssets = assets.filter((a: any) => a.status === 'OK').length;
+    const totalAssets = assets.length;
+
+    // Map widget IDs to their corresponding data
+    switch (widget.id) {
+      case 'overview-mttf':
+        return { value: data.kpis?.mtbf || '168', unit: 'horas', trend: 5.3, color: '#8b5cf6' };
+      case 'overview-availability':
+        return { value: data.kpis?.uptime || 98.5, unit: '%', target: 99.5, color: '#10b981' };
+      case 'overview-active-alerts':
+        return { value: data.kpis?.activeAlerts || 0, unit: '', color: '#f59e0b' };
+      case 'overview-health-score':
+        return { value: data.kpis?.avgHealth || 92, unit: '%', color: '#10b981' };
+      case 'overview-sensor-availability':
+        return { value: data.kpis?.uptime || 95.2, unit: '%', trend: 2.1, color: '#3b82f6' };
+      case 'overview-equipment-online':
+        return { value: `${onlineAssets}/${totalAssets}`, unit: '', color: '#10b981' };
+      default:
+        return null;
+    }
+  };
+
+  const widgetData = getWidgetData();
   
   const {
     attributes,
@@ -65,7 +100,11 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
 
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
-    removeWidget(layoutId, widget.id);
+    if (isOverview) {
+      useOverviewStore.getState().removeWidget(widget.id);
+    } else {
+      useDashboardStore.getState().removeWidget(layoutId, widget.id);
+    }
   };
 
   const renderContent = () => {
@@ -86,6 +125,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
     switch (widget.type) {
       // ============ CARDS SIMPLES ============
       case 'card-value':
+        const cardValue = widgetData?.value ?? (Math.random() * 100).toFixed(widget.config?.decimals || 2);
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col justify-between">
             <div className="flex items-start justify-between mb-4">
@@ -93,17 +133,19 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" title="Online" />
             </div>
             <div className="flex-1 flex flex-col justify-center">
-              <div className="text-4xl font-bold" style={{ color: widget.config?.color || '#3b82f6' }}>
-                {(Math.random() * 100).toFixed(widget.config?.decimals || 2)}
+              <div className="text-4xl font-bold" style={{ color: widgetData?.color || widget.config?.color || '#3b82f6' }}>
+                {cardValue}
               </div>
               <div className="text-sm text-muted-foreground mt-1">
-                {widget.config?.unit || 'valor'}
+                {widgetData?.unit || widget.config?.unit || 'valor'}
               </div>
             </div>
           </div>
         );
 
       case 'card-stat':
+        const statValue = widgetData?.value ?? (Math.random() * 100).toFixed(widget.config?.decimals || 2);
+        const statTrend = widgetData?.trend ?? 5.2;
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col justify-between">
             <div className="flex items-start justify-between mb-4">
@@ -111,12 +153,14 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
               <Activity className="w-5 h-5 text-muted-foreground" />
             </div>
             <div className="flex-1 flex flex-col justify-center">
-              <div className="text-3xl font-bold" style={{ color: widget.config?.color || '#3b82f6' }}>
-                {(Math.random() * 100).toFixed(widget.config?.decimals || 2)}
+              <div className="text-3xl font-bold" style={{ color: widgetData?.color || widget.config?.color || '#3b82f6' }}>
+                {statValue}
               </div>
-              <div className="text-sm text-muted-foreground mt-1">{widget.config?.unit || 'valor'}</div>
+              <div className="text-sm text-muted-foreground mt-1">{widgetData?.unit || widget.config?.unit || 'valor'}</div>
               <div className="flex items-center gap-2 mt-2">
-                <span className="text-green-600 text-sm font-medium">↑ 5.2%</span>
+                <span className={`text-sm font-medium ${statTrend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {statTrend >= 0 ? '↑' : '↓'} {Math.abs(statTrend).toFixed(1)}%
+                </span>
                 <span className="text-xs text-muted-foreground">vs ontem</span>
               </div>
             </div>
@@ -124,34 +168,35 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         );
 
       case 'card-progress':
-        const progressValue = Math.random() * 100;
+        const progressValue = widgetData?.value ?? Math.random() * 100;
+        const progressTarget = widgetData?.target ?? widget.config?.target ?? 100;
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col justify-between">
             <div className="flex items-start justify-between mb-4">
               <h3 className="text-sm font-medium text-muted-foreground">{widget.config?.label || widget.title}</h3>
             </div>
             <div className="flex-1 flex flex-col justify-center">
-              <div className="text-2xl font-bold mb-2" style={{ color: widget.config?.color || '#3b82f6' }}>
-                {progressValue.toFixed(0)}%
+              <div className="text-2xl font-bold mb-2" style={{ color: widgetData?.color || widget.config?.color || '#3b82f6' }}>
+                {typeof progressValue === 'number' ? progressValue.toFixed(1) : progressValue}%
               </div>
               <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
                 <div 
                   className="h-full rounded-full transition-all duration-300"
                   style={{ 
                     width: `${progressValue}%`,
-                    backgroundColor: widget.config?.color || '#3b82f6'
+                    backgroundColor: widgetData?.color || widget.config?.color || '#3b82f6'
                   }}
                 />
               </div>
               <div className="text-xs text-muted-foreground mt-2">
-                {widget.config?.minValue || 0} - {widget.config?.maxValue || 100} {widget.config?.unit}
+                Meta: {progressTarget}% {widgetData?.unit || widget.config?.unit || ''}
               </div>
             </div>
           </div>
         );
 
       case 'card-gauge':
-        const gaugeValue = Math.random() * 100;
+        const gaugeValue = widgetData?.value ?? Math.random() * 100;
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col items-center justify-center">
             <h3 className="text-sm font-medium text-muted-foreground mb-4">{widget.config?.label || widget.title}</h3>
@@ -238,6 +283,17 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       case 'chart-line-multi':
       case 'chart-area':
       case 'chart-spline':
+        // Se for overview e temos dados de consumo histórico, renderizar gráfico real
+        if (isOverview && widget.id === 'overview-consumption-trend' && data?.energyData) {
+          return (
+            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
+              <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
+              <ChartWrapper title="Consumo Histórico" height={250}>
+                <BarChartEnergy data={data.energyData} height={250} />
+              </ChartWrapper>
+            </div>
+          );
+        }
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
             <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
@@ -255,6 +311,30 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       case 'chart-bar':
       case 'chart-bar-horizontal':
       case 'chart-column':
+        // Se for overview e widget de consumo por equipamento
+        if (isOverview && widget.id === 'overview-consumption-bar' && data?.assets) {
+          return (
+            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
+              <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
+              <div className="flex-1 flex items-end justify-between gap-2 px-4">
+                {data.assets.slice(0, 6).map((asset: any, i: number) => {
+                  const maxConsumption = Math.max(...data.assets.map((a: any) => a.powerConsumption));
+                  const height = (asset.powerConsumption / maxConsumption) * 100;
+                  return (
+                    <div key={i} className="flex flex-col items-center gap-1 flex-1">
+                      <div className="text-xs font-medium text-center mb-1">{asset.powerConsumption.toFixed(0)}kWh</div>
+                      <div 
+                        className="w-full rounded-t-md transition-all bg-blue-500"
+                        style={{ height: `${height}%` }}
+                      />
+                      <span className="text-xs text-muted-foreground truncate w-full text-center">{asset.tag}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
             <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
@@ -282,6 +362,64 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       case 'chart-pie':
       case 'chart-donut':
       case 'chart-radial':
+        // Se for overview e widget de distribuição de consumo
+        if (isOverview && widget.id === 'overview-consumption-distribution' && data?.assets) {
+          // Agrupar consumo por tipo de equipamento
+          const consumptionByType = data.assets.reduce((acc: any, asset: any) => {
+            const type = asset.type;
+            acc[type] = (acc[type] || 0) + asset.powerConsumption;
+            return acc;
+          }, {});
+          
+          const total = Object.values(consumptionByType).reduce((a: any, b: any) => a + b, 0) as number;
+          const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4'];
+          let currentAngle = 0;
+
+          return (
+            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
+              <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
+              <div className="flex-1 flex items-center justify-center gap-6">
+                <div className="relative w-48 h-48">
+                  <svg className="w-full h-full transform -rotate-90">
+                    {Object.entries(consumptionByType).map(([type, value]: [string, any], i) => {
+                      const percentage = (value / total) * 100;
+                      const angle = (percentage / 100) * 360;
+                      const circumference = 2 * Math.PI * 80;
+                      const strokeDasharray = `${(angle / 360) * circumference} ${circumference}`;
+                      const rotation = currentAngle;
+                      currentAngle += angle;
+                      
+                      return (
+                        <circle 
+                          key={type}
+                          cx="96" 
+                          cy="96" 
+                          r="80" 
+                          stroke={colors[i % colors.length]}
+                          strokeWidth="32" 
+                          fill="none"
+                          strokeDasharray={strokeDasharray}
+                          style={{ transform: `rotate(${rotation}deg)`, transformOrigin: '96px 96px' }}
+                        />
+                      );
+                    })}
+                  </svg>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {Object.entries(consumptionByType).map(([type, value]: [string, any], i) => {
+                    const percentage = ((value / total) * 100).toFixed(1);
+                    return (
+                      <div key={type} className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors[i % colors.length] }} />
+                        <span className="text-sm">{type}: {percentage}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        }
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
             <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
@@ -472,6 +610,70 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       case 'table-data':
       case 'table-realtime':
       case 'table-alerts':
+        // Se for overview e widget de últimos alertas
+        if (isOverview && widget.id === 'overview-alerts-table' && data?.topAlerts) {
+          const getSeverityColor = (severity: string) => {
+            switch (severity) {
+              case 'Critical': return 'bg-red-100 text-red-800';
+              case 'High': return 'bg-orange-100 text-orange-800';
+              case 'Medium': return 'bg-yellow-100 text-yellow-800';
+              case 'Low': return 'bg-blue-100 text-blue-800';
+              default: return 'bg-gray-100 text-gray-800';
+            }
+          };
+
+          const getTimeAgo = (date: Date | string | number) => {
+            const now = new Date();
+            const timestamp = date instanceof Date ? date : new Date(date);
+            const diffMs = now.getTime() - timestamp.getTime();
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffDays = Math.floor(diffHours / 24);
+            if (diffDays > 0) return `${diffDays}d atrás`;
+            if (diffHours > 0) return `${diffHours}h atrás`;
+            return 'Agora mesmo';
+          };
+
+          return (
+            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
+              <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
+              {data.topAlerts.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center text-center text-muted-foreground">
+                  <div>
+                    <AlertTriangle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Nenhum alerta ativo no momento</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 overflow-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Severidade</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Ativo</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Mensagem</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Há quanto tempo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.topAlerts.map((alert: any) => (
+                        <tr key={alert.id} className="border-b last:border-b-0 hover:bg-muted/50">
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(alert.severity)}`}>
+                              {alert.severity}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 font-medium">{alert.assetTag}</td>
+                          <td className="py-3 px-4 text-sm">{alert.message}</td>
+                          <td className="py-3 px-4 text-sm text-muted-foreground">{getTimeAgo(alert.timestamp)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          );
+        }
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
             <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
@@ -503,6 +705,17 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       // ============ OUTROS ============
       case 'heatmap-time':
       case 'heatmap-matrix':
+        // Se for overview e widget de mapa de calor de alertas
+        if (isOverview && widget.id === 'overview-alerts-heatmap' && data?.alertHeatmapData) {
+          return (
+            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
+              <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
+              <ChartWrapper title="Mapa de Calor de Alertas" height={200}>
+                <HeatmapAlarms data={data.alertHeatmapData} height={200} />
+              </ChartWrapper>
+            </div>
+          );
+        }
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
             <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
