@@ -30,7 +30,7 @@ const DEMO_USERS: Record<string, { password: string; user: User }> = {
       email: 'admin@traksense.com',
       name: 'Admin TrakSense',
       role: 'admin',
-      site: 'Data Center Principal',
+      site: 'OncoCentro',
       tenant: 'traksense'
     }
   },
