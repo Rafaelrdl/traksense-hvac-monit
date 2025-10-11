@@ -601,7 +601,7 @@ export class SimulationEngine {
       {
         assetId: 'ahu-001',
         assetTag: 'AHU-001',
-        message: 'Filter maintenance completed - Pressure drop normalized: 89.2 Pa',
+        message: 'Manutenção de filtro concluída - Queda de pressão normalizada: 89.2 Pa',
         severity: 'Medium' as Alert['severity'],
         type: 'dp_filter',
         ruleName: 'dp_filter_monitoring',
@@ -610,7 +610,7 @@ export class SimulationEngine {
       {
         assetId: 'vrf-001',
         assetTag: 'VRF-001',
-        message: 'Temperature control restored - System rebalanced',
+        message: 'Controle de temperatura restaurado - Sistema rebalanceado',
         severity: 'Low' as Alert['severity'],
         type: 'temp_supply',
         ruleName: 'temp_supply_monitoring',
@@ -619,7 +619,7 @@ export class SimulationEngine {
       {
         assetId: 'chill-002',
         assetTag: 'CHILL-002',
-        message: 'Refrigerant leak detected and repaired - System recharged',
+        message: 'Vazamento de fluido refrigerante detectado e reparado - Sistema recarregado',
         severity: 'High' as Alert['severity'],
         type: 'refrigerant',
         ruleName: 'refrigerant_monitoring',
@@ -628,7 +628,7 @@ export class SimulationEngine {
       {
         assetId: 'ahu-002',
         assetTag: 'AHU-002',
-        message: 'Bearing replacement completed - Vibration normalized',
+        message: 'Substituição de rolamento concluída - Vibração normalizada',
         severity: 'Medium' as Alert['severity'],
         type: 'vibration',
         ruleName: 'vibration_monitoring',
@@ -667,7 +667,7 @@ export class SimulationEngine {
         assetTag: 'AHU-006',
         severity: 'High' as Alert['severity'],
         type: 'je02_fault',
-        message: 'Falha detectada pelo sensor JE02 - Equipamento em modo FAULT (INPUT2=1)',
+        message: 'Inversor em falha - Sinal de erro recebido do inversor de frequência (INPUT2=1)',
         ruleName: 'je02_fault_monitoring',
         sensorValue: 1,
         sensorUnit: ''
@@ -677,7 +677,7 @@ export class SimulationEngine {
         assetTag: 'AHU-005',
         severity: 'Medium' as Alert['severity'],
         type: 'je02_errors',
-        message: 'Múltiplos erros de comunicação detectados - CNTSERR: 2',
+        message: 'Múltiplos erros de comunicação serial - CNTSERR: 2',
         ruleName: 'je02_communication_monitoring',
         sensorValue: 2,
         sensorUnit: ''
@@ -687,7 +687,7 @@ export class SimulationEngine {
         assetTag: 'AHU-003',
         severity: 'Low' as Alert['severity'],
         type: 'je02_errors',
-        message: 'Erro de comunicação detectado - CNTSERR: 1',
+        message: 'Erro de comunicação serial - CNTSERR: 1',
         ruleName: 'je02_communication_monitoring',
         sensorValue: 1,
         sensorUnit: ''
@@ -1225,153 +1225,139 @@ export class SimulationEngine {
           if (value > 300) {
             shouldAlert = true;
             severity = 'High';
-            message = `Filter replacement critical - Pressure drop: ${value.toFixed(1)} Pa (Limit: 300 Pa)`;
+            message = `Troca de filtro crítica - Queda de pressão: ${value.toFixed(1)} Pa (Limite: 300 Pa)`;
           } else if (value > 250) {
             shouldAlert = true;
             severity = 'Medium';
-            message = `Filter maintenance required - Pressure drop: ${value.toFixed(1)} Pa (Warning: 250 Pa)`;
+            message = `Manutenção de filtro necessária - Queda de pressão: ${value.toFixed(1)} Pa (Aviso: 250 Pa)`;
           } else if (value > 200) {
             shouldAlert = true;
             severity = 'Low';
-            message = `Filter monitoring - Pressure drop elevated: ${value.toFixed(1)} Pa`;
+            message = `Monitoramento de filtro - Queda de pressão elevada: ${value.toFixed(1)} Pa`;
           }
           break;
-          
         case 'temp_supply':
           if (sensor.setpoint) {
             const deviation = Math.abs(value - sensor.setpoint);
             if (deviation > 4) {
               shouldAlert = true;
               severity = 'High';
-              message = `Supply temperature critically off setpoint: ${value.toFixed(1)}°C (Setpoint: ${sensor.setpoint}°C, Deviation: ${deviation.toFixed(1)}°C)`;
+              message = `Temperatura de insuflamento fora do setpoint: ${value.toFixed(1)}°C (Setpoint: ${sensor.setpoint}°C, Desvio: ${deviation.toFixed(1)}°C)`;
             } else if (deviation > 2.5) {
               shouldAlert = true;
               severity = 'Medium';
-              message = `Supply temperature deviation: ${value.toFixed(1)}°C (Setpoint: ${sensor.setpoint}°C, Deviation: ${deviation.toFixed(1)}°C)`;
+              message = `Desvio de temperatura de insuflamento: ${value.toFixed(1)}°C (Setpoint: ${sensor.setpoint}°C, Desvio: ${deviation.toFixed(1)}°C)`;
             }
           }
           break;
-          
         case 'vibration':
           if (value > 6.5) {
             shouldAlert = true;
             severity = 'High';
-            message = `Critical vibration level - Immediate inspection required: ${value.toFixed(2)} mm/s RMS (Limit: 6.5 mm/s)`;
+            message = `Nível crítico de vibração - Inspeção imediata necessária: ${value.toFixed(2)} mm/s RMS (Limite: 6.5 mm/s)`;
           } else if (value > 4.5) {
             shouldAlert = true;
             severity = 'Medium';
-            message = `Elevated vibration detected - Schedule maintenance: ${value.toFixed(2)} mm/s RMS (Warning: 4.5 mm/s)`;
+            message = `Vibração elevada detectada - Agendar manutenção: ${value.toFixed(2)} mm/s RMS (Aviso: 4.5 mm/s)`;
           }
           break;
-          
         case 'power_kw':
           const baseline = (sensor as any).baseline || 50;
           if (value > baseline * 1.3) {
             shouldAlert = true;
             severity = 'Medium';
-            message = `High power consumption detected: ${value.toFixed(1)} kW (${(((value/baseline)-1)*100).toFixed(1)}% above baseline)`;
+            message = `Consumo de energia elevado: ${value.toFixed(1)} kW (${(((value/baseline)-1)*100).toFixed(1)}% acima do valor de referência)`;
           }
           break;
-          
         case 'current':
           if (asset.specifications.maxCurrent && value > asset.specifications.maxCurrent * 0.95) {
             shouldAlert = true;
             severity = 'High';
-            message = `Current near maximum rating: ${value.toFixed(1)} A (Max: ${asset.specifications.maxCurrent} A)`;
+            message = `Corrente próxima do limite máximo: ${value.toFixed(1)} A (Máx: ${asset.specifications.maxCurrent} A)`;
           } else if (asset.specifications.maxCurrent && value > asset.specifications.maxCurrent * 0.85) {
             shouldAlert = true;
             severity = 'Medium';
-            message = `High current consumption: ${value.toFixed(1)} A (${((value/asset.specifications.maxCurrent)*100).toFixed(1)}% of max)`;
+            message = `Consumo de corrente elevado: ${value.toFixed(1)} A (${((value/asset.specifications.maxCurrent)*100).toFixed(1)}% do máximo)`;
           }
           break;
-          
         case 'superheat':
           if (value > 10) {
             shouldAlert = true;
             severity = 'Medium';
-            message = `Excessive superheat - Check refrigerant charge: ${value.toFixed(1)} K (Normal: 4-8 K)`;
+            message = `Superaquecimento excessivo - Verifique carga de fluido refrigerante: ${value.toFixed(1)} K (Normal: 4-8 K)`;
           } else if (value < 3) {
             shouldAlert = true;
             severity = 'High';
-            message = `Low superheat - Risk of liquid flood back: ${value.toFixed(1)} K (Minimum: 3 K)`;
+            message = `Superaquecimento baixo - Risco de retorno de líquido: ${value.toFixed(1)} K (Mínimo: 3 K)`;
           }
           break;
-          
         case 'subcooling':
           if (value < 2) {
             shouldAlert = true;
             severity = 'Medium';
-            message = `Low subcooling - Possible refrigerant leak: ${value.toFixed(1)} K (Normal: 3-7 K)`;
+            message = `Sub-resfriamento baixo - Possível vazamento de fluido refrigerante: ${value.toFixed(1)} K (Normal: 3-7 K)`;
           } else if (value > 8) {
             shouldAlert = true;
             severity = 'Medium';
-            message = `High subcooling - Check system charge: ${value.toFixed(1)} K (Normal: 3-7 K)`;
+            message = `Sub-resfriamento alto - Verifique carga do sistema: ${value.toFixed(1)} K (Normal: 3-7 K)`;
           }
           break;
-          
         case 'humidity':
           if (value > 65) {
             shouldAlert = true;
             severity = 'Medium';
-            message = `High humidity level: ${value.toFixed(1)}% RH (Comfort limit: 60%)`;
+            message = `Nível de umidade elevado: ${value.toFixed(1)}% UR (Limite de conforto: 60%)`;
           } else if (value < 40) {
             shouldAlert = true;
             severity = 'Low';
-            message = `Low humidity level: ${value.toFixed(1)}% RH (Comfort minimum: 40%)`;
+            message = `Nível de umidade baixo: ${value.toFixed(1)}% UR (Mínimo de conforto: 40%)`;
           }
           break;
-          
         case 'pressure_suction':
           if (value < 300 || value > 550) {
             shouldAlert = true;
             severity = 'Medium';
-            message = `Suction pressure out of range: ${value.toFixed(0)} kPa (Normal: 350-500 kPa)`;
+            message = `Pressão de sucção fora da faixa: ${value.toFixed(0)} kPa (Normal: 350-500 kPa)`;
           }
           break;
-          
         case 'pressure_discharge':
           if (value > 1700) {
             shouldAlert = true;
             severity = 'High';
-            message = `High discharge pressure: ${value.toFixed(0)} kPa (High limit: 1700 kPa)`;
+            message = `Pressão de descarga elevada: ${value.toFixed(0)} kPa (Limite alto: 1700 kPa)`;
           } else if (value < 1200) {
             shouldAlert = true;
             severity = 'Medium';
-            message = `Low discharge pressure: ${value.toFixed(0)} kPa (Low limit: 1200 kPa)`;
+            message = `Pressão de descarga baixa: ${value.toFixed(0)} kPa (Limite baixo: 1200 kPa)`;
           }
           break;
-          
         case 'cop':
           if (value < 3.0) {
             shouldAlert = true;
             severity = 'Medium';
-            message = `Low COP efficiency: ${value.toFixed(2)} (Below optimal: 3.5)`;
+            message = `Eficiência COP baixa: ${value.toFixed(2)} (Abaixo do ideal: 3.5)`;
           }
           break;
-          
         case 'eer':
           if (value < 8.5) {
             shouldAlert = true;
             severity = 'Medium';
-            message = `Low EER efficiency: ${value.toFixed(1)} (Below optimal: 9.5)`;
+            message = `Eficiência EER baixa: ${value.toFixed(1)} (Abaixo do ideal: 9.5)`;
           }
           break;
-          
         case 'airflow':
           const nominalFlow = (sensor as any).baseline || 25000;
           if (value < nominalFlow * 0.7) {
             shouldAlert = true;
             severity = 'High';
-            message = `Low airflow detected: ${(value/1000).toFixed(1)} m³/h (${((value/nominalFlow)*100).toFixed(0)}% of nominal)`;
+            message = `Vazão de ar baixa detectada: ${(value/1000).toFixed(1)} m³/h (${((value/nominalFlow)*100).toFixed(0)}% do nominal)`;
           }
           break;
       }
-      
-      // Check for sensor offline condition
       if (!sensor.online) {
         shouldAlert = true;
         severity = 'Medium';
-        message = `${sensorName} sensor offline - No communication detected`;
+        message = `Sensor ${sensorName} offline - Sem comunicação detectada`;
       }
       
       // Check for stale data (older than 5 minutes)
@@ -1379,7 +1365,7 @@ export class SimulationEngine {
       if (dataAge > 5 && sensor.online) {
         shouldAlert = true;
         severity = 'Low';
-        message = `${sensorName} data stale - Last reading: ${Math.round(dataAge)} minutes ago`;
+        message = `Dados do sensor ${sensorName} desatualizados - Última leitura: ${Math.round(dataAge)} minutos atrás`;
       }
       
       if (shouldAlert) {
@@ -1457,7 +1443,7 @@ export class SimulationEngine {
             assetTag: asset.tag,
             severity: 'Medium',
             type: 'maintenance' as any,
-            message: `Scheduled maintenance overdue by ${daysSinceMaintenance - maintenanceInterval} days`,
+            message: `Manutenção programada atrasada em ${daysSinceMaintenance - maintenanceInterval} dias`,
             timestamp: now,
             acknowledged: false,
             resolved: false,
@@ -1478,7 +1464,7 @@ export class SimulationEngine {
             assetTag: asset.tag,
             severity: 'Low',
             type: 'maintenance_reminder' as any,
-            message: `Maintenance due in ${maintenanceInterval - daysSinceMaintenance} days`,
+            message: `Manutenção preventiva prevista para daqui a ${maintenanceInterval - daysSinceMaintenance} dias`,
             timestamp: now,
             acknowledged: false,
             resolved: false,

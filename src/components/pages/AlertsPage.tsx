@@ -21,14 +21,14 @@ export const AlertsPage: React.FC = () => {
   const handleAcknowledge = (alertId: string) => {
     acknowledgeAlert(alertId);
     toast.success('Alerta reconhecido', {
-      description: 'O alerta foi marcado como reconhecido com sucesso.',
+      description: 'Marcado para monitoramento',
     });
   };
 
   const handleResolve = (alertId: string) => {
     resolveAlert(alertId);
     toast.success('Alerta resolvido', {
-      description: 'O alerta foi marcado como resolvido com sucesso.',
+      description: 'Problema solucionado',
     });
   };
 
@@ -221,7 +221,7 @@ export const AlertsPage: React.FC = () => {
                           onClick={() => handleResolve(alert.id)}
                           className="px-3 py-1 text-xs bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors font-medium"
                         >
-                          Resolver
+                          Resolvido
                         </button>
                       </>
                     )}
