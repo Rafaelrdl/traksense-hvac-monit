@@ -34,6 +34,7 @@ interface AppState {
   
   refreshData: () => void;
   acknowledgeAlert: (alertId: string) => void;
+  resolveAlert: (alertId: string) => void;
   
   // Asset actions
   addAsset: (asset: Omit<HVACAsset, 'id' | 'healthScore' | 'powerConsumption' | 'status' | 'operatingHours' | 'lastMaintenance'>) => void;
@@ -161,7 +162,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   acknowledgeAlert: (alertId) => {
     const alerts = get().alerts.map(alert => 
       alert.id === alertId 
-        ? { ...alert, acknowledged: true, acknowledgedAt: new Date() }
+        ? { ...alert, acknowledged: true, acknowledgedAt: new Date(), acknowledgedBy: 'Admin TrakSense' }
+        : alert
+    );
+    set({ alerts });
+  },
+
+  resolveAlert: (alertId) => {
+    const alerts = get().alerts.map(alert => 
+      alert.id === alertId 
+        ? { ...alert, resolved: true, resolvedAt: new Date() }
         : alert
     );
     set({ alerts });
