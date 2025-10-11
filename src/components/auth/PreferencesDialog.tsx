@@ -60,11 +60,6 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
     highAlerts: true,
     mediumAlerts: true,
     lowAlerts: false,
-    
-    // Dashboard
-    autoRefresh: true,
-    refreshInterval: 5, // minutos
-    compactView: false,
   });
 
   const handleSave = () => {
@@ -91,9 +86,6 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
       highAlerts: true,
       mediumAlerts: true,
       lowAlerts: false,
-      autoRefresh: true,
-      refreshInterval: 5,
-      compactView: false,
     });
     
     toast.success('Preferências restauradas', {
@@ -117,10 +109,9 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
         </DialogHeader>
 
         <Tabs defaultValue="appearance" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="appearance">Aparência</TabsTrigger>
             <TabsTrigger value="notifications">Notificações</TabsTrigger>
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           </TabsList>
 
           {/* Tab: Aparência */}
@@ -374,90 +365,6 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
                       />
                     </div>
                   </div>
-                </div>
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          {/* Tab: Dashboard */}
-          <TabsContent value="dashboard" className="space-y-4 mt-4">
-            <ScrollArea className="h-[400px] pr-4">
-              <div className="space-y-6">
-                {/* Atualização Automática */}
-                <div className="space-y-4">
-                  <Label className="text-base font-semibold">Atualização Automática</Label>
-
-                  <div className="flex items-center justify-between p-3 rounded-lg border">
-                    <div>
-                      <p className="font-medium">Atualizar automaticamente</p>
-                      <p className="text-xs text-muted-foreground">
-                        Recarregar dados periodicamente
-                      </p>
-                    </div>
-                    <Switch
-                      checked={preferences.autoRefresh}
-                      onCheckedChange={(checked) =>
-                        setPreferences({ ...preferences, autoRefresh: checked })
-                      }
-                    />
-                  </div>
-
-                  {preferences.autoRefresh && (
-                    <div className="space-y-2 ml-3">
-                      <Label htmlFor="refreshInterval" className="text-sm">
-                        Intervalo de atualização
-                      </Label>
-                      <Select
-                        value={preferences.refreshInterval.toString()}
-                        onValueChange={(value) =>
-                          setPreferences({ ...preferences, refreshInterval: parseInt(value) })
-                        }
-                      >
-                        <SelectTrigger id="refreshInterval" className="h-11">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">1 minuto</SelectItem>
-                          <SelectItem value="5">5 minutos</SelectItem>
-                          <SelectItem value="10">10 minutos</SelectItem>
-                          <SelectItem value="15">15 minutos</SelectItem>
-                          <SelectItem value="30">30 minutos</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                </div>
-
-                <Separator />
-
-                {/* Visualização */}
-                <div className="space-y-4">
-                  <Label className="text-base font-semibold">Visualização</Label>
-
-                  <div className="flex items-center justify-between p-3 rounded-lg border">
-                    <div>
-                      <p className="font-medium">Modo compacto</p>
-                      <p className="text-xs text-muted-foreground">
-                        Exibir mais informações em menos espaço
-                      </p>
-                    </div>
-                    <Switch
-                      checked={preferences.compactView}
-                      onCheckedChange={(checked) =>
-                        setPreferences({ ...preferences, compactView: checked })
-                      }
-                    />
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Informações */}
-                <div className="p-4 rounded-lg bg-muted/50 border">
-                  <p className="text-sm text-muted-foreground">
-                    💡 <strong>Dica:</strong> Você pode personalizar ainda mais seu dashboard usando 
-                    a funcionalidade de <strong>Dashboard Customizado</strong> no menu de navegação.
-                  </p>
                 </div>
               </div>
             </ScrollArea>
