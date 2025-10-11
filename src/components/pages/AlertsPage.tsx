@@ -1,10 +1,36 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../../store/app';
 import { AlertTriangle, Bell, CheckCircle, Clock } from 'lucide-react';
+import { toast } from 'sonner';
 
 export const AlertsPage: React.FC = () => {
-  const { alerts, acknowledgeAlert } = useAppStore();
+  const { alerts, acknowledgeAlert, resolveAlert } = useAppStore();
   const [filterStatus, setFilterStatus] = useState<string>('active');
+
+  // Traduções
+  const translateSeverity = (severity: string): string => {
+    const translations: Record<string, string> = {
+      'Critical': 'Crítico',
+      'High': 'Alto',
+      'Medium': 'Médio',
+      'Low': 'Baixo'
+    };
+    return translations[severity] || severity;
+  };
+
+  const handleAcknowledge = (alertId: string) => {
+    acknowledgeAlert(alertId);
+    toast.success('Alerta reconhecido', {
+      description: 'Marcado para monitoramento',
+    });
+  };
+
+  const handleResolve = (alertId: string) => {
+    resolveAlert(alertId);
+    toast.success('Alerta resolvido', {
+      description: 'Problema solucionado',
+    });
+  };
 
   const filteredAlerts = alerts.filter(alert => {
     switch (filterStatus) {
@@ -17,13 +43,20 @@ export const AlertsPage: React.FC = () => {
   });
 
   const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'Critical': return 'bg-red-100 text-red-800 border-red-200';
-      case 'High': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'Medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Low': return 'bg-blue-100 text-blue-800 border-blue-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    const normalizedSeverity = severity.toLowerCase();
+    if (normalizedSeverity.includes('critical') || normalizedSeverity.includes('crítico')) {
+      return 'bg-red-100 text-red-800 border-red-200';
     }
+    if (normalizedSeverity.includes('high') || normalizedSeverity.includes('alto')) {
+      return 'bg-orange-100 text-orange-800 border-orange-200';
+    }
+    if (normalizedSeverity.includes('medium') || normalizedSeverity.includes('médio')) {
+      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    }
+    if (normalizedSeverity.includes('low') || normalizedSeverity.includes('baixo')) {
+      return 'bg-blue-100 text-blue-800 border-blue-200';
+    }
+    return 'bg-gray-100 text-gray-800 border-gray-200';
   };
 
   const getTimeAgo = (date: Date | string | number) => {
@@ -147,7 +180,7 @@ export const AlertsPage: React.FC = () => {
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getSeverityColor(alert.severity)}`}>
-                        {alert.severity}
+                        {translateSeverity(alert.severity)}
                       </span>
                       <span className="font-medium">{alert.assetTag}</span>
                       <span className="text-sm text-muted-foreground">
@@ -167,24 +200,35 @@ export const AlertsPage: React.FC = () => {
                   </div>
 
                   <div className="flex flex-col space-y-2 ml-4">
+                    {/* Botão Reconhecer - apenas para alertas ativos */}
                     {!alert.acknowledged && !alert.resolved && (
                       <button
-                        onClick={() => acknowledgeAlert(alert.id)}
-                        className="px-3 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors"
+                        onClick={() => handleAcknowledge(alert.id)}
+                        className="px-3 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors font-medium"
                       >
                         Reconhecer
                       </button>
                     )}
                     
-                    {alert.acknowledged && (
-                      <div className="flex items-center space-x-1 text-xs text-green-600">
-                        <CheckCircle className="w-3 h-3" />
-                        <span>Reconhecido</span>
-                      </div>
+                    {/* Botão Resolver - para alertas reconhecidos */}
+                    {alert.acknowledged && !alert.resolved && (
+                      <>
+                        <div className="flex items-center space-x-1 text-xs text-yellow-600 mb-1">
+                          <CheckCircle className="w-3 h-3" />
+                          <span>Reconhecido</span>
+                        </div>
+                        <button
+                          onClick={() => handleResolve(alert.id)}
+                          className="px-3 py-1 text-xs bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors font-medium"
+                        >
+                          Resolvido
+                        </button>
+                      </>
                     )}
                     
+                    {/* Status Resolvido - apenas visual */}
                     {alert.resolved && (
-                      <div className="flex items-center space-x-1 text-xs text-gray-500">
+                      <div className="flex items-center space-x-1 text-xs text-green-600">
                         <CheckCircle className="w-3 h-3" />
                         <span>Resolvido</span>
                       </div>
