@@ -94,8 +94,8 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
                 alt="TrakSense Logo" 
                 className="w-8 h-8 object-contain"
               />
-              <h1 className="text-lg md:text-xl font-bold tracking-tight">
-                <span className="font-sans">Trak</span><span className="font-sans">Sense</span>
+              <h1 className="text-lg md:text-xl tracking-tight font-archive">
+                TrakSense
               </h1>
             </div>
             
