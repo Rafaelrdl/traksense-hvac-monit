@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/app';
 import { useAuthStore } from '../../store/auth';
-import { Bell, Clock, Menu, LogOut, User, ChevronDown, Settings, UserCog, Users } from 'lucide-react';
+import { Bell, Clock, Menu, LogOut, ChevronDown, Settings, UserCog, Users } from 'lucide-react';
 import logoImage from '@/assets/images/LOGO.png';
 import { HorizontalNav, MobileNav } from './HorizontalNav';
 import { EditProfileDialog } from '../auth/EditProfileDialog';
@@ -17,8 +17,10 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getInitials } from '@/lib/get-initials';
 
 interface HeaderProps {
   currentPage: string;
@@ -146,13 +148,25 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
                 <DropdownMenuTrigger asChild>
                   <button 
                     className="flex items-center space-x-2 px-3 py-2 rounded-md text-white/90 hover:text-white hover:bg-white/10 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
+                    aria-label="Menu do usuário"
                   >
-                    <div className="w-8 h-8 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-                      <User className="w-4 h-4" />
-                    </div>
+                    <Avatar className="w-8 h-8 ring-1 ring-white/40">
+                      <AvatarImage 
+                        src={user.photoUrl || ''} 
+                        alt={user.name}
+                        className="object-cover"
+                      />
+                      <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground font-semibold text-sm">
+                        {getInitials(user.name)}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="hidden md:flex flex-col items-start text-left">
                       <span className="text-sm font-medium">{user.name}</span>
-                      <span className="text-xs opacity-75">{user.role}</span>
+                      <span className="text-xs opacity-75">
+                        {user.role === 'operator' ? 'Operador' :
+                         user.role === 'viewer' ? 'Visualizador' : 
+                         user.role === 'admin' ? 'Administrador' : user.role}
+                      </span>
                     </div>
                     <ChevronDown className="w-4 h-4 opacity-75" />
                   </button>
