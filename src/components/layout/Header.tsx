@@ -3,7 +3,7 @@ import { useAppStore } from '../../store/app';
 import { useAuthStore } from '../../store/auth';
 import { Clock, Menu, LogOut, ChevronDown, Settings, UserCog, Users } from 'lucide-react';
 import logoImage from '@/assets/images/LOGO.png';
-import traksenseLogo from '@/assets/images/traksense-logo.svg';
+import traksenseLogo from '@/assets/images/traksense-logo.png';
 import { HorizontalNav, MobileNav } from './HorizontalNav';
 import { EditProfileDialog } from '../auth/EditProfileDialog';
 import { TeamManagementDialog } from '../auth/TeamManagementDialog';
@@ -101,7 +101,7 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
               <img 
                 src={traksenseLogo} 
                 alt="TrakSense" 
-                className="h-6 md:h-18 w-auto object-contain"
+                className="h-6 md:h-20 w-auto object-contain"
               />
             </div>
             
