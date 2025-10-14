@@ -3,7 +3,7 @@ import { useAppStore } from '../../store/app';
 import { useAuthStore } from '../../store/auth';
 import { Clock, Menu, LogOut, ChevronDown, Settings, UserCog, Users } from 'lucide-react';
 import logoImage from '@/assets/images/LOGO.png';
-import traksenseLogo from '@/assets/images/traksense-logo.png';
+import traksenseLogo from '@/assets/images/traksense-logo.svg';
 import { HorizontalNav, MobileNav } from './HorizontalNav';
 import { EditProfileDialog } from '../auth/EditProfileDialog';
 import { TeamManagementDialog } from '../auth/TeamManagementDialog';

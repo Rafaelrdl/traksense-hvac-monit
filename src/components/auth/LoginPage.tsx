@@ -20,6 +20,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import logoImage from '@/assets/images/Logo-white.png';
+import traksenseLogo from '@/assets/images/traksense-logo.svg';
 import { useAuthStore, getDemoUsers } from '../../store/auth';
 import { toast } from 'sonner';
 
@@ -114,9 +115,11 @@ export const LoginPage: React.FC = () => {
             
             {/* Platform Name */}
             <div className="space-y-0.5">
-              <h1 className="text-3xl text-white tracking-tight" style={{ fontFamily: 'Archive, sans-serif' }}>
-                <span>TrakSense</span>
-              </h1>
+              <img 
+                src={traksenseLogo} 
+                alt="TrakSense" 
+                className="h-8 w-auto object-contain"
+              />
             </div>
           </div>
           
