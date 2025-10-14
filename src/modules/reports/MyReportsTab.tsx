@@ -148,29 +148,6 @@ export function MyReportsTab({ onRequestCustomReport }: MyReportsTabProps) {
         </div>
       </div>
 
-      {/* KPIs Agregados */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-card rounded-xl p-4 border shadow-sm">
-          <div className="text-2xl font-bold text-primary">98.5%</div>
-          <div className="text-sm text-muted-foreground">Uptime Médio</div>
-        </div>
-        
-        <div className="bg-card rounded-xl p-4 border shadow-sm">
-          <div className="text-2xl font-bold text-primary">15,240</div>
-          <div className="text-sm text-muted-foreground">kWh Consumidos</div>
-        </div>
-        
-        <div className="bg-card rounded-xl p-4 border shadow-sm">
-          <div className="text-2xl font-bold text-primary">87%</div>
-          <div className="text-sm text-muted-foreground">Saúde Média</div>
-        </div>
-        
-        <div className="bg-card rounded-xl p-4 border shadow-sm">
-          <div className="text-2xl font-bold text-primary">12</div>
-          <div className="text-sm text-muted-foreground">Alertas Resolvidos</div>
-        </div>
-      </div>
-
       {/* Generated Reports List */}
       <div className="bg-card rounded-xl p-6 border shadow-sm">
         <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
