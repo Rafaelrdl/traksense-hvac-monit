@@ -54,12 +54,6 @@ function App() {
         message: 'Chiller 02 operando com temperatura de condensação acima do limite',
         severity: 'critical',
       });
-      
-      addNotification({
-        title: 'Manutenção programada',
-        message: 'Lembre-se: manutenção preventiva do AHU-001 agendada para amanhã às 14h',
-        severity: 'info',
-      });
     }
   }, [addNotification, notifications.length]);
 

@@ -3,11 +3,11 @@ import { useAppStore } from '../../store/app';
 import { useAuthStore } from '../../store/auth';
 import { Clock, Menu, LogOut, ChevronDown, Settings, UserCog, Users } from 'lucide-react';
 import logoImage from '@/assets/images/LOGO.png';
+import traksenseLogo from '@/assets/images/traksense-logo.png';
 import { HorizontalNav, MobileNav } from './HorizontalNav';
 import { EditProfileDialog } from '../auth/EditProfileDialog';
 import { TeamManagementDialog } from '../auth/TeamManagementDialog';
 import { PreferencesDialog } from '../auth/PreferencesDialog';
-import { LogoWordmark } from '@/components/brand/LogoWordmark';
 import { HeaderNotifications } from '@/components/header/HeaderNotifications';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -92,13 +92,17 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
             )}
             
             {/* Logo and Brand */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-1.5">
               <img 
                 src={logoImage} 
                 alt="TrakSense Logo" 
                 className="w-8 h-8 object-contain"
               />
-              <LogoWordmark size="md" className="text-primary-foreground" />
+              <img 
+                src={traksenseLogo} 
+                alt="TrakSense" 
+                className="h-6 md:h-18 w-auto object-contain"
+              />
             </div>
             
             {/* Tenant/Site Selector */}
