@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/app';
 import { useAuthStore } from '../../store/auth';
-import { Bell, Clock, Menu, LogOut, ChevronDown, Settings, UserCog, Users } from 'lucide-react';
+import { Clock, Menu, LogOut, ChevronDown, Settings, UserCog, Users } from 'lucide-react';
 import logoImage from '@/assets/images/LOGO.png';
 import { HorizontalNav, MobileNav } from './HorizontalNav';
 import { EditProfileDialog } from '../auth/EditProfileDialog';
 import { TeamManagementDialog } from '../auth/TeamManagementDialog';
 import { PreferencesDialog } from '../auth/PreferencesDialog';
+import { LogoWordmark } from '@/components/brand/LogoWordmark';
+import { HeaderNotifications } from '@/components/header/HeaderNotifications';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { 
@@ -96,9 +98,7 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
                 alt="TrakSense Logo" 
                 className="w-8 h-8 object-contain"
               />
-              <h1 className="text-lg md:text-xl tracking-tight" style={{ fontFamily: 'Archive, sans-serif', fontWeight: 400, letterSpacing: 'normal' }}>
-                <span>TrakSense</span>
-              </h1>
+              <LogoWordmark size="md" className="text-primary-foreground" />
             </div>
             
             {/* Tenant/Site Selector */}
@@ -129,18 +129,14 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
           </div>
 
           {/* Right Actions */}
-          <div className="flex items-center space-x-4">
-            {/* Alert Bell */}
-            <div className="relative">
-              <Bell className="w-5 h-5 opacity-90" />
-              {activeAlerts.length > 0 && (
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full flex items-center justify-center">
-                  <span className="text-xs font-bold text-destructive-foreground">
-                    {activeAlerts.length > 9 ? '9+' : activeAlerts.length}
-                  </span>
-                </div>
-              )}
-            </div>
+          <div className="flex items-center space-x-2">
+            {/* Notifications */}
+            <HeaderNotifications 
+              onNavigateToAlerts={() => {
+                onNavigate('alerts');
+                setIsMobileMenuOpen(false);
+              }}
+            />
 
             {/* User Menu */}
             {user && (

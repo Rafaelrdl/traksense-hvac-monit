@@ -12,10 +12,12 @@ import { SettingsPage } from './components/pages/SettingsPage';
 import { CustomDashboard } from './components/dashboard/CustomDashboard';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { useAppStore } from './store/app';
+import { useNotifications } from './store/notifications';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('overview');
   const selectedAssetId = useAppStore(state => state.selectedAssetId);
+  const { add: addNotification, items: notifications } = useNotifications();
 
   // Start simulation on app load
   useEffect(() => {
@@ -30,6 +32,36 @@ function App() {
       stopSimulation();
     };
   }, []); // Empty dependency array to run only once
+  
+  // Seed notifications in development mode
+  useEffect(() => {
+    if (import.meta.env.DEV && notifications.length === 0) {
+      // Add some sample notifications for testing
+      addNotification({
+        title: 'HVAC: Consumo acima do esperado',
+        message: 'Zona L2 apresenta consumo 18% acima da meta estabelecida',
+        severity: 'warning',
+      });
+      
+      addNotification({
+        title: 'Sensores sincronizados',
+        message: 'Todos os sensores da planta foram sincronizados com sucesso',
+        severity: 'info',
+      });
+      
+      addNotification({
+        title: 'Alerta crítico: Temperatura alta',
+        message: 'Chiller 02 operando com temperatura de condensação acima do limite',
+        severity: 'critical',
+      });
+      
+      addNotification({
+        title: 'Manutenção programada',
+        message: 'Lembre-se: manutenção preventiva do AHU-001 agendada para amanhã às 14h',
+        severity: 'info',
+      });
+    }
+  }, [addNotification, notifications.length]);
 
   const handleNavigation = (page: string) => {
     setCurrentPage(page);
