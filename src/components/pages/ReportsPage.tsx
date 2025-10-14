@@ -1,198 +1,88 @@
 import React, { useState } from 'react';
-import { FileText, Download, Calendar as CalendarSmallIcon, Filter } from 'lucide-react';
+import { Mail, FileText, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { DatePicker } from '@/components/ui/date-picker';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RequestReportMiniModal } from '@/modules/reports/RequestReportMiniModal';
+import { ReportTemplatesGrid } from '@/modules/reports/ReportTemplatesGrid';
+import { MyReportsTab } from '@/modules/reports/MyReportsTab';
+import type { ReportTemplate } from '@/modules/reports/templates';
 
 export const ReportsPage: React.FC = () => {
-  const [startDate, setStartDate] = useState<Date>();
-  const [endDate, setEndDate] = useState<Date>();
-  const [scope, setScope] = useState<string>('all');
-  const [reportType, setReportType] = useState<string>('operational');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<ReportTemplate | null>(null);
+  const [activeTab, setActiveTab] = useState('my-reports');
+
+  const handleRequestReport = (template?: ReportTemplate) => {
+    if (template) {
+      setSelectedTemplate(template);
+    } else {
+      setSelectedTemplate(null);
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedTemplate(null);
+  };
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Relatórios</h1>
           <p className="text-muted-foreground">
-            Análises históricas e exportação de dados
+            Gere relatórios customizados e explore modelos predefinidos
           </p>
         </div>
+        <Button 
+          onClick={() => handleRequestReport()} 
+          className="flex items-center gap-2 transition-colors"
+        >
+          <Mail className="w-4 h-4" />
+          Solicitar relatórios personalizados
+        </Button>
       </div>
 
-      {/* Report Controls */}
-      <div className="bg-card rounded-xl p-6 border shadow-sm">
-        <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
-          <Filter className="w-5 h-5" />
-          <span>Controles de Relatório</span>
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Date Range */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Período</Label>
-            <div className="grid grid-cols-2 gap-2">
-              <DatePicker
-                selected={startDate}
-                onChange={(date) => setStartDate(date || undefined)}
-                placeholderText="Início"
-              />
-              <DatePicker
-                selected={endDate}
-                onChange={(date) => setEndDate(date || undefined)}
-                placeholderText="Fim"
-              />
+      {/* Tabs Navigation */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 lg:w-fit">
+          <TabsTrigger value="my-reports" className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            <span>Meus Relatórios</span>
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="flex items-center gap-2">
+            <Layers className="w-4 h-4" />
+            <span>Modelos</span>
+          </TabsTrigger>
+        </TabsList>
+
+        {/* My Reports Tab */}
+        <TabsContent value="my-reports" className="space-y-6">
+          <MyReportsTab onRequestCustomReport={() => handleRequestReport()} />
+        </TabsContent>
+
+        {/* Templates Tab */}
+        <TabsContent value="templates" className="space-y-6">
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Modelos de Relatório</h2>
+              <p className="text-sm text-muted-foreground">
+                Explore nossos modelos predefinidos e solicite relatórios baseados neles
+              </p>
             </div>
+            <ReportTemplatesGrid onRequest={handleRequestReport} />
           </div>
-          
-          {/* Scope */}
-          <div className="space-y-3">
-            <Label htmlFor="scope-select" className="text-sm font-medium">Escopo</Label>
-            <Select value={scope} onValueChange={setScope}>
-              <SelectTrigger id="scope-select" className="w-full">
-                <SelectValue placeholder="Selecione o escopo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Ativos</SelectItem>
-                <SelectItem value="ahu">Apenas AHUs</SelectItem>
-                <SelectItem value="chiller">Apenas Chillers</SelectItem>
-                <SelectItem value="vrf">Apenas VRFs</SelectItem>
-                <SelectItem value="rtu">Apenas RTUs</SelectItem>
-                <SelectItem value="boiler">Apenas Boilers</SelectItem>
-                <SelectItem value="cooling-tower">Apenas Torres de Resfriamento</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {/* Report Type */}
-          <div className="space-y-3">
-            <Label htmlFor="report-type-select" className="text-sm font-medium">Tipo de Relatório</Label>
-            <Select value={reportType} onValueChange={setReportType}>
-              <SelectTrigger id="report-type-select" className="w-full">
-                <SelectValue placeholder="Selecione o tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="operational">Resumo Operacional</SelectItem>
-                <SelectItem value="energy">Análise Energética</SelectItem>
-                <SelectItem value="performance">Performance de Ativos</SelectItem>
-                <SelectItem value="alerts">Histórico de Alertas</SelectItem>
-                <SelectItem value="maintenance">Manutenções Realizadas</SelectItem>
-                <SelectItem value="efficiency">Eficiência Energética</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row gap-3 mt-6">
-          <Button 
-            className="flex items-center gap-2"
-            disabled={!startDate || !endDate}
-          >
-            <Filter className="w-4 h-4" />
-            Gerar Relatório
-          </Button>
-          <Button variant="outline" className="flex items-center gap-2">
-            <Download className="w-4 h-4" />
-            Exportar CSV
-          </Button>
-          <Button variant="outline" className="flex items-center gap-2">
-            <Download className="w-4 h-4" />
-            Exportar PDF
-          </Button>
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
 
-      {/* KPIs Agregados */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-card rounded-xl p-4 border shadow-sm">
-          <div className="text-2xl font-bold text-primary">98.5%</div>
-          <div className="text-sm text-muted-foreground">Uptime Médio</div>
-        </div>
-        
-        <div className="bg-card rounded-xl p-4 border shadow-sm">
-          <div className="text-2xl font-bold text-primary">15,240</div>
-          <div className="text-sm text-muted-foreground">kWh Consumidos</div>
-        </div>
-        
-        <div className="bg-card rounded-xl p-4 border shadow-sm">
-          <div className="text-2xl font-bold text-primary">87%</div>
-          <div className="text-sm text-muted-foreground">Saúde Média</div>
-        </div>
-        
-        <div className="bg-card rounded-xl p-4 border shadow-sm">
-          <div className="text-2xl font-bold text-primary">12</div>
-          <div className="text-sm text-muted-foreground">Alertas Resolvidos</div>
-        </div>
-      </div>
-
-      {/* Available Reports */}
-      <div className="bg-card rounded-xl p-6 border shadow-sm">
-        <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
-          <FileText className="w-5 h-5" />
-          <span>Relatórios Disponíveis</span>
-        </h3>
-        
-        <div className="space-y-4">
-          {[
-            {
-              title: 'Resumo Operacional Semanal',
-              description: 'Visão geral do desempenho de todos os ativos HVAC',
-              date: '2024-01-15',
-              type: 'PDF'
-            },
-            {
-              title: 'Análise de Consumo Energético',
-              description: 'Detalhamento do consumo energético por ativo e período',
-              date: '2024-01-14',
-              type: 'Excel'
-            },
-            {
-              title: 'Histórico de Manutenções',
-              description: 'Registro completo de manutenções preventivas e corretivas',
-              date: '2024-01-13',
-              type: 'PDF'
-            },
-            {
-              title: 'Dashboard de Performance',
-              description: 'Indicadores de performance e eficiência energética',
-              date: '2024-01-12',
-              type: 'Excel'
-            }
-          ].map((report, index) => (
-            <div key={index} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/30 transition-colors">
-              <div className="flex items-center space-x-4">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <FileText className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h4 className="font-medium">{report.title}</h4>
-                  <p className="text-sm text-muted-foreground">{report.description}</p>
-                  <div className="flex items-center space-x-4 mt-1">
-                    <span className="text-xs text-muted-foreground flex items-center space-x-1">
-                      <CalendarSmallIcon className="w-3 h-3" />
-                      <span>{report.date}</span>
-                    </span>
-                    <span className="px-2 py-1 bg-muted rounded text-xs">{report.type}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  Visualizar
-                </Button>
-                <Button size="sm" className="flex items-center gap-1">
-                  <Download className="w-3 h-3" />
-                  <span>Download</span>
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Request Report Modal */}
+      <RequestReportMiniModal
+        open={isModalOpen}
+        onOpenChange={handleCloseModal}
+        selectedTemplate={selectedTemplate}
+      />
     </div>
   );
 };
