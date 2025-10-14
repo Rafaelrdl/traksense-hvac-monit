@@ -58,19 +58,11 @@ export function MyReportsTab({ onRequestCustomReport }: MyReportsTabProps) {
     <div className="space-y-6">
       {/* Report Generation Controls */}
       <div className="bg-card rounded-xl p-6 border shadow-sm">
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
           <h3 className="text-lg font-semibold flex items-center space-x-2">
             <Filter className="w-5 h-5" />
             <span>Gerar Novo Relatório</span>
           </h3>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={onRequestCustomReport}
-            className="text-sm"
-          >
-            Solicitar personalizado
-          </Button>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -171,10 +163,10 @@ export function MyReportsTab({ onRequestCustomReport }: MyReportsTabProps) {
                       <span>{report.date}</span>
                     </span>
                     <span className="px-2 py-1 bg-muted rounded text-xs">{report.type}</span>
-                    <span className={`px-2 py-1 rounded text-xs ${
+                    <span className={`px-2 py-1 rounded text-xs font-medium text-white ${
                       report.status === 'Disponível' 
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
-                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'
+                        ? 'bg-chart-1'
+                        : 'bg-chart-2'
                     }`}>
                       {report.status}
                     </span>

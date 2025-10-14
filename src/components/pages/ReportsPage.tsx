@@ -36,13 +36,15 @@ export const ReportsPage: React.FC = () => {
             Gere relatórios customizados e explore modelos predefinidos
           </p>
         </div>
-        <Button 
-          onClick={() => handleRequestReport()} 
-          className="flex items-center gap-2 transition-colors"
-        >
-          <Mail className="w-4 h-4" />
-          Solicitar relatórios personalizados
-        </Button>
+        {activeTab === 'templates' && (
+          <Button 
+            onClick={() => handleRequestReport()} 
+            className="flex items-center gap-2 transition-colors"
+          >
+            <Mail className="w-4 h-4" />
+            Solicitar relatórios personalizados
+          </Button>
+        )}
       </div>
 
       {/* Tabs Navigation */}
