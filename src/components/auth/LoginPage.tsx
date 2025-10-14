@@ -114,7 +114,7 @@ export const LoginPage: React.FC = () => {
             <div className="w-12 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
             
             {/* Platform Name */}
-            <div className="space-y-0.5">
+            <div className="space-y-0.5 transform hover:scale-105 transition-transform duration-300">
               <img 
                 src={traksenseLogo} 
                 alt="TrakSense" 
