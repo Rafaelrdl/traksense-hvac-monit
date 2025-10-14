@@ -65,6 +65,28 @@ function App() {
     }
   };
 
+  // Listen for custom navigation events
+  useEffect(() => {
+    const handleNavigateToAsset = (event: CustomEvent) => {
+      const { assetId } = event.detail;
+      setCurrentPage('assets');
+      // The asset will be selected by the sensors page handler
+    };
+
+    const handleNavigateToPage = (event: CustomEvent) => {
+      const { page } = event.detail;
+      setCurrentPage(page);
+    };
+
+    window.addEventListener('navigate-to-asset', handleNavigateToAsset as EventListener);
+    window.addEventListener('navigate-to-page', handleNavigateToPage as EventListener);
+    
+    return () => {
+      window.removeEventListener('navigate-to-asset', handleNavigateToAsset as EventListener);
+      window.removeEventListener('navigate-to-page', handleNavigateToPage as EventListener);
+    };
+  }, []);
+
   const renderPage = () => {
     // Show asset detail if an asset is selected
     if (selectedAssetId && (currentPage === 'assets' || currentPage === 'overview')) {
