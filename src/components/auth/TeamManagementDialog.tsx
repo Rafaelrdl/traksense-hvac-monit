@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../../store/auth';
+import { useTeamStore, initializeDemoTeam } from '../../store/team';
 import {
   Dialog,
   DialogContent,
@@ -24,7 +25,10 @@ import {
   MoreVertical,
   CheckCircle2,
   Clock,
-  XCircle
+  XCircle,
+  KeyRound,
+  Copy,
+  Loader2
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -41,6 +45,12 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { generateInviteToken, generatePasswordResetToken } from '@/lib/token';
+import { saveInviteToken, savePasswordResetToken } from '@/lib/kv';
+import { renderInviteEmail } from '@/emails/invite-email';
+import { renderPasswordResetEmail } from '@/emails/password-reset-email';
+import { sendInviteEmail, sendPasswordResetEmail } from '@/services/email.provider';
+import { getInitials } from '@/lib/get-initials';
 
 interface TeamMember {
   id: string;
@@ -115,8 +125,10 @@ export const TeamManagementDialog: React.FC<TeamManagementDialogProps> = ({ open
   });
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState<string | null>(null);
 
-  const handleInviteMember = (e: React.FormEvent) => {
+  const handleInviteMember = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validação de email
@@ -139,23 +151,85 @@ export const TeamManagementDialog: React.FC<TeamManagementDialogProps> = ({ open
       return;
     }
 
-    // Adicionar convite pendente
-    const newInvite: PendingInvite = {
-      id: `inv-${Date.now()}`,
-      email: inviteData.email,
-      role: inviteData.role,
-      invitedAt: new Date(),
-      invitedBy: user?.name || 'Você'
-    };
+    setIsSendingInvite(true);
 
-    setPendingInvites([...pendingInvites, newInvite]);
+    try {
+      // Gerar token único
+      const token = generateInviteToken();
+      
+      // Obter URL base da aplicação
+      const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+      const inviteUrl = `${appUrl}/accept-invite?token=${token}`;
+      
+      // Salvar no KV (7 dias)
+      await saveInviteToken(token, {
+        teamId: 'team-1', // TODO: usar ID da equipe real
+        email: inviteData.email,
+        role: inviteData.role.toUpperCase() as 'ADMIN' | 'MEMBER',
+        invitedBy: user?.name || 'Você'
+      });
+      
+      // Renderizar template de e-mail
+      const emailTemplate = renderInviteEmail({
+        appName: 'TrakSense HVAC',
+        teamName: 'Equipe Principal', // TODO: usar nome da equipe real
+        invitedBy: user?.name || 'Administrador',
+        inviteUrl,
+        role: inviteData.role.toUpperCase() as 'ADMIN' | 'MEMBER'
+      });
+      
+      // Enviar e-mail
+      await sendInviteEmail(
+        inviteData.email,
+        emailTemplate.subject,
+        emailTemplate.html,
+        emailTemplate.text
+      );
+      
+      // Adicionar convite pendente na UI
+      const newInvite: PendingInvite = {
+        id: `inv-${Date.now()}`,
+        email: inviteData.email,
+        role: inviteData.role,
+        invitedAt: new Date(),
+        invitedBy: user?.name || 'Você'
+      };
 
-    toast.success('Convite enviado!', {
-      description: `Um convite foi enviado para ${inviteData.email}`,
-    });
+      setPendingInvites([...pendingInvites, newInvite]);
 
-    // Limpar formulário
-    setInviteData({ email: '', role: 'viewer' });
+      // Em dev, oferecer copiar link
+      if (!import.meta.env.VITE_RESEND_API_KEY) {
+        toast.success('Convite criado (DEV)', {
+          description: 'Link do convite copiado para clipboard',
+          action: {
+            label: 'Copiar Link',
+            onClick: () => {
+              navigator.clipboard.writeText(inviteUrl);
+              toast.success('Link copiado!');
+            }
+          },
+          duration: 10000
+        });
+        
+        // Copiar automaticamente em dev
+        navigator.clipboard.writeText(inviteUrl);
+      } else {
+        toast.success('Convite enviado!', {
+          description: `Um convite foi enviado para ${inviteData.email}`,
+        });
+      }
+
+      // Limpar formulário
+      setInviteData({ email: '', role: 'viewer' });
+      
+    } catch (error) {
+      console.error('Erro ao enviar convite:', error);
+      toast.error('Erro ao enviar convite', {
+        description: 'Ocorreu um erro ao processar o convite. Tente novamente.',
+      });
+    } finally {
+      setIsSendingInvite(false);
+    }
   };
 
   const handleChangeRole = (memberId: string, newRole: 'admin' | 'operator' | 'viewer') => {
@@ -193,13 +267,68 @@ export const TeamManagementDialog: React.FC<TeamManagementDialogProps> = ({ open
     });
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+  const handleSendPasswordReset = async (member: TeamMember) => {
+    setIsSendingReset(member.id);
+
+    try {
+      // Gerar token único para reset
+      const token = generatePasswordResetToken();
+      
+      // Obter URL base da aplicação
+      const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+      const resetUrl = `${appUrl}/reset-password?token=${token}`;
+      
+      // Salvar no KV (1 hora)
+      await savePasswordResetToken(token, {
+        userId: member.id,
+        email: member.email
+      });
+      
+      // Renderizar template de e-mail
+      const emailTemplate = renderPasswordResetEmail({
+        appName: 'TrakSense HVAC',
+        resetUrl,
+        userName: member.name
+      });
+      
+      // Enviar e-mail
+      await sendPasswordResetEmail(
+        member.email,
+        emailTemplate.subject,
+        emailTemplate.html,
+        emailTemplate.text
+      );
+      
+      // Em dev, oferecer copiar link
+      if (!import.meta.env.VITE_RESEND_API_KEY) {
+        toast.success('Link de reset criado (DEV)', {
+          description: 'Link copiado para clipboard',
+          action: {
+            label: 'Copiar Link',
+            onClick: () => {
+              navigator.clipboard.writeText(resetUrl);
+              toast.success('Link copiado!');
+            }
+          },
+          duration: 10000
+        });
+        
+        // Copiar automaticamente em dev
+        navigator.clipboard.writeText(resetUrl);
+      } else {
+        toast.success('E-mail de redefinição enviado!', {
+          description: `${member.name} receberá instruções no e-mail ${member.email}`,
+        });
+      }
+      
+    } catch (error) {
+      console.error('Erro ao enviar e-mail de reset:', error);
+      toast.error('Erro ao enviar e-mail', {
+        description: 'Ocorreu um erro ao processar a solicitação. Tente novamente.',
+      });
+    } finally {
+      setIsSendingReset(null);
+    }
   };
 
   const getRoleBadgeVariant = (role: string) => {
@@ -336,17 +465,37 @@ export const TeamManagementDialog: React.FC<TeamManagementDialogProps> = ({ open
 
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8"
+                              aria-label="Ações do membro"
+                            >
                               <MoreVertical className="w-4 h-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" className="w-64">
+                            {/* Apenas admin pode enviar reset de senha */}
+                            {user.role === 'admin' && member.id !== user.id && (
+                              <DropdownMenuItem
+                                onClick={() => handleSendPasswordReset(member)}
+                                disabled={isSendingReset === member.id}
+                                className="gap-2"
+                              >
+                                {isSendingReset === member.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <KeyRound className="w-4 h-4" />
+                                )}
+                                Enviar redefinição de senha
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem
                               onClick={() => handleRemoveMember(member.id)}
                               disabled={member.id === user.id}
-                              className="text-destructive focus:text-destructive"
+                              className="text-destructive focus:text-destructive gap-2"
                             >
-                              <Trash2 className="mr-2 h-4 w-4" />
+                              <Trash2 className="w-4 h-4" />
                               Remover da equipe
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -414,9 +563,22 @@ export const TeamManagementDialog: React.FC<TeamManagementDialogProps> = ({ open
                 </Select>
               </div>
 
-              <Button type="submit" className="w-full gap-2">
-                <UserPlus className="w-4 h-4" />
-                Enviar Convite
+              <Button 
+                type="submit" 
+                className="w-full gap-2"
+                disabled={isSendingInvite}
+              >
+                {isSendingInvite ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4" />
+                    Enviar Convite
+                  </>
+                )}
               </Button>
             </form>
 

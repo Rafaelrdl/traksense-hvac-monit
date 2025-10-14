@@ -9,28 +9,14 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { 
   Settings, 
   Bell, 
-  Palette, 
-  Globe,
-  Moon,
-  Sun,
-  Monitor,
   Volume2,
   Mail,
   Smartphone,
-  Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -43,13 +29,8 @@ interface PreferencesDialogProps {
 export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOpenChange }) => {
   const user = useAuthStore(state => state.user);
 
-  // Preferências gerais
+  // Preferências de notificações
   const [preferences, setPreferences] = useState({
-    // Aparência
-    theme: 'system' as 'light' | 'dark' | 'system',
-    language: 'pt-BR',
-    timezone: 'America/Sao_Paulo',
-    
     // Notificações
     emailNotifications: true,
     pushNotifications: true,
@@ -76,9 +57,6 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
   const handleReset = () => {
     // Resetar para valores padrão
     setPreferences({
-      theme: 'system',
-      language: 'pt-BR',
-      timezone: 'America/Sao_Paulo',
       emailNotifications: true,
       pushNotifications: true,
       soundEnabled: true,
@@ -108,120 +86,7 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="appearance" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="appearance">Aparência</TabsTrigger>
-            <TabsTrigger value="notifications">Notificações</TabsTrigger>
-          </TabsList>
-
-          {/* Tab: Aparência */}
-          <TabsContent value="appearance" className="space-y-4 mt-4">
-            <ScrollArea className="h-[400px] pr-4">
-              <div className="space-y-6">
-                {/* Tema */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Palette className="w-4 h-4 text-muted-foreground" />
-                    <Label className="text-base font-semibold">Tema</Label>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setPreferences({ ...preferences, theme: 'light' })}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
-                        preferences.theme === 'light'
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <Sun className="w-6 h-6" />
-                      <span className="text-sm font-medium">Claro</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPreferences({ ...preferences, theme: 'dark' })}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
-                        preferences.theme === 'dark'
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <Moon className="w-6 h-6" />
-                      <span className="text-sm font-medium">Escuro</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPreferences({ ...preferences, theme: 'system' })}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
-                        preferences.theme === 'system'
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <Monitor className="w-6 h-6" />
-                      <span className="text-sm font-medium">Sistema</span>
-                    </button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Escolha entre tema claro, escuro ou automático baseado no sistema
-                  </p>
-                </div>
-
-                <Separator />
-
-                {/* Idioma */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-muted-foreground" />
-                    <Label className="text-base font-semibold">Idioma</Label>
-                  </div>
-                  <Select
-                    value={preferences.language}
-                    onValueChange={(value) => setPreferences({ ...preferences, language: value })}
-                  >
-                    <SelectTrigger className="h-11">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
-                      <SelectItem value="en-US">English (US)</SelectItem>
-                      <SelectItem value="es-ES">Español</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Separator />
-
-                {/* Fuso Horário */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-muted-foreground" />
-                    <Label className="text-base font-semibold">Fuso Horário</Label>
-                  </div>
-                  <Select
-                    value={preferences.timezone}
-                    onValueChange={(value) => setPreferences({ ...preferences, timezone: value })}
-                  >
-                    <SelectTrigger className="h-11">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="America/Sao_Paulo">Brasília (GMT-3)</SelectItem>
-                      <SelectItem value="America/Manaus">Manaus (GMT-4)</SelectItem>
-                      <SelectItem value="America/Rio_Branco">Rio Branco (GMT-5)</SelectItem>
-                      <SelectItem value="America/Noronha">Fernando de Noronha (GMT-2)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Todos os horários serão exibidos neste fuso horário
-                  </p>
-                </div>
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          {/* Tab: Notificações */}
-          <TabsContent value="notifications" className="space-y-4 mt-4">
+        <div className="space-y-4 mt-4">
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-6">
                 {/* Canais de Notificação */}
@@ -368,8 +233,7 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
                 </div>
               </div>
             </ScrollArea>
-          </TabsContent>
-        </Tabs>
+        </div>
 
         <Separator />
 

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/app';
 import { useAuthStore } from '../../store/auth';
-import { Bell, Clock, Menu, LogOut, User, ChevronDown, Settings, UserCog, Users } from 'lucide-react';
+import { Clock, Menu, LogOut, ChevronDown, Settings, UserCog, Users } from 'lucide-react';
 import logoImage from '@/assets/images/LOGO.png';
+import traksenseLogo from '@/assets/images/traksense-logo.png';
 import { HorizontalNav, MobileNav } from './HorizontalNav';
 import { EditProfileDialog } from '../auth/EditProfileDialog';
 import { TeamManagementDialog } from '../auth/TeamManagementDialog';
 import { PreferencesDialog } from '../auth/PreferencesDialog';
+import { HeaderNotifications } from '@/components/header/HeaderNotifications';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { 
@@ -17,8 +19,10 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getInitials } from '@/lib/get-initials';
 
 interface HeaderProps {
   currentPage: string;
@@ -88,15 +92,17 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
             )}
             
             {/* Logo and Brand */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-1.5">
               <img 
                 src={logoImage} 
                 alt="TrakSense Logo" 
                 className="w-8 h-8 object-contain"
               />
-              <h1 className="text-lg md:text-xl tracking-tight" style={{ fontFamily: 'Archive, sans-serif', fontWeight: 400, letterSpacing: 'normal' }}>
-                <span>TrakSense</span>
-              </h1>
+              <img 
+                src={traksenseLogo} 
+                alt="TrakSense" 
+                className="h-6 md:h-20 w-auto object-contain"
+              />
             </div>
             
             {/* Tenant/Site Selector */}
@@ -127,18 +133,14 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
           </div>
 
           {/* Right Actions */}
-          <div className="flex items-center space-x-4">
-            {/* Alert Bell */}
-            <div className="relative">
-              <Bell className="w-5 h-5 opacity-90" />
-              {activeAlerts.length > 0 && (
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full flex items-center justify-center">
-                  <span className="text-xs font-bold text-destructive-foreground">
-                    {activeAlerts.length > 9 ? '9+' : activeAlerts.length}
-                  </span>
-                </div>
-              )}
-            </div>
+          <div className="flex items-center space-x-2">
+            {/* Notifications */}
+            <HeaderNotifications 
+              onNavigateToAlerts={() => {
+                onNavigate('alerts');
+                setIsMobileMenuOpen(false);
+              }}
+            />
 
             {/* User Menu */}
             {user && (
@@ -146,13 +148,25 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
                 <DropdownMenuTrigger asChild>
                   <button 
                     className="flex items-center space-x-2 px-3 py-2 rounded-md text-white/90 hover:text-white hover:bg-white/10 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
+                    aria-label="Menu do usuário"
                   >
-                    <div className="w-8 h-8 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-                      <User className="w-4 h-4" />
-                    </div>
+                    <Avatar className="w-8 h-8 ring-1 ring-white/40">
+                      <AvatarImage 
+                        src={user.photoUrl || ''} 
+                        alt={user.name}
+                        className="object-cover"
+                      />
+                      <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground font-semibold text-sm">
+                        {getInitials(user.name)}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="hidden md:flex flex-col items-start text-left">
                       <span className="text-sm font-medium">{user.name}</span>
-                      <span className="text-xs opacity-75">{user.role}</span>
+                      <span className="text-xs opacity-75">
+                        {user.role === 'operator' ? 'Operador' :
+                         user.role === 'viewer' ? 'Visualizador' : 
+                         user.role === 'admin' ? 'Administrador' : user.role}
+                      </span>
                     </div>
                     <ChevronDown className="w-4 h-4 opacity-75" />
                   </button>

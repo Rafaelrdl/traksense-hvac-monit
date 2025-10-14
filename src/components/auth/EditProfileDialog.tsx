@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '../../store/auth';
 import {
   Dialog,
@@ -25,10 +25,13 @@ import {
   Lock, 
   Eye, 
   EyeOff,
-  AlertCircle 
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cropToSquare, validateImageFile } from '@/lib/image-crop';
+import { getInitials } from '@/lib/get-initials';
 
 interface EditProfileDialogProps {
   open: boolean;
@@ -37,17 +40,31 @@ interface EditProfileDialogProps {
 
 export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onOpenChange }) => {
   const user = useAuthStore(state => state.user);
+  const updateUserProfile = useAuthStore(state => state.updateUserProfile);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
     site: user?.site || '',
-    phone: '',
+    phone: user?.phone || '',
   });
 
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.photoUrl || null);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  
+  // Sync form data when user changes
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        email: user.email || '',
+        site: user.site || '',
+        phone: user.phone || '',
+      });
+      setAvatarPreview(user.photoUrl || null);
+    }
+  }, [user]);
   
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -62,9 +79,14 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onOp
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // TODO: Implementar atualização real do perfil via API
-    console.log('Dados do perfil atualizados:', formData);
-    console.log('Arquivo de avatar:', avatarFile);
+    // Atualizar perfil no store (persiste via Zustand middleware)
+    updateUserProfile({
+      name: formData.name,
+      email: formData.email,
+      site: formData.site,
+      phone: formData.phone,
+      photoUrl: avatarPreview || undefined
+    });
     
     toast.success('Perfil atualizado com sucesso!', {
       description: 'Suas informações foram salvas.',
@@ -110,48 +132,38 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onOp
     fileInputRef.current?.click();
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     
     if (!file) return;
 
-    // Validar tipo de arquivo
-    if (!file.type.startsWith('image/')) {
-      toast.error('Formato inválido', {
-        description: 'Por favor, selecione uma imagem.',
+    // Validar arquivo
+    const validation = validateImageFile(file, 5);
+    if (!validation.valid) {
+      toast.error('Erro ao carregar imagem', {
+        description: validation.error,
       });
       return;
     }
 
-    // Validar tamanho (máximo 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Arquivo muito grande', {
-        description: 'A imagem deve ter no máximo 5MB.',
+    setIsProcessingImage(true);
+
+    try {
+      // Aplicar crop quadrado centralizado
+      const croppedDataUrl = await cropToSquare(file, 256);
+      setAvatarPreview(croppedDataUrl);
+      
+      toast.success('Foto processada com sucesso', {
+        description: 'Clique em "Salvar Alterações" para confirmar.',
       });
-      return;
+    } catch (error) {
+      console.error('Erro ao processar imagem:', error);
+      toast.error('Erro ao processar imagem', {
+        description: 'Tente novamente com outra foto.',
+      });
+    } finally {
+      setIsProcessingImage(false);
     }
-
-    // Criar preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setAvatarPreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-    
-    setAvatarFile(file);
-    
-    toast.success('Foto selecionada', {
-      description: 'Clique em "Salvar Alterações" para confirmar.',
-    });
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
   };
 
   if (!user) return null;
@@ -183,7 +195,11 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onOp
                 <div className="relative group">
                   <Avatar className="w-24 h-24 border-4 border-primary/10">
                     {avatarPreview ? (
-                      <AvatarImage src={avatarPreview} alt={user.name} />
+                      <AvatarImage 
+                        src={avatarPreview} 
+                        alt={user.name}
+                        className="object-cover"
+                      />
                     ) : (
                       <AvatarFallback className="bg-primary/20 text-primary text-2xl font-semibold">
                         {getInitials(user.name)}
@@ -193,9 +209,14 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onOp
                   <button
                     type="button"
                     onClick={handleAvatarClick}
-                    className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    disabled={isProcessingImage}
+                    className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
                   >
-                    <Camera className="w-6 h-6 text-white" />
+                    {isProcessingImage ? (
+                      <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    ) : (
+                      <Camera className="w-6 h-6 text-white" />
+                    )}
                   </button>
                   <input
                     ref={fileInputRef}
@@ -203,6 +224,7 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onOp
                     accept="image/*"
                     onChange={handleAvatarChange}
                     className="hidden"
+                    disabled={isProcessingImage}
                   />
                 </div>
                 <div className="flex-1">
@@ -214,12 +236,22 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onOp
                     size="sm" 
                     className="mt-2 gap-2"
                     onClick={handleAvatarClick}
+                    disabled={isProcessingImage}
                   >
-                    <Upload className="w-4 h-4" />
-                    Escolher Foto
+                    {isProcessingImage ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Processando...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4" />
+                        Escolher Foto
+                      </>
+                    )}
                   </Button>
                   <p className="text-xs text-muted-foreground mt-1">
-                    JPG, PNG ou GIF • Máximo 5MB
+                    JPG, PNG ou GIF • Máximo 5MB • Crop automático 1:1
                   </p>
                 </div>
               </div>
@@ -293,25 +325,6 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onOp
                     placeholder="Data Center Principal"
                     className="h-11"
                   />
-                </div>
-
-                {/* Read-only Info */}
-                <div className="bg-muted/50 p-4 rounded-lg space-y-2 border">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Role:</span>
-                    <span className="font-medium capitalize">
-                      {user.role === 'operator' ? 'Operador' :
-                       user.role === 'viewer' ? 'Visualizador' : 
-                       user.role === 'admin' ? 'Administrador' : user.role}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tenant:</span>
-                    <span className="font-medium">{user.tenant}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Para alterar role ou tenant, entre em contato com o administrador.
-                  </p>
                 </div>
               </div>
 
