@@ -29,18 +29,29 @@ export const RulesPage: React.FC = () => {
           <Zap className="w-5 h-5" />
           Como funcionam as regras?
         </h3>
-        <div className="text-sm text-blue-800 space-y-2">
+        <div className="text-sm text-blue-800 space-y-3">
           <p>
-            As regras de monitoramento avaliam continuamente os parâmetros dos equipamentos HVAC 
-            e disparam alertas automáticos quando as condições configuradas são atendidas.
+            As regras são avaliadas sobre <strong>parâmetros do Equipamento IoT</strong> vinculado ao equipamento cadastrado.
+            Quando as condições são atendidas, alertas automáticos são gerados.
           </p>
-          <ul className="list-disc list-inside space-y-1 ml-2">
-            <li>Monitore temperatura, pressão, consumo de energia e mais</li>
-            <li>Configure limiares e duração para cada parâmetro</li>
-            <li>Defina níveis de severidade (Crítico, Alto, Médio, Baixo)</li>
-            <li>Escolha ações automáticas (Email, SMS, Push, Log, Webhook)</li>
-            <li>Ative ou desative regras conforme necessário</li>
-          </ul>
+          
+          <div className="space-y-2">
+            <h4 className="font-semibold text-blue-900">Principais características:</h4>
+            <ul className="list-disc list-inside space-y-1 ml-2">
+              <li><strong>Equipamento-based:</strong> Regras vinculadas a equipamentos específicos cadastrados</li>
+              <li><strong>Tipo de ativo derivado:</strong> Automaticamente obtido do equipamento (não editável)</li>
+              <li><strong>Parâmetros IoT:</strong> Apenas parâmetros disponíveis no dispositivo IoT do equipamento</li>
+              <li><strong>Variáveis:</strong> Detalhamento de como observar o parâmetro (ex: média, pico, atual)</li>
+              <li><strong>Ações disponíveis:</strong> E-mail e Notificação in-app (WebHook descontinuado)</li>
+            </ul>
+          </div>
+
+          <div className="bg-blue-100 rounded-lg p-3 mt-3">
+            <p className="text-xs text-blue-700">
+              <strong>Nota:</strong> WebHook foi descontinuado por questões de segurança. 
+              Regras antigas com WebHook foram migradas automaticamente e podem necessitar de revisão.
+            </p>
+          </div>
         </div>
       </div>
     </div>
