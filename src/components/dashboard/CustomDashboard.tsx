@@ -29,11 +29,13 @@ import {
 } from 'lucide-react';
 
 export const CustomDashboard: React.FC = () => {
-  const { layouts, currentLayoutId, editMode, setEditMode, setCurrentLayout, createLayout, deleteLayout } = useDashboardStore();
+  const { layouts, currentLayoutId, editMode, setEditMode, setCurrentLayout, createLayout, deleteLayout, updateLayout } = useDashboardStore();
   const { assets, sensors, alerts } = useAppStore();
   const timeRange = useTimeRangeMs();
   const [showNewLayoutDialog, setShowNewLayoutDialog] = useState(false);
   const [newLayoutName, setNewLayoutName] = useState('');
+  const [editingLayoutId, setEditingLayoutId] = useState<string | null>(null);
+  const [editingLayoutName, setEditingLayoutName] = useState('');
   
   const currentLayout = layouts.find(l => l.id === currentLayoutId);
   
@@ -205,6 +207,24 @@ export const CustomDashboard: React.FC = () => {
     }
   };
 
+  const handleStartEditName = (layoutId: string, currentName: string) => {
+    setEditingLayoutId(layoutId);
+    setEditingLayoutName(currentName);
+  };
+
+  const handleSaveLayoutName = (layoutId: string) => {
+    if (editingLayoutName.trim() && editingLayoutName !== layouts.find(l => l.id === layoutId)?.name) {
+      updateLayout(layoutId, { name: editingLayoutName.trim() });
+    }
+    setEditingLayoutId(null);
+    setEditingLayoutName('');
+  };
+
+  const handleCancelEditName = () => {
+    setEditingLayoutId(null);
+    setEditingLayoutName('');
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -297,19 +317,64 @@ export const CustomDashboard: React.FC = () => {
         </div>
       )}
 
+      {/* Rename Layout Modal */}
+      {editingLayoutId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={handleCancelEditName}>
+          <div className="bg-background rounded-lg p-6 max-w-md w-full mx-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-xl font-semibold mb-4">Renomear Tela</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Nome da Tela</label>
+                <input
+                  type="text"
+                  value={editingLayoutName}
+                  onChange={(e) => setEditingLayoutName(e.target.value)}
+                  placeholder="Digite o novo nome..."
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveLayoutName(editingLayoutId);
+                    if (e.key === 'Escape') handleCancelEditName();
+                  }}
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={handleCancelEditName}>
+                  Cancelar
+                </Button>
+                <Button onClick={() => handleSaveLayoutName(editingLayoutId)} disabled={!editingLayoutName.trim()}>
+                  Salvar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Edit Mode Actions */}
       {editMode && (
-        <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 text-blue-800">
+        <div className="flex items-center justify-between bg-accent-2 border border-accent-6 rounded-lg p-4 shadow-sm dark:bg-accent-3/30 dark:border-accent-6/50">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent-3 text-accent-11 dark:bg-accent-4/50">
               <Edit3 className="w-5 h-5" />
-              <span className="font-medium">Modo de Edição Ativo</span>
             </div>
-            <span className="text-blue-700 text-sm">
-              Arraste widgets para reorganizar ou clique no X para remover
-            </span>
+            <div>
+              <div className="font-medium text-foreground">Modo de Edição Ativo</div>
+              <p className="text-sm text-muted-foreground">
+                Arraste widgets para reorganizar ou clique no X para remover
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleStartEditName(currentLayoutId, currentLayout?.name || '')}
+              className="gap-2"
+            >
+              <Edit3 className="w-4 h-4" />
+              Renomear Tela
+            </Button>
             <WidgetPalette layoutId={currentLayoutId} />
             {!currentLayout?.isDefault && layouts.length > 1 && (
               <Button
