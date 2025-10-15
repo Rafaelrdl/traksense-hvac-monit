@@ -26,6 +26,10 @@ export interface DashboardWidget {
     decimals?: number;
     showIcon?: boolean;
     iconName?: string;
+    // Transformação de dados via fórmula
+    transform?: {
+      formula?: string;  // Fórmula JavaScript com $VALUE$ placeholder
+    };
     [key: string]: any;
   };
   props?: Record<string, any>;

@@ -6,9 +6,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { ScrollArea } from '../ui/scroll-area';
-import { Settings, Save, X, Zap } from 'lucide-react';
+import { Settings, Save, X, Zap, Code } from 'lucide-react';
+import { FORMULA_EXAMPLES } from '../../utils/formula-eval';
 
 interface WidgetConfigProps {
   widget: DashboardWidget;
@@ -85,11 +87,47 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="small">📱 Pequeno (1 coluna)</SelectItem>
-                      <SelectItem value="medium">📊 Médio (3 colunas)</SelectItem>
-                      <SelectItem value="large">📈 Grande (6 colunas)</SelectItem>
+                      <SelectItem value="col-1">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-4 bg-primary rounded" />
+                          <span>1 Coluna (Mínimo)</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="col-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 bg-primary rounded" />
+                          <span>2 Colunas (Pequeno)</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="col-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-4 bg-primary rounded" />
+                          <span>3 Colunas (Médio)</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="col-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-4 bg-primary rounded" />
+                          <span>4 Colunas</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="col-5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-10 h-4 bg-primary rounded" />
+                          <span>5 Colunas</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="col-6">
+                        <div className="flex items-center gap-2">
+                          <div className="w-12 h-4 bg-primary rounded" />
+                          <span>6 Colunas (Largura Total)</span>
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    O layout usa um grid de 6 colunas. Escolha a largura ideal para o widget.
+                  </p>
                 </div>
               </div>
             </div>
@@ -145,6 +183,78 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
                     </p>
                   </div>
                 )}
+              </div>
+
+              {/* Campo de Fórmula - Transformação de Valores */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Code className="w-4 h-4 text-muted-foreground" />
+                  <Label htmlFor="formula" className="text-sm font-medium">
+                    Fórmula de Transformação (opcional)
+                  </Label>
+                </div>
+                
+                <Textarea
+                  id="formula"
+                  value={config.transform?.formula || ''}
+                  onChange={(e) => setConfig({ 
+                    ...config, 
+                    transform: { 
+                      ...config.transform,
+                      formula: e.target.value 
+                    }
+                  })}
+                  placeholder="Use $VALUE$ para referenciar o valor do sensor
+
+Exemplo: $VALUE$ == true ? &quot;Ligado&quot; : &quot;Desligado&quot;"
+                  className="font-mono text-sm min-h-[80px] resize-y"
+                  rows={3}
+                />
+                
+                <p className="text-xs text-muted-foreground">
+                  Transforme o valor do sensor usando expressões JavaScript. Use <code className="text-xs bg-muted px-1 py-0.5 rounded">$VALUE$</code> como placeholder.
+                </p>
+                
+                <details className="text-xs">
+                  <summary className="cursor-pointer font-medium text-foreground hover:text-accent-foreground transition-colors">
+                    📚 Ver exemplos e operadores disponíveis
+                  </summary>
+                  
+                  <div className="mt-3 space-y-3 pl-3 border-l-2 border-muted">
+                    <div>
+                      <p className="font-semibold text-foreground mb-2">Exemplos:</p>
+                      <div className="space-y-2">
+                        {FORMULA_EXAMPLES.slice(0, 6).map((example, idx) => (
+                          <div key={idx} className="p-2 bg-muted/50 rounded border">
+                            <p className="font-medium text-foreground">{example.label}</p>
+                            <code className="text-xs text-accent-foreground block mt-1 break-all">
+                              {example.formula}
+                            </code>
+                            <p className="text-muted-foreground mt-1">{example.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <p className="font-semibold text-foreground mb-2">Operadores suportados:</p>
+                      <ul className="space-y-1 text-muted-foreground">
+                        <li>• <code className="text-xs bg-muted px-1 py-0.5 rounded">+, -, *, /, %</code> - Aritméticos</li>
+                        <li>• <code className="text-xs bg-muted px-1 py-0.5 rounded">==, !=, &lt;, &gt;, &lt;=, &gt;=</code> - Comparação</li>
+                        <li>• <code className="text-xs bg-muted px-1 py-0.5 rounded">&amp;&amp;, ||, !</code> - Lógicos</li>
+                        <li>• <code className="text-xs bg-muted px-1 py-0.5 rounded">cond ? a : b</code> - Ternário</li>
+                        <li>• <code className="text-xs bg-muted px-1 py-0.5 rounded">helpers.clamp()</code>, <code className="text-xs bg-muted px-1 py-0.5 rounded">helpers.round()</code>, <code className="text-xs bg-muted px-1 py-0.5 rounded">helpers.toF()</code></li>
+                      </ul>
+                    </div>
+                    
+                    <div className="p-3 bg-muted/50 border rounded">
+                      <p className="font-semibold text-foreground mb-1">⚠️ Segurança</p>
+                      <p className="text-muted-foreground">
+                        As fórmulas são avaliadas em um ambiente seguro. Operações perigosas como <code className="text-xs bg-background px-1 py-0.5 rounded">eval</code>, <code className="text-xs bg-background px-1 py-0.5 rounded">window</code>, <code className="text-xs bg-background px-1 py-0.5 rounded">document</code> são bloqueadas.
+                      </p>
+                    </div>
+                  </div>
+                </details>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

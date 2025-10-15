@@ -25,6 +25,7 @@ import {
   Wrench
 } from 'lucide-react';
 import { MaintenanceWidget } from './widgets/MaintenanceWidget';
+import { safeEvalFormula, formatFormulaResult } from '../../utils/formula-eval';
 
 interface DraggableWidgetProps {
   widget: DashboardWidget;
@@ -41,6 +42,21 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
   
   const [configOpen, setConfigOpen] = useState(false);
   const [toggleState, setToggleState] = useState(false);
+
+  // Helper para aplicar transformação de fórmula nos valores do widget
+  const applyFormulaTransform = (value: any): any => {
+    const formula = widget.config?.transform?.formula;
+    if (!formula || !formula.trim()) {
+      return value;
+    }
+    
+    try {
+      return safeEvalFormula(formula, value, value);
+    } catch (error) {
+      console.error('Erro ao aplicar fórmula no widget:', error);
+      return value;
+    }
+  };
 
   // Helper function to get real or mocked data for overview widgets based on widget ID or type
   const getWidgetData = () => {
@@ -231,7 +247,8 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
     switch (widget.type) {
       // ============ CARDS KPI (Estilo Overview) ============
       case 'card-kpi':
-        const kpiValue = widgetData?.value ?? (Math.random() * 100).toFixed(widget.config?.decimals || 1);
+        const kpiRawValue = widgetData?.value ?? (Math.random() * 100).toFixed(widget.config?.decimals || 1);
+        const kpiValue = applyFormulaTransform(kpiRawValue);
         const kpiData = widgetData as any;
         const kpiTrend = typeof kpiData?.trendValue === 'number' ? kpiData.trendValue : (Math.random() * 10 - 5).toFixed(1);
         const kpiTrendDirection = typeof kpiData?.trend === 'string' ? kpiData.trend : (parseFloat(kpiTrend as string) >= 0 ? 'up' : 'down');
@@ -290,7 +307,8 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
 
       // ============ CARDS SIMPLES ============
       case 'card-value':
-        const cardValue = widgetData?.value ?? (Math.random() * 100).toFixed(widget.config?.decimals || 2);
+        const cardRawValue = widgetData?.value ?? (Math.random() * 100).toFixed(widget.config?.decimals || 2);
+        const cardValue = applyFormulaTransform(cardRawValue);
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col justify-between">
             <div className="flex items-start justify-between mb-4">
@@ -309,7 +327,8 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         );
 
       case 'card-stat':
-        const statValue = widgetData?.value ?? (Math.random() * 100).toFixed(widget.config?.decimals || 2);
+        const statRawValue = widgetData?.value ?? (Math.random() * 100).toFixed(widget.config?.decimals || 2);
+        const statValue = applyFormulaTransform(statRawValue);
         const statData = widgetData as any;
         const statTrend = typeof statData?.trend === 'number' ? statData.trend : 5.2;
         return (
