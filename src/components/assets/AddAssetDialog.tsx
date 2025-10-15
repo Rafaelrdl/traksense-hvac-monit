@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -23,7 +23,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { HVACAsset, EquipmentType } from '@/types/hvac';
 import { EquipmentTypeField } from './EquipmentTypeField';
-import { SpecsInfo } from './SpecsInfo';
 
 interface AddAssetDialogProps {
   onAddAsset: (asset: Omit<HVACAsset, 'id' | 'healthScore' | 'powerConsumption' | 'status' | 'operatingHours' | 'lastMaintenance'>) => void;
@@ -35,13 +34,12 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
 
   // Informações Básicas
   const [tag, setTag] = useState('');
-  const [type, setType] = useState<HVACAsset['type']>('AHU');
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [capacity, setCapacity] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
 
-  // Novo tipo expandido de equipamento
+  // Tipo expandido de equipamento
   const [equipmentType, setEquipmentType] = useState<EquipmentType>('AHU');
   const [equipmentTypeOther, setEquipmentTypeOther] = useState('');
 
@@ -58,7 +56,6 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
 
   const resetForm = () => {
     setTag('');
-    setType('AHU');
     setBrand('');
     setModel('');
     setCapacity('');
@@ -101,10 +98,23 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
     // Criar localização completa
     const fullLocation = [company, sector, subsector].filter(Boolean).join(' - ');
 
+    // Mapear equipmentType para type legado
+    const mapEquipmentTypeToLegacy = (eqType: EquipmentType): HVACAsset['type'] => {
+      const mapping: Record<string, HVACAsset['type']> = {
+        'CHILLER': 'Chiller',
+        'AHU': 'AHU',
+        'VRF': 'VRF',
+        'RTU': 'RTU',
+        'BOILER': 'Boiler',
+        'COOLING_TOWER': 'CoolingTower',
+      };
+      return mapping[eqType] || 'AHU'; // Fallback para AHU
+    };
+
     // Criar novo ativo
     const newAsset: Omit<HVACAsset, 'id' | 'healthScore' | 'powerConsumption' | 'status' | 'operatingHours' | 'lastMaintenance'> = {
       tag: tag.trim(),
-      type,
+      type: mapEquipmentTypeToLegacy(equipmentType),
       location: location.trim() || fullLocation,
       company: company.trim(),
       sector: sector.trim(),
@@ -141,7 +151,7 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Plus className="w-5 h-5" />
-            <span>Adicionar Novo Ativo HVAC</span>
+            <span>Adicionar Novo Ativo</span>
           </DialogTitle>
           <DialogDescription>
             Preencha as informações do equipamento. Os campos marcados com * são obrigatórios.
@@ -159,55 +169,29 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
             <ScrollArea className="h-[400px] mt-4">
               {/* Informações Básicas */}
               <TabsContent value="basic" className="space-y-4 px-1">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="tag">
-                      Tag do Equipamento <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="tag"
-                      placeholder="Ex: AHU-001"
-                      value={tag}
-                      onChange={(e) => setTag(e.target.value)}
-                      required
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Identificador único do equipamento
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="type">
-                      Tipo Legado <span className="text-red-500">*</span>
-                    </Label>
-                    <Select value={type} onValueChange={(value: HVACAsset['type']) => setType(value)}>
-                      <SelectTrigger id="type">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="AHU">AHU - Air Handling Unit</SelectItem>
-                        <SelectItem value="Chiller">Chiller</SelectItem>
-                        <SelectItem value="VRF">VRF - Variable Refrigerant Flow</SelectItem>
-                        <SelectItem value="RTU">RTU - Rooftop Unit</SelectItem>
-                        <SelectItem value="Boiler">Boiler</SelectItem>
-                        <SelectItem value="CoolingTower">Cooling Tower</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Compatibilidade com sistema antigo
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <EquipmentTypeField
-                    value={equipmentType}
-                    onChange={setEquipmentType}
-                    otherValue={equipmentTypeOther}
-                    onChangeOther={setEquipmentTypeOther}
+                <div className="space-y-2">
+                  <Label htmlFor="tag">
+                    Tag do Equipamento <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="tag"
+                    placeholder="Ex: AHU-001"
+                    value={tag}
+                    onChange={(e) => setTag(e.target.value)}
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Identificador único do equipamento
+                  </p>
                 </div>
+
+                <EquipmentTypeField
+                  value={equipmentType}
+                  onChange={setEquipmentType}
+                  otherValue={equipmentTypeOther}
+                  onChangeOther={setEquipmentTypeOther}
+                  required
+                />
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -243,7 +227,7 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
                       onChange={(e) => setCapacity(e.target.value)}
                     />
                     <p className="text-xs text-muted-foreground">
-                      {type === 'Chiller' ? 'Toneladas de refrigeração (TR)' : 'Potência (kW)'}
+                      {equipmentType === 'CHILLER' ? 'Toneladas de refrigeração (TR)' : 'Potência (kW)'}
                     </p>
                   </div>
 
@@ -325,8 +309,6 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
 
               {/* Especificações Técnicas */}
               <TabsContent value="specs" className="space-y-4 px-1">
-                <SpecsInfo />
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="voltage">Tensão Nominal (V)</Label>
