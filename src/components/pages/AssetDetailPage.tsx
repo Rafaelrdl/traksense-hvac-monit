@@ -299,8 +299,11 @@ export const AssetDetailPage: React.FC = () => {
         <div className="space-y-6">
           {/* TrakNor CTA */}
           <TrakNorCTA 
-            orgId="default" 
-            onContactClick={() => setContactDialogOpen(true)} 
+            onContactClick={() => setContactDialogOpen(true)}
+            onLearnMoreClick={() => {
+              // Pode abrir modal interno ou página externa
+              window.open('https://traknor.com/como-funciona', '_blank', 'noopener,noreferrer');
+            }}
           />
           
           {/* Maintenance Summary */}

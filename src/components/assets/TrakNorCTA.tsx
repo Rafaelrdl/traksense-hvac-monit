@@ -1,128 +1,120 @@
-import React, { useState } from 'react';
-import { CheckCircle2, X, Wrench, Zap, Clock } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React from 'react';
+import { FileText, ListChecks, LayoutDashboard, CheckCircle2, Wrench } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useCTAStore } from '@/store/cta';
 import { useFeaturesStore } from '@/store/features';
 
 interface TrakNorCTAProps {
-  orgId?: string;
   onContactClick?: () => void;
+  onLearnMoreClick?: () => void;
 }
 
-export function TrakNorCTA({ orgId = 'default', onContactClick }: TrakNorCTAProps) {
-  const { isDismissed, dismiss } = useCTAStore();
+export function TrakNorCTA({ onContactClick, onLearnMoreClick }: TrakNorCTAProps) {
   const enableTrakNorCTA = useFeaturesStore(state => state.enableTrakNorCTA);
   
-  // ID único para este CTA
-  const ctaKey = `traknor:${orgId}`;
-  
-  // Não exibir se foi dispensado ou está desabilitado
-  if (isDismissed(ctaKey) || !enableTrakNorCTA) {
+  // Não exibir se está desabilitado por feature flag
+  if (!enableTrakNorCTA) {
     return null;
   }
-  
-  const handleDismiss = () => {
-    dismiss(ctaKey);
-  };
   
   const handleContact = () => {
     if (onContactClick) {
       onContactClick();
     } else {
       // Fallback: abrir modal de contato ou mailto
-      window.location.href = 'mailto:vendas@traknor.com?subject=Interesse em TrakNor&body=Gostaria de saber mais sobre a plataforma TrakNor para gestão de manutenção.';
+      window.location.href = 'mailto:vendas@traknor.com?subject=Interesse em TrakNor CMMS&body=Gostaria de conhecer o TrakNor para gestão de manutenção.';
+    }
+  };
+  
+  const handleLearnMore = () => {
+    if (onLearnMoreClick) {
+      onLearnMoreClick();
+    } else {
+      // Fallback: abrir página externa
+      window.open('https://traknor.com/como-funciona', '_blank', 'noopener,noreferrer');
     }
   };
   
   return (
-    <Card className="border-blue-200 bg-gradient-to-br from-blue-50/80 to-indigo-50/50 dark:border-blue-800/50 dark:from-blue-950/30 dark:to-indigo-950/20">
-      <CardHeader className="flex-row items-start justify-between space-y-0 pb-3">
-        <div className="flex items-start gap-3 flex-1">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
+    <Card className="relative overflow-hidden border shadow-sm bg-card">
+      {/* Accent bar superior */}
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent-9 via-accent-10 to-accent-9" />
+      
+      <CardHeader className="space-y-2 pb-4 pt-5">
+        <div className="flex items-start gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent-3 text-accent-11 dark:bg-accent-4/50">
             <Wrench className="size-5" />
           </div>
-          <div>
-            <CardTitle className="text-lg text-foreground">
-              Manutenção Inteligente com TrakNor
+          <div className="flex-1">
+            <CardTitle className="text-xl font-bold leading-tight">
+              Manutenção sem caos. Comande tudo no TrakNor.
             </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Eleve sua gestão de manutenção ao próximo nível
-            </p>
+            <CardDescription className="mt-1.5 leading-relaxed">
+              Abra e priorize Ordens de Serviço em segundos, execute Planos preventivos e acompanhe seus ativos em painéis claros — tudo em um só lugar.
+            </CardDescription>
           </div>
         </div>
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={handleDismiss}
-          aria-label="Dispensar CTA"
-          className="hover:bg-blue-100 dark:hover:bg-blue-900/50"
-        >
-          <X className="size-4" />
-        </Button>
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* Benefícios */}
-        <ul className="space-y-2.5">
+        {/* Benefícios principais - 3 bullets enxutos */}
+        <div className="space-y-3">
           {[
             {
-              icon: <Zap className="size-4" />,
-              text: 'Alertas preditivos e priorização automática de tarefas'
+              icon: <FileText className="size-4" />,
+              text: 'OS em 1 clique e histórico do ativo organizado.'
             },
             {
-              icon: <Clock className="size-4" />,
-              text: 'Ordem de serviço em 1 clique com histórico completo'
+              icon: <ListChecks className="size-4" />,
+              text: 'Planos e checklists preventivos para reduzir paradas e urgências.'
             },
             {
-              icon: <CheckCircle2 className="size-4" />,
-              text: 'Integração total com sensores e telemetria do ativo'
+              icon: <LayoutDashboard className="size-4" />,
+              text: 'Painéis operacionais para ver o que importa e decidir mais rápido.'
             },
           ].map((item, idx) => (
-            <li key={idx} className="flex items-center gap-3 text-sm">
-              <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-blue-600/10 text-blue-700 dark:bg-blue-400/10 dark:text-blue-400">
+            <div key={idx} className="flex items-start gap-3 text-sm">
+              <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-accent-3 text-accent-11 dark:bg-accent-4/30 mt-0.5">
                 {item.icon}
               </div>
-              <span>{item.text}</span>
-            </li>
+              <span className="leading-relaxed">{item.text}</span>
+            </div>
           ))}
-        </ul>
-        
-        {/* Destaque */}
-        <div className="rounded-lg bg-blue-600/5 border border-blue-200/50 p-3 dark:bg-blue-400/5 dark:border-blue-800/50">
-          <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-            🎁 <strong>Oferta especial:</strong> Integração gratuita para clientes TrakSense HVAC
-          </p>
         </div>
         
-        {/* Botões de Ação */}
-        <div className="flex flex-wrap gap-3 pt-2">
+        {/* Observação inteligente - linkagem com TrakSense */}
+        <div className="rounded-lg bg-accent-2 border border-accent-6 p-3 dark:bg-accent-3/30 dark:border-accent-6/50">
+          <div className="flex items-start gap-2">
+            <CheckCircle2 className="size-4 shrink-0 text-accent-11 mt-0.5" />
+            <p className="text-sm leading-relaxed">
+              <strong className="font-semibold">Sem telemetria?</strong> O TrakNor funciona 100% sem sensores — e quando você integrar ao TrakSense, desbloqueia camadas de análise preditiva.
+            </p>
+          </div>
+        </div>
+        
+        {/* Botões de Ação - primário e secundário */}
+        <div className="flex flex-wrap gap-2 pt-2">
           <Button 
             onClick={handleContact}
-            className="gap-2 bg-blue-600 hover:bg-blue-700"
+            size="sm"
+            className="gap-2"
           >
+            <Wrench className="size-4" />
             Quero Contratar
           </Button>
           
           <Button 
+            onClick={handleLearnMore}
             variant="outline" 
-            asChild
-            className="gap-2"
+            size="sm"
           >
-            <a 
-              href="https://traknor.com/planos" 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
-              Saiba Mais
-            </a>
+            Ver como funciona
           </Button>
         </div>
         
-        {/* Informação Adicional */}
-        <p className="text-xs text-muted-foreground pt-2 border-t">
-          TrakNor é uma plataforma de gestão de manutenção desenvolvida pela mesma equipe do TrakSense. 
-          Dados de sensores são sincronizados automaticamente.
+        {/* Rodapé - microcopy de confiança */}
+        <p className="text-xs text-muted-foreground pt-3 border-t leading-relaxed">
+          Tecnologia moderna (React + TypeScript) e testes automatizados para estabilidade no dia a dia.
         </p>
       </CardContent>
     </Card>
