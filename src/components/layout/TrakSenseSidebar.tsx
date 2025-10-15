@@ -29,7 +29,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { id: 'overview', label: 'Visão Geral', icon: LayoutGrid, path: '/overview' },
   { id: 'custom-dashboard', label: 'Dashboard Custom', icon: PanelsTopLeft, path: '/custom-dashboard' },
-  { id: 'assets', label: 'Ativos (HVAC)', icon: AirVent, path: '/assets' },
+  { id: 'assets', label: 'Ativos', icon: AirVent, path: '/assets' },
   { id: 'sensors', label: 'Sensores & Telemetria', icon: Activity, path: '/sensors' },
   { id: 'alerts', label: 'Alertas & Regras', icon: BellRing, path: '/alerts' },
   { id: 'maintenance', label: 'Manutenção', icon: Wrench, path: '/maintenance' },
