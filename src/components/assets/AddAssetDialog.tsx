@@ -114,9 +114,9 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="flex items-center space-x-2">
-          <Plus className="w-4 h-4" />
-          <span>Adicionar Ativo</span>
+        <Button size="sm" className="gap-2">
+          <Plus className="size-4" />
+          Adicionar ativo
         </Button>
       </DialogTrigger>
 

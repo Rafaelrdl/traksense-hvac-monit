@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/app';
 import { HVACAsset } from '../../types/hvac';
 import { Search, ExternalLink, Filter, Heart, Zap, AlertCircle } from 'lucide-react';
 import { AddAssetDialog } from '../assets/AddAssetDialog';
+import { StatusFilter } from '../../modules/assets/components/StatusFilter';
 
 export const AssetsPage: React.FC = () => {
   const { assets, setSelectedAsset, addAsset } = useAppStore();
@@ -47,7 +48,7 @@ export const AssetsPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Ativos HVAC</h1>
+          <h1 className="text-2xl font-bold text-foreground">Ativos</h1>
           <p className="text-muted-foreground">
             Gerenciamento e monitoramento de equipamentos críticos
           </p>
@@ -61,7 +62,12 @@ export const AssetsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Search and Filters */}
+      {/* Status Filter */}
+      <div className="flex items-center justify-between">
+        <StatusFilter value={filterStatus} onChange={setFilterStatus} />
+      </div>
+
+      {/* Search and Type Filter */}
       <div className="bg-card rounded-xl p-4 border shadow-sm">
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Search */}
@@ -76,19 +82,21 @@ export const AssetsPage: React.FC = () => {
             />
           </div>
 
-          {/* Status Filter */}
+          {/* Type Filter */}
           <div className="flex items-center space-x-2">
             <Filter className="w-4 h-4 text-muted-foreground" />
             <select
               className="px-3 py-2 border border-input rounded-lg bg-background text-sm"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
             >
-              <option value="all">Todos os status</option>
-              <option value="OK">OK</option>
-              <option value="Maintenance">Manutenção</option>
-              <option value="Alert">Alerta</option>
-              <option value="Stopped">Parado</option>
+              <option value="all">Todos os tipos</option>
+              <option value="AHU">AHU</option>
+              <option value="Chiller">Chiller</option>
+              <option value="VRF">VRF</option>
+              <option value="RTU">RTU</option>
+              <option value="Boiler">Boiler</option>
+              <option value="CoolingTower">Torre de Resfriamento</option>
             </select>
           </div>
         </div>

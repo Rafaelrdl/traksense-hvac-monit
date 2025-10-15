@@ -21,7 +21,7 @@ interface SidebarProps {
 const menuItems = [
   { id: 'overview', label: 'Visão Geral', icon: LayoutDashboard },
   { id: 'custom-dashboard', label: 'Dashboard Custom', icon: Layout },
-  { id: 'assets', label: 'Ativos (HVAC)', icon: Wind },
+  { id: 'assets', label: 'Ativos', icon: Wind },
   { id: 'sensors', label: 'Sensores & Telemetria', icon: Activity },
   { id: 'alerts', label: 'Alertas & Regras', icon: AlertTriangle },
   { id: 'maintenance', label: 'Manutenção', icon: Wrench },
