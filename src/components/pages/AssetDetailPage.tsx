@@ -1,10 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { useAppStore, useSelectedAsset, useTimeRangeMs } from '../../store/app';
+import { useFeaturesStore } from '../../store/features';
 import { simEngine } from '../../lib/simulation';
+import { hasPerformanceTelemetry, reasonMissingTelemetry } from '../../lib/hasPerformanceTelemetry';
 import { LineChartTemp } from '../charts/LineChartTemp';
 import { ScatterPerformance } from '../charts/ScatterPerformance';
 import { KPICard } from '../ui/KPICard';
 import { JE02SensorDetail } from './JE02SensorDetail';
+import { PerformanceEmpty } from '../assets/PerformanceEmpty';
+import { TrakNorCTA } from '../assets/TrakNorCTA';
+import { ContactSalesDialog } from '../common/ContactSalesDialog';
 import { 
   ArrowLeft, 
   ExternalLink, 
@@ -20,8 +25,10 @@ export const AssetDetailPage: React.FC = () => {
   const { setSelectedAsset, sensors, alerts, maintenanceTasks, maintenanceSchedules, maintenanceHistory } = useAppStore();
   const selectedAsset = useSelectedAsset();
   const timeRange = useTimeRangeMs();
+  const hidePerformanceWhenNoSensors = useFeaturesStore(state => state.hidePerformanceWhenNoSensors);
   const [selectedMetrics, setSelectedMetrics] = useState(['temp_supply', 'temp_return', 'power_kw']);
   const [activeTab, setActiveTab] = useState('je02');
+  const [contactDialogOpen, setContactDialogOpen] = useState(false);
 
   if (!selectedAsset) {
     return (
@@ -42,6 +49,13 @@ export const AssetDetailPage: React.FC = () => {
   // Get asset sensors
   const assetSensors = sensors.filter(s => s.assetId === selectedAsset.id);
   const assetAlerts = alerts.filter(a => a.assetId === selectedAsset.id && !a.resolved);
+  
+  // Check if asset has performance telemetry
+  const hasPerf = hasPerformanceTelemetry(selectedAsset, sensors);
+  const missingSensors = hasPerf ? [] : reasonMissingTelemetry(selectedAsset, sensors);
+  
+  // Decide if Performance tab should be shown
+  const showPerformanceTab = !hidePerformanceWhenNoSensors || hasPerf;
 
   // Get telemetry data for selected metrics
   const telemetryData = useMemo(() => {
@@ -191,23 +205,25 @@ export const AssetDetailPage: React.FC = () => {
           {[
             { id: 'je02', label: 'Monitoramento' },
             { id: 'telemetry', label: 'Telemetria' },
-            { id: 'performance', label: 'Performance' },
+            { id: 'performance', label: 'Performance', conditional: showPerformanceTab },
             { id: 'maintenance', label: 'Manutenção' },
             { id: 'alerts', label: 'Histórico Alertas' },
             { id: 'raw', label: 'Telemetria Bruta' }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === tab.id
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          ]
+            .filter(tab => tab.conditional !== false)
+            .map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
         </nav>
       </div>
 
@@ -266,17 +282,27 @@ export const AssetDetailPage: React.FC = () => {
         <JE02SensorDetail assetId={selectedAsset.id} />
       )}
 
-      {activeTab === 'performance' && (
+      {activeTab === 'performance' && showPerformanceTab && (
         <div className="space-y-6">
-          <div className="bg-card rounded-xl p-6 border shadow-sm">
-            <h3 className="text-lg font-semibold mb-4">Análise de Performance</h3>
-            <ScatterPerformance data={performanceData} height={400} />
-          </div>
+          {hasPerf ? (
+            <div className="bg-card rounded-xl p-6 border shadow-sm">
+              <h3 className="text-lg font-semibold mb-4">Análise de Performance</h3>
+              <ScatterPerformance data={performanceData} height={400} />
+            </div>
+          ) : (
+            <PerformanceEmpty asset={selectedAsset} missingSensors={missingSensors} />
+          )}
         </div>
       )}
 
       {activeTab === 'maintenance' && (
         <div className="space-y-6">
+          {/* TrakNor CTA */}
+          <TrakNorCTA 
+            orgId="default" 
+            onContactClick={() => setContactDialogOpen(true)} 
+          />
+          
           {/* Maintenance Summary */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-card rounded-xl p-6 border shadow-sm">
@@ -475,6 +501,13 @@ export const AssetDetailPage: React.FC = () => {
           </div>
         </div>
       )}
+      
+      {/* Contact Sales Dialog */}
+      <ContactSalesDialog 
+        open={contactDialogOpen} 
+        onOpenChange={setContactDialogOpen}
+        subject="Interesse em TrakNor - Gestão de Manutenção"
+      />
     </div>
   );
 };
