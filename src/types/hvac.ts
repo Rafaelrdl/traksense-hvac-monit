@@ -1,3 +1,20 @@
+export type EquipmentType =
+  | 'CHILLER'
+  | 'AHU'            // Unidade de Tratamento de Ar
+  | 'FAN_COIL'
+  | 'PUMP'
+  | 'BOILER'
+  | 'COOLING_TOWER'
+  | 'VRF'
+  | 'RTU'
+  | 'VALVE'
+  | 'SENSOR'
+  | 'CONTROLLER'
+  | 'FILTER'
+  | 'DUCT'
+  | 'METER'
+  | 'OTHER';
+
 export interface HVACAsset {
   id: string;
   tag: string;
@@ -16,6 +33,8 @@ export interface HVACAsset {
     brand?: string; // Marca
     model?: string; // Modelo
     serialNumber?: string; // Número de Série
+    equipmentType?: EquipmentType; // Novo tipo expandido
+    equipmentTypeOther?: string; // Texto livre quando type === 'OTHER'
   };
   // Informações de Localização
   company?: string; // Empresa

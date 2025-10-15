@@ -21,7 +21,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import { HVACAsset } from '@/types/hvac';
+import { HVACAsset, EquipmentType } from '@/types/hvac';
+import { EquipmentTypeField } from './EquipmentTypeField';
+import { SpecsInfo } from './SpecsInfo';
 
 interface AddAssetDialogProps {
   onAddAsset: (asset: Omit<HVACAsset, 'id' | 'healthScore' | 'powerConsumption' | 'status' | 'operatingHours' | 'lastMaintenance'>) => void;
@@ -38,6 +40,10 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
   const [model, setModel] = useState('');
   const [capacity, setCapacity] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
+
+  // Novo tipo expandido de equipamento
+  const [equipmentType, setEquipmentType] = useState<EquipmentType>('AHU');
+  const [equipmentTypeOther, setEquipmentTypeOther] = useState('');
 
   // Informações de Localização
   const [company, setCompany] = useState('');
@@ -57,6 +63,8 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
     setModel('');
     setCapacity('');
     setSerialNumber('');
+    setEquipmentType('AHU');
+    setEquipmentTypeOther('');
     setCompany('');
     setSector('');
     setSubsector('');
@@ -73,6 +81,13 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
     // Validação básica
     if (!tag.trim()) {
       toast.error('Tag do equipamento é obrigatória');
+      setActiveTab('basic');
+      return;
+    }
+
+    // Validação do tipo de equipamento
+    if (equipmentType === 'OTHER' && (!equipmentTypeOther.trim() || equipmentTypeOther.trim().length < 3)) {
+      toast.error('Especifique o tipo de equipamento (mínimo 3 caracteres)');
       setActiveTab('basic');
       return;
     }
@@ -102,6 +117,8 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
         brand: brand.trim() || undefined,
         model: model.trim() || undefined,
         serialNumber: serialNumber.trim() || undefined,
+        equipmentType: equipmentType,
+        equipmentTypeOther: equipmentType === 'OTHER' ? equipmentTypeOther.trim() : undefined,
       },
     };
 
@@ -161,7 +178,7 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
 
                   <div className="space-y-2">
                     <Label htmlFor="type">
-                      Tipo de Equipamento <span className="text-red-500">*</span>
+                      Tipo Legado <span className="text-red-500">*</span>
                     </Label>
                     <Select value={type} onValueChange={(value: HVACAsset['type']) => setType(value)}>
                       <SelectTrigger id="type">
@@ -176,7 +193,20 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
                         <SelectItem value="CoolingTower">Cooling Tower</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Compatibilidade com sistema antigo
+                    </p>
                   </div>
+                </div>
+
+                <div className="pt-2">
+                  <EquipmentTypeField
+                    value={equipmentType}
+                    onChange={setEquipmentType}
+                    otherValue={equipmentTypeOther}
+                    onChangeOther={setEquipmentTypeOther}
+                    required
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -295,11 +325,7 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
 
               {/* Especificações Técnicas */}
               <TabsContent value="specs" className="space-y-4 px-1">
-                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-4">
-                  <p className="text-sm text-amber-800 dark:text-amber-200">
-                    ℹ️ Estas especificações são opcionais, mas ajudam no monitoramento e manutenção do equipamento.
-                  </p>
-                </div>
+                <SpecsInfo />
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
