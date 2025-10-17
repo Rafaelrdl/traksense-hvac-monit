@@ -108,7 +108,7 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
             {/* Tenant/Site Selector */}
             <div className="hidden md:flex items-center space-x-2 text-sm opacity-90">
               <span>|</span>
-              <span>{user?.site || 'Site não definido'}</span>
+              <span>Uberlandia Medical Center</span>
             </div>
           </div>
 
