@@ -19,7 +19,6 @@ import {
   Volume2,
   Mail,
   Smartphone,
-  Globe,
   Clock,
   Loader2,
 } from 'lucide-react';
@@ -32,13 +31,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-
-// Idiomas disponíveis
-const LANGUAGES = [
-  { value: 'pt-br', label: 'Português (Brasil)', flag: '🇧🇷' },
-  { value: 'en', label: 'English (US)', flag: '🇺🇸' },
-  { value: 'es', label: 'Español', flag: '🇪🇸' },
-];
 
 // Timezones do Brasil e principais
 const TIMEZONES = [
@@ -77,9 +69,8 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
     lowAlerts: false,
   });
 
-  // Preferências de regionalização (salvas no backend)
-  const [regionalization, setRegionalization] = useState({
-    language: 'pt-br',
+  // Preferências de fusos horários (salvas no backend)
+  const [timezonePrefs, setTimezonePrefs] = useState({
     timezone: 'America/Sao_Paulo',
     time_format: '24h' as '12h' | '24h',
   });
@@ -93,18 +84,16 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
     console.log('👤 useEffect: user =', user);
     
     if (user && open) {
-      console.log('🔄 useEffect: Sincronizando regionalization com user');
-      console.log('🌍 useEffect: user.language =', user.language);
+      console.log('🔄 useEffect: Sincronizando timezonePrefs com user');
       console.log('⏰ useEffect: user.timezone =', user.timezone);
+      console.log('🕐 useEffect: user.time_format =', user.time_format);
       
-      setRegionalization({
-        language: user.language || 'pt-br',
+      setTimezonePrefs({
         timezone: user.timezone || 'America/Sao_Paulo',
         time_format: user.time_format || '24h',
       });
       
-      console.log('✅ useEffect: Regionalization setado para:', {
-        language: user.language || 'pt-br',
+      console.log('✅ useEffect: TimezonePrefs setado para:', {
         timezone: user.timezone || 'America/Sao_Paulo',
         time_format: user.time_format || '24h',
       });
@@ -117,13 +106,12 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
     setIsSubmitting(true);
 
     try {
-      console.log('🔄 Salvando preferências:', regionalization); // Debug
+      console.log('🔄 Salvando preferências:', timezonePrefs); // Debug
       
-      // Salvar preferências de regionalização no backend
+      // Salvar preferências de fuso horário no backend
       await updateUserProfile({
-        language: regionalization.language,
-        timezone: regionalization.timezone,
-        time_format: regionalization.time_format,
+        timezone: timezonePrefs.timezone,
+        time_format: timezonePrefs.time_format,
       });
 
       console.log('✅ Preferências salvas com sucesso!'); // Debug
@@ -158,10 +146,9 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
       lowAlerts: false,
     });
 
-    // Resetar regionalização para valores do usuário
+    // Resetar fusos horários para valores do usuário
     if (user) {
-      setRegionalization({
-        language: user.language || 'pt-br',
+      setTimezonePrefs({
         timezone: user.timezone || 'America/Sao_Paulo',
         time_format: user.time_format || '24h',
       });
@@ -190,7 +177,7 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
         <Tabs defaultValue="notifications" className="w-full mt-4">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="notifications">Notificações</TabsTrigger>
-            <TabsTrigger value="regional">Regionalização</TabsTrigger>
+            <TabsTrigger value="timezone">Fusos Horários</TabsTrigger>
           </TabsList>
 
           {/* TAB: Notificações */}
@@ -343,44 +330,10 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
             </ScrollArea>
           </TabsContent>
 
-          {/* TAB: Regionalização */}
-          <TabsContent value="regional" className="space-y-4 mt-4">
+          {/* TAB: Fusos Horários */}
+          <TabsContent value="timezone" className="space-y-4 mt-4">
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-6">
-                {/* Idioma */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-muted-foreground" />
-                    <Label className="text-base font-semibold">Idioma da Interface</Label>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Escolha o idioma que será usado na plataforma
-                  </p>
-
-                  <Select
-                    value={regionalization.language}
-                    onValueChange={(value) =>
-                      setRegionalization({ ...regionalization, language: value })
-                    }
-                  >
-                    <SelectTrigger className="w-full h-12">
-                      <SelectValue placeholder="Selecione um idioma" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LANGUAGES.map((lang) => (
-                        <SelectItem key={lang.value} value={lang.value}>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xl">{lang.flag}</span>
-                            <span>{lang.label}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Separator />
-
                 {/* Fuso Horário */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
@@ -392,9 +345,9 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
                   </p>
 
                   <Select
-                    value={regionalization.timezone}
+                    value={timezonePrefs.timezone}
                     onValueChange={(value) =>
-                      setRegionalization({ ...regionalization, timezone: value })
+                      setTimezonePrefs({ ...timezonePrefs, timezone: value })
                     }
                   >
                     <SelectTrigger className="w-full h-12">
@@ -417,7 +370,7 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
                     <p className="text-sm">
                       <span className="font-medium">Horário local atual:</span>{' '}
                       {new Date().toLocaleString('pt-BR', {
-                        timeZone: regionalization.timezone,
+                        timeZone: timezonePrefs.timezone,
                         dateStyle: 'short',
                         timeStyle: 'medium',
                       })}
@@ -438,9 +391,9 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
                   </p>
 
                   <Select
-                    value={regionalization.time_format}
+                    value={timezonePrefs.time_format}
                     onValueChange={(value: '12h' | '24h') =>
-                      setRegionalization({ ...regionalization, time_format: value })
+                      setTimezonePrefs({ ...timezonePrefs, time_format: value })
                     }
                   >
                     <SelectTrigger className="w-full h-12">
@@ -470,16 +423,13 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
                   <div className="p-3 rounded-lg bg-muted/50 border">
                     <p className="text-sm">
                       <span className="font-medium">Pré-visualização:</span>{' '}
-                      {new Date().toLocaleTimeString(
-                        regionalization.language || 'pt-BR',
-                        {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit',
-                          hour12: regionalization.time_format === '12h',
-                          timeZone: regionalization.timezone,
-                        }
-                      )}
+                      {new Date().toLocaleTimeString('pt-BR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: timezonePrefs.time_format === '12h',
+                        timeZone: timezonePrefs.timezone,
+                      })}
                     </p>
                   </div>
                 </div>

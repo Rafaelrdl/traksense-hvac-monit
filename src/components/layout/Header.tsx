@@ -40,9 +40,8 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const isMobile = useIsMobile();
   
-  // Configurações de timezone e idioma do usuário
+  // Configurações de timezone e formato de hora do usuário
   const userTimezone = user?.timezone || 'America/Sao_Paulo';
-  const userLanguage = user?.language || 'pt-BR';
   const userTimeFormat = user?.time_format || '24h';
   const hour12 = userTimeFormat === '12h';
   
@@ -123,7 +122,7 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
             <div className="flex items-center space-x-2">
               <Clock className="w-4 h-4 opacity-75" />
               <span>
-                {currentTime.toLocaleTimeString(userLanguage, { 
+                {currentTime.toLocaleTimeString('pt-BR', { 
                   hour: '2-digit', 
                   minute: '2-digit',
                   second: '2-digit',
@@ -135,7 +134,7 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
             
             {lastUpdateTime && (
               <div className="text-xs opacity-75">
-                Última atualização: {lastUpdateTime.toLocaleTimeString(userLanguage, {
+                Última atualização: {lastUpdateTime.toLocaleTimeString('pt-BR', {
                   timeZone: userTimezone,
                   hour12: hour12
                 })}

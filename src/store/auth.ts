@@ -18,7 +18,6 @@ export interface User {
   phone?: string | null;
   bio?: string | null;
   timezone?: string;
-  language?: string;
   time_format?: '12h' | '24h'; // Formato de hora: 12h (AM/PM) ou 24h
   email_verified?: boolean;
   is_active?: boolean;
@@ -213,7 +212,6 @@ export const useAuthStore = create<AuthState>()(
           
           if (savedData) {
             const parsed = JSON.parse(savedData);
-            console.log('👤 localStorage user.language =', parsed?.state?.user?.language); // Debug
             console.log('⏰ localStorage user.timezone =', parsed?.state?.user?.timezone); // Debug
             console.log('🕐 localStorage user.time_format =', parsed?.state?.user?.time_format); // Debug
           }

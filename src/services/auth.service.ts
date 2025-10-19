@@ -35,7 +35,6 @@ export interface UserProfileUpdate {
   phone?: string;
   bio?: string;
   timezone?: string;
-  language?: string;
   time_format?: '12h' | '24h';
 }
 
@@ -67,7 +66,6 @@ export interface BackendUser {
   phone: string | null;
   bio: string | null;
   timezone: string;
-  language: string;
   time_format: '12h' | '24h';
   email_verified: boolean;
   is_active: boolean;
@@ -93,8 +91,7 @@ const mapBackendUserToUser = (backendUser: BackendUser): User => {
     site: undefined, // Será definido quando implementarmos Sites
     photoUrl: backendUser.avatar || undefined,
     phone: backendUser.phone || undefined,
-    // Regionalização
-    language: backendUser.language || 'pt-br',
+    // Preferências
     timezone: backendUser.timezone || 'America/Sao_Paulo',
     time_format: backendUser.time_format || '24h',
     // Outros campos do perfil
