@@ -87,8 +87,21 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
 
   // Sincronizar com dados do usuário quando o dialog abrir
   useEffect(() => {
+    console.log('🔄 useEffect: Dialog abriu ou user mudou');
+    console.log('📊 useEffect: open =', open);
+    console.log('👤 useEffect: user =', user);
+    
     if (user && open) {
+      console.log('🔄 useEffect: Sincronizando regionalization com user');
+      console.log('🌍 useEffect: user.language =', user.language);
+      console.log('⏰ useEffect: user.timezone =', user.timezone);
+      
       setRegionalization({
+        language: user.language || 'pt-br',
+        timezone: user.timezone || 'America/Sao_Paulo',
+      });
+      
+      console.log('✅ useEffect: Regionalization setado para:', {
         language: user.language || 'pt-br',
         timezone: user.timezone || 'America/Sao_Paulo',
       });
@@ -101,11 +114,15 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
     setIsSubmitting(true);
 
     try {
+      console.log('🔄 Salvando preferências:', regionalization); // Debug
+      
       // Salvar preferências de regionalização no backend
       await updateUserProfile({
         language: regionalization.language,
         timezone: regionalization.timezone,
       });
+
+      console.log('✅ Preferências salvas com sucesso!'); // Debug
 
       // TODO: Salvar preferências de notificações quando backend suportar
       console.log('Preferências de notificações (local):', preferences);
@@ -116,7 +133,7 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
       
       onOpenChange(false);
     } catch (error: any) {
-      console.error('Erro ao salvar preferências:', error);
+      console.error('❌ Erro ao salvar preferências:', error);
       toast.error('Erro ao salvar preferências', {
         description: error.message || 'Tente novamente mais tarde.',
       });

@@ -168,6 +168,8 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
+          console.log('🔄 Store: Atualizando perfil com:', updates); // Debug
+          
           // Converte campos do frontend para backend se necessário
           const backendUpdates: any = { ...updates };
           
@@ -188,13 +190,32 @@ export const useAuthStore = create<AuthState>()(
           delete backendUpdates.initials;
           delete backendUpdates.username;
           
+          console.log('📤 Store: Enviando para backend:', backendUpdates); // Debug
+          
           const updatedUser = await authService.updateProfile(backendUpdates);
+
+          console.log('✅ Store: Usuário atualizado:', updatedUser); // Debug
+          console.log('💾 Store: Salvando no state...'); // Debug
 
           set({
             user: updatedUser,
             isLoading: false,
           });
+
+          console.log('💾 Store: State atualizado!'); // Debug
+          console.log('🔍 Store: Verificando localStorage...'); // Debug
+          
+          // Verificar o que foi salvo no localStorage
+          const savedData = localStorage.getItem('ts:auth');
+          console.log('💾 localStorage ts:auth =', savedData); // Debug
+          
+          if (savedData) {
+            const parsed = JSON.parse(savedData);
+            console.log('👤 localStorage user.language =', parsed?.state?.user?.language); // Debug
+            console.log('⏰ localStorage user.timezone =', parsed?.state?.user?.timezone); // Debug
+          }
         } catch (error: any) {
+          console.error('❌ Store: Erro ao atualizar:', error); // Debug
           set({
             isLoading: false,
             error: error.message || 'Erro ao atualizar perfil',

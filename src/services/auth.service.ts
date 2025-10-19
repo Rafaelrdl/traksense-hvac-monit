@@ -88,6 +88,19 @@ const mapBackendUserToUser = (backendUser: BackendUser): User => {
     site: undefined, // Será definido quando implementarmos Sites
     photoUrl: backendUser.avatar || undefined,
     phone: backendUser.phone || undefined,
+    // Regionalização
+    language: backendUser.language || 'pt-br',
+    timezone: backendUser.timezone || 'America/Sao_Paulo',
+    // Outros campos do perfil
+    bio: backendUser.bio || undefined,
+    first_name: backendUser.first_name || undefined,
+    last_name: backendUser.last_name || undefined,
+    full_name: backendUser.full_name || undefined,
+    initials: backendUser.initials || undefined,
+    email_verified: backendUser.email_verified,
+    is_active: backendUser.is_active,
+    is_staff: backendUser.is_staff,
+    date_joined: backendUser.date_joined,
   };
 };
 
@@ -186,9 +199,14 @@ class AuthService {
         '/users/me/',
         updates
       );
+      
+      console.log('updateProfile response:', data); // Debug
+      
+      // Backend retorna { user: {...}, message: '...' }
       return mapBackendUserToUser(data.user);
     } catch (error: any) {
       console.error('Update profile error:', error);
+      console.error('Response data:', error.response?.data); // Debug
       throw new Error(
         error.response?.data?.detail ||
         'Erro ao atualizar perfil.'
