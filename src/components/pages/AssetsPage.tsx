@@ -6,7 +6,13 @@ import { AddAssetDialog } from '../assets/AddAssetDialog';
 import { UnifiedAssetsToolbar } from '../../modules/assets/components/UnifiedAssetsToolbar';
 
 export const AssetsPage: React.FC = () => {
-  const { assets, setSelectedAsset, addAsset } = useAppStore();
+  const { 
+    assets, 
+    setSelectedAsset, 
+    addAsset, 
+    isLoadingAssets,
+    error 
+  } = useAppStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -56,6 +62,25 @@ export const AssetsPage: React.FC = () => {
         
         <AddAssetDialog onAddAsset={addAsset} />
       </div>
+
+      {/* Loading State */}
+      {isLoadingAssets && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-3">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+          <span className="text-blue-700 font-medium">Carregando assets...</span>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600" />
+          <div>
+            <div className="text-red-700 font-medium">Erro ao carregar dados</div>
+            <div className="text-red-600 text-sm">{error}</div>
+          </div>
+        </div>
+      )}
 
       {/* Unified Toolbar with all filters */}
       <UnifiedAssetsToolbar

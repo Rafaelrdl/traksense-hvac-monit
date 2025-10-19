@@ -31,9 +31,6 @@ interface AppState {
   lastUpdateTime: Date | null;
   refreshInterval: number | null;
   
-  // API mode toggle (para transição gradual)
-  useApiData: boolean;
-  
   // Actions
   setSelectedAsset: (assetId: string | null) => void;
   setTimeRange: (range: AppState['selectedTimeRange']) => void;
@@ -60,12 +57,11 @@ interface AppState {
   
   // API actions
   loadAssetsFromApi: () => Promise<void>;
-  setUseApiData: (useApi: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
-  // Initial state
-  assets: simEngine.getAssets(),
+  // Initial state - vazio, será carregado da API
+  assets: [],
   sensors: simEngine.getSensors(),
   alerts: simEngine.getAlerts(),
   scenarios: simEngine.getScenarios(),
@@ -74,12 +70,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   maintenanceHistory: simEngine.getMaintenanceHistory(),
   
   // Loading states
-  isLoadingAssets: false,
+  isLoadingAssets: true, // Inicia como loading
   isLoadingSensors: false,
   error: null,
-  
-  // API mode (inicialmente desabilitado, manter mock)
-  useApiData: false,
   
   selectedAssetId: null,
   selectedTimeRange: '24h',
@@ -309,26 +302,10 @@ export const useAppStore = create<AppState>((set, get) => ({
       });
     }
   },
-
-  /**
-   * Alterna entre dados da API e dados mockados
-   */
-  setUseApiData: (useApi) => {
-    set({ useApiData: useApi });
-    
-    if (useApi) {
-      // Carregar dados da API
-      get().loadAssetsFromApi();
-    } else {
-      // Voltar para dados mockados
-      set({
-        assets: simEngine.getAssets(),
-        sensors: simEngine.getSensors(),
-        alerts: simEngine.getAlerts(),
-      });
-    }
-  },
 }));
+
+// Carregar assets automaticamente ao inicializar
+useAppStore.getState().loadAssetsFromApi();
 
 // Utility hooks for specific data
 export const useAssets = () => useAppStore(state => state.assets);
