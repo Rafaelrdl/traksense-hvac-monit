@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { authService } from '@/services/auth.service';
 
 export interface User {
   id: string;
@@ -20,12 +21,23 @@ interface AuthState {
   
   // Actions
   login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
+  register: (data: {
+    username: string;
+    email: string;
+    password: string;
+    password_confirm: string;
+    first_name: string;
+    last_name: string;
+  }) => Promise<boolean>;
+  getProfile: () => Promise<void>;
+  updateUserProfile: (updates: Partial<User>) => Promise<void>;
+  uploadAvatar: (file: File) => Promise<void>;
+  removeAvatar: () => Promise<void>;
   clearError: () => void;
-  updateUserProfile: (updates: Partial<User>) => void;
 }
 
-// Demo users for testing
+// Demo users for testing (mantido para fallback)
 const DEMO_USERS: Record<string, { password: string; user: User }> = {
   'admin@traksense.com': {
     password: 'admin123',
@@ -60,50 +72,167 @@ export const useAuthStore = create<AuthState>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
 
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        try {
+          const user = await authService.login({
+            username_or_email: email,
+            password,
+          });
 
-        const demoUser = DEMO_USERS[email.toLowerCase()];
-        
-        if (!demoUser || demoUser.password !== password) {
-          set({ 
-            isLoading: false, 
-            error: 'Email ou senha inválidos' 
+          set({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          });
+
+          return true;
+        } catch (error: any) {
+          set({
+            isLoading: false,
+            error: error.message || 'Erro ao fazer login',
           });
           return false;
         }
-
-        set({
-          user: demoUser.user,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null
-        });
-
-        return true;
       },
 
-      logout: () => {
-        set({
-          user: null,
-          isAuthenticated: false,
-          error: null
-        });
+      logout: async () => {
+        set({ isLoading: true });
+
+        try {
+          await authService.logout();
+        } catch (error) {
+          console.error('Logout error:', error);
+        } finally {
+          set({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null,
+          });
+        }
+      },
+
+      register: async (data) => {
+        set({ isLoading: true, error: null });
+
+        try {
+          const user = await authService.register(data);
+
+          set({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          });
+
+          return true;
+        } catch (error: any) {
+          set({
+            isLoading: false,
+            error: error.message || 'Erro ao registrar usuário',
+          });
+          return false;
+        }
+      },
+
+      getProfile: async () => {
+        set({ isLoading: true });
+
+        try {
+          const user = await authService.getProfile();
+          
+          set({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        } catch (error: any) {
+          console.error('Get profile error:', error);
+          set({ isLoading: false });
+        }
+      },
+
+      updateUserProfile: async (updates: Partial<User>) => {
+        set({ isLoading: true, error: null });
+
+        try {
+          // Converte campos do frontend para backend
+          const backendUpdates: any = {};
+          
+          if (updates.name) {
+            const [firstName, ...lastNameParts] = updates.name.split(' ');
+            backendUpdates.first_name = firstName;
+            backendUpdates.last_name = lastNameParts.join(' ');
+          }
+          
+          if (updates.phone !== undefined) backendUpdates.phone = updates.phone;
+          
+          const updatedUser = await authService.updateProfile(backendUpdates);
+
+          set({
+            user: updatedUser,
+            isLoading: false,
+          });
+        } catch (error: any) {
+          set({
+            isLoading: false,
+            error: error.message || 'Erro ao atualizar perfil',
+          });
+          throw error;
+        }
+      },
+
+      uploadAvatar: async (file: File) => {
+        set({ isLoading: true, error: null });
+
+        try {
+          const avatarUrl = await authService.uploadAvatar(file);
+
+          const currentUser = get().user;
+          if (currentUser) {
+            set({
+              user: {
+                ...currentUser,
+                photoUrl: avatarUrl,
+              },
+              isLoading: false,
+            });
+          }
+        } catch (error: any) {
+          set({
+            isLoading: false,
+            error: error.message || 'Erro ao fazer upload do avatar',
+          });
+          throw error;
+        }
+      },
+
+      removeAvatar: async () => {
+        set({ isLoading: true, error: null });
+
+        try {
+          await authService.removeAvatar();
+
+          const currentUser = get().user;
+          if (currentUser) {
+            set({
+              user: {
+                ...currentUser,
+                photoUrl: undefined,
+              },
+              isLoading: false,
+            });
+          }
+        } catch (error: any) {
+          set({
+            isLoading: false,
+            error: error.message || 'Erro ao remover avatar',
+          });
+          throw error;
+        }
       },
 
       clearError: () => set({ error: null }),
-
-      updateUserProfile: (updates: Partial<User>) => {
-        const currentUser = get().user;
-        if (!currentUser) return;
-        
-        set({
-          user: {
-            ...currentUser,
-            ...updates
-          }
-        });
-      }
     }),
     {
       name: 'ts:auth', // Key para localStorage via persist middleware
