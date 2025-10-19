@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { useMemo } from 'react';
 import { HVACAsset, Sensor, Alert, SimulationScenario, TelemetryPoint, MaintenanceTask, MaintenanceSchedule, MaintenanceHistory } from '../types/hvac';
 import { simEngine } from '../lib/simulation';
+import { assetsService } from '@/services/assetsService';
+import { sitesService } from '@/services/sitesService';
+import { mapApiAssetsToHVACAssets } from '@/lib/mappers/assetMapper';
 
 interface AppState {
   // Current data
@@ -13,6 +16,11 @@ interface AppState {
   maintenanceSchedules: MaintenanceSchedule[];
   maintenanceHistory: MaintenanceHistory[];
   
+  // Loading states
+  isLoadingAssets: boolean;
+  isLoadingSensors: boolean;
+  error: string | null;
+  
   // UI state
   selectedAssetId: string | null;
   selectedTimeRange: '1h' | '6h' | '24h' | '7d' | '30d';
@@ -21,7 +29,10 @@ interface AppState {
   // Real-time simulation
   isSimulationRunning: boolean;
   lastUpdateTime: Date | null;
-  refreshInterval: NodeJS.Timeout | null;
+  refreshInterval: number | null;
+  
+  // API mode toggle (para transição gradual)
+  useApiData: boolean;
   
   // Actions
   setSelectedAsset: (assetId: string | null) => void;
@@ -46,6 +57,10 @@ interface AppState {
   addMaintenanceSchedule: (schedule: Omit<MaintenanceSchedule, 'id'>) => void;
   updateMaintenanceSchedule: (scheduleId: string, updates: Partial<MaintenanceSchedule>) => void;
   deleteMaintenanceSchedule: (scheduleId: string) => void;
+  
+  // API actions
+  loadAssetsFromApi: () => Promise<void>;
+  setUseApiData: (useApi: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -57,6 +72,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   maintenanceTasks: simEngine.getMaintenanceTasks(),
   maintenanceSchedules: simEngine.getMaintenanceSchedules(),
   maintenanceHistory: simEngine.getMaintenanceHistory(),
+  
+  // Loading states
+  isLoadingAssets: false,
+  isLoadingSensors: false,
+  error: null,
+  
+  // API mode (inicialmente desabilitado, manter mock)
+  useApiData: false,
   
   selectedAssetId: null,
   selectedTimeRange: '24h',
@@ -241,7 +264,70 @@ export const useAppStore = create<AppState>((set, get) => ({
     const currentSchedules = get().maintenanceSchedules;
     const newSchedules = currentSchedules.filter(schedule => schedule.id !== scheduleId);
     set({ maintenanceSchedules: newSchedules });
-  }
+  },
+
+  /**
+   * Carrega assets da API REST Django
+   * Esta função substitui o uso do simEngine quando useApiData = true
+   */
+  loadAssetsFromApi: async () => {
+    set({ isLoadingAssets: true, error: null });
+    
+    try {
+      // Buscar todos os assets (ajustar limit conforme necessário)
+      const assetsResponse = await assetsService.getAll({ 
+        limit: 100 
+      });
+      
+      // Buscar sites para enriquecer dados
+      const sitesResponse = await sitesService.getAll({ 
+        limit: 100 
+      });
+      
+      const sitesMap = new Map(
+        sitesResponse.results.map(s => [s.id, s])
+      );
+      
+      // Mapear para formato do frontend
+      const assets = mapApiAssetsToHVACAssets(
+        assetsResponse.results,
+        sitesMap
+      );
+      
+      set({ 
+        assets, 
+        isLoadingAssets: false,
+        lastUpdateTime: new Date()
+      });
+      
+      console.log(`✅ Carregados ${assets.length} assets da API`);
+    } catch (error) {
+      console.error('❌ Erro ao carregar assets da API:', error);
+      set({ 
+        error: 'Falha ao carregar ativos. Verifique sua conexão.', 
+        isLoadingAssets: false 
+      });
+    }
+  },
+
+  /**
+   * Alterna entre dados da API e dados mockados
+   */
+  setUseApiData: (useApi) => {
+    set({ useApiData: useApi });
+    
+    if (useApi) {
+      // Carregar dados da API
+      get().loadAssetsFromApi();
+    } else {
+      // Voltar para dados mockados
+      set({
+        assets: simEngine.getAssets(),
+        sensors: simEngine.getSensors(),
+        alerts: simEngine.getAlerts(),
+      });
+    }
+  },
 }));
 
 // Utility hooks for specific data
