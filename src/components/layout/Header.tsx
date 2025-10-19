@@ -40,6 +40,10 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const isMobile = useIsMobile();
   
+  // Configurações de timezone e idioma do usuário
+  const userTimezone = user?.timezone || 'America/Sao_Paulo';
+  const userLanguage = user?.language || 'pt-BR';
+  
   // Update current time every second
   useEffect(() => {
     const timer = setInterval(() => {
@@ -117,17 +121,20 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
             <div className="flex items-center space-x-2">
               <Clock className="w-4 h-4 opacity-75" />
               <span>
-                {currentTime.toLocaleTimeString('pt-BR', { 
+                {currentTime.toLocaleTimeString(userLanguage, { 
                   hour: '2-digit', 
                   minute: '2-digit',
-                  second: '2-digit'
+                  second: '2-digit',
+                  timeZone: userTimezone
                 })}
               </span>
             </div>
             
             {lastUpdateTime && (
               <div className="text-xs opacity-75">
-                Última atualização: {lastUpdateTime.toLocaleTimeString('pt-BR')}
+                Última atualização: {lastUpdateTime.toLocaleTimeString(userLanguage, {
+                  timeZone: userTimezone
+                })}
               </div>
             )}
           </div>
