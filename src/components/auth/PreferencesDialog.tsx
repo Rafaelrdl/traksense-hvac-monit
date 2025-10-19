@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/auth';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -11,15 +12,47 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Settings, 
   Bell, 
   Volume2,
   Mail,
   Smartphone,
+  Globe,
+  Clock,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+// Idiomas disponíveis
+const LANGUAGES = [
+  { value: 'pt-br', label: 'Português (Brasil)', flag: '🇧🇷' },
+  { value: 'en', label: 'English (US)', flag: '🇺🇸' },
+  { value: 'es', label: 'Español', flag: '🇪🇸' },
+];
+
+// Timezones do Brasil e principais
+const TIMEZONES = [
+  { value: 'America/Sao_Paulo', label: 'Brasília (GMT-3)', region: 'Brasil' },
+  { value: 'America/Manaus', label: 'Manaus (GMT-4)', region: 'Brasil' },
+  { value: 'America/Fortaleza', label: 'Fortaleza (GMT-3)', region: 'Brasil' },
+  { value: 'America/Recife', label: 'Recife (GMT-3)', region: 'Brasil' },
+  { value: 'America/Noronha', label: 'Fernando de Noronha (GMT-2)', region: 'Brasil' },
+  { value: 'America/New_York', label: 'New York (GMT-5)', region: 'EUA' },
+  { value: 'America/Los_Angeles', label: 'Los Angeles (GMT-8)', region: 'EUA' },
+  { value: 'Europe/London', label: 'London (GMT+0)', region: 'Europa' },
+  { value: 'Europe/Paris', label: 'Paris (GMT+1)', region: 'Europa' },
+  { value: 'Asia/Tokyo', label: 'Tokyo (GMT+9)', region: 'Ásia' },
+];
 
 interface PreferencesDialogProps {
   open: boolean;
@@ -28,8 +61,9 @@ interface PreferencesDialogProps {
 
 export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOpenChange }) => {
   const user = useAuthStore(state => state.user);
+  const updateUserProfile = useAuthStore(state => state.updateUserProfile);
 
-  // Preferências de notificações
+  // Preferências de notificações (locais - não salvas no backend ainda)
   const [preferences, setPreferences] = useState({
     // Notificações
     emailNotifications: true,
@@ -43,19 +77,56 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
     lowAlerts: false,
   });
 
-  const handleSave = () => {
-    // TODO: Salvar preferências na API
-    console.log('Preferências salvas:', preferences);
-    
-    toast.success('Preferências salvas!', {
-      description: 'Suas preferências foram atualizadas com sucesso.',
-    });
-    
-    onOpenChange(false);
+  // Preferências de regionalização (salvas no backend)
+  const [regionalization, setRegionalization] = useState({
+    language: 'pt-br',
+    timezone: 'America/Sao_Paulo',
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Sincronizar com dados do usuário quando o dialog abrir
+  useEffect(() => {
+    if (user && open) {
+      setRegionalization({
+        language: user.language || 'pt-br',
+        timezone: user.timezone || 'America/Sao_Paulo',
+      });
+    }
+  }, [user, open]);
+
+  const handleSave = async () => {
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+
+    try {
+      // Salvar preferências de regionalização no backend
+      await updateUserProfile({
+        language: regionalization.language,
+        timezone: regionalization.timezone,
+      });
+
+      // TODO: Salvar preferências de notificações quando backend suportar
+      console.log('Preferências de notificações (local):', preferences);
+      
+      toast.success('Preferências salvas!', {
+        description: 'Suas preferências foram atualizadas com sucesso.',
+      });
+      
+      onOpenChange(false);
+    } catch (error: any) {
+      console.error('Erro ao salvar preferências:', error);
+      toast.error('Erro ao salvar preferências', {
+        description: error.message || 'Tente novamente mais tarde.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleReset = () => {
-    // Resetar para valores padrão
+    // Resetar notificações para valores padrão
     setPreferences({
       emailNotifications: true,
       pushNotifications: true,
@@ -65,9 +136,17 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
       mediumAlerts: true,
       lowAlerts: false,
     });
+
+    // Resetar regionalização para valores do usuário
+    if (user) {
+      setRegionalization({
+        language: user.language || 'pt-br',
+        timezone: user.timezone || 'America/Sao_Paulo',
+      });
+    }
     
     toast.success('Preferências restauradas', {
-      description: 'As preferências padrão foram restauradas.',
+      description: 'As preferências foram restauradas aos valores originais.',
     });
   };
 
@@ -86,7 +165,14 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 mt-4">
+        <Tabs defaultValue="notifications" className="w-full mt-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="notifications">Notificações</TabsTrigger>
+            <TabsTrigger value="regional">Regionalização</TabsTrigger>
+          </TabsList>
+
+          {/* TAB: Notificações */}
+          <TabsContent value="notifications" className="space-y-4 mt-4">
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-6">
                 {/* Canais de Notificação */}
@@ -233,9 +319,95 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
                 </div>
               </div>
             </ScrollArea>
-        </div>
+          </TabsContent>
 
-        <Separator />
+          {/* TAB: Regionalização */}
+          <TabsContent value="regional" className="space-y-4 mt-4">
+            <ScrollArea className="h-[400px] pr-4">
+              <div className="space-y-6">
+                {/* Idioma */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-muted-foreground" />
+                    <Label className="text-base font-semibold">Idioma da Interface</Label>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Escolha o idioma que será usado na plataforma
+                  </p>
+
+                  <Select
+                    value={regionalization.language}
+                    onValueChange={(value) =>
+                      setRegionalization({ ...regionalization, language: value })
+                    }
+                  >
+                    <SelectTrigger className="w-full h-12">
+                      <SelectValue placeholder="Selecione um idioma" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LANGUAGES.map((lang) => (
+                        <SelectItem key={lang.value} value={lang.value}>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl">{lang.flag}</span>
+                            <span>{lang.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator />
+
+                {/* Fuso Horário */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-muted-foreground" />
+                    <Label className="text-base font-semibold">Fuso Horário</Label>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Defina seu fuso horário para exibir datas e horários corretamente
+                  </p>
+
+                  <Select
+                    value={regionalization.timezone}
+                    onValueChange={(value) =>
+                      setRegionalization({ ...regionalization, timezone: value })
+                    }
+                  >
+                    <SelectTrigger className="w-full h-12">
+                      <SelectValue placeholder="Selecione um fuso horário" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIMEZONES.map((tz) => (
+                        <SelectItem key={tz.value} value={tz.value}>
+                          <div className="flex flex-col">
+                            <span>{tz.label}</span>
+                            <span className="text-xs text-muted-foreground">{tz.region}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Informação sobre timezone atual */}
+                  <div className="p-3 rounded-lg bg-muted/50 border">
+                    <p className="text-sm">
+                      <span className="font-medium">Horário local atual:</span>{' '}
+                      {new Date().toLocaleString('pt-BR', {
+                        timeZone: regionalization.timezone,
+                        dateStyle: 'short',
+                        timeStyle: 'medium',
+                      })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
+
+        <Separator className="mt-4" />
 
         {/* Footer com Ações */}
         <div className="flex items-center justify-between gap-2">
@@ -244,6 +416,7 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
             variant="outline"
             onClick={handleReset}
             className="text-muted-foreground"
+            disabled={isSubmitting}
           >
             Restaurar Padrões
           </Button>
@@ -252,11 +425,23 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
             >
               Cancelar
             </Button>
-            <Button onClick={handleSave} className="bg-primary hover:bg-primary/90">
-              Salvar Preferências
+            <Button 
+              onClick={handleSave} 
+              className="bg-primary hover:bg-primary/90"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                'Salvar Preferências'
+              )}
             </Button>
           </div>
         </div>
