@@ -4,13 +4,25 @@ import { authService } from '@/services/auth.service';
 
 export interface User {
   id: string;
+  username?: string;
   email: string;
-  name: string;
+  first_name?: string;
+  last_name?: string;
+  full_name?: string;
+  initials?: string;
+  name: string; // Legacy field for compatibility
   role: 'admin' | 'operator' | 'viewer';
-  site?: string;
-  photoUrl?: string; // Base64 data URL ou URL externa
-  phone?: string;
-  // tenant removido - mantido apenas por compatibilidade histórica interna
+  site?: string; // Legacy field
+  avatar?: string | null; // Backend field
+  photoUrl?: string; // Legacy frontend field
+  phone?: string | null;
+  bio?: string | null;
+  timezone?: string;
+  language?: string;
+  email_verified?: boolean;
+  is_active?: boolean;
+  is_staff?: boolean;
+  date_joined?: string;
 }
 
 interface AuthState {
@@ -156,16 +168,25 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          // Converte campos do frontend para backend
-          const backendUpdates: any = {};
+          // Converte campos do frontend para backend se necessário
+          const backendUpdates: any = { ...updates };
           
+          // Se enviou 'name', quebra em first_name e last_name
           if (updates.name) {
             const [firstName, ...lastNameParts] = updates.name.split(' ');
             backendUpdates.first_name = firstName;
             backendUpdates.last_name = lastNameParts.join(' ');
+            delete backendUpdates.name;
           }
           
-          if (updates.phone !== undefined) backendUpdates.phone = updates.phone;
+          // Remove campos que não devem ser enviados
+          delete backendUpdates.photoUrl; // Backend usa 'avatar'
+          delete backendUpdates.site; // Campo legacy
+          delete backendUpdates.role; // Não atualizado via profile
+          delete backendUpdates.id;
+          delete backendUpdates.full_name;
+          delete backendUpdates.initials;
+          delete backendUpdates.username;
           
           const updatedUser = await authService.updateProfile(backendUpdates);
 
@@ -193,7 +214,8 @@ export const useAuthStore = create<AuthState>()(
             set({
               user: {
                 ...currentUser,
-                photoUrl: avatarUrl,
+                avatar: avatarUrl,
+                photoUrl: avatarUrl, // Maintain legacy field compatibility
               },
               isLoading: false,
             });
@@ -218,7 +240,8 @@ export const useAuthStore = create<AuthState>()(
             set({
               user: {
                 ...currentUser,
-                photoUrl: undefined,
+                avatar: null,
+                photoUrl: undefined, // Maintain legacy field compatibility
               },
               isLoading: false,
             });

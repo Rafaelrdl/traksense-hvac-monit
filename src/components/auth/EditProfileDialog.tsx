@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '../../store/auth';
+import { authService } from '../../services/auth.service';
 import {
   Dialog,
   DialogContent,
@@ -41,30 +42,49 @@ interface EditProfileDialogProps {
 export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onOpenChange }) => {
   const user = useAuthStore(state => state.user);
   const updateUserProfile = useAuthStore(state => state.updateUserProfile);
+  const uploadAvatar = useAuthStore(state => state.uploadAvatar);
+  const removeAvatar = useAuthStore(state => state.removeAvatar);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    site: user?.site || '',
-    phone: user?.phone || '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    bio: '',
   });
 
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.photoUrl || null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [hasAvatarChanged, setHasAvatarChanged] = useState(false);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   
-  // Sync form data when user changes
+  // Sync form data when user changes or dialog opens
   useEffect(() => {
     if (user) {
+      // Parse full_name into first_name and last_name
+      const fullName = user.full_name || user.name || '';
+      const nameParts = fullName.split(' ');
+      const firstName = user.first_name || nameParts[0] || '';
+      const lastName = user.last_name || nameParts.slice(1).join(' ') || '';
+
       setFormData({
-        name: user.name || '',
+        firstName,
+        lastName,
         email: user.email || '',
-        site: user.site || '',
         phone: user.phone || '',
+        bio: user.bio || '',
       });
-      setAvatarPreview(user.photoUrl || null);
+      
+      // Use backend avatar URL or legacy photoUrl
+      const avatarUrl = user.avatar || user.photoUrl || null;
+      setAvatarPreview(avatarUrl);
+      setAvatarFile(null);
+      setHasAvatarChanged(false);
     }
-  }, [user]);
+  }, [user, open]);
   
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -76,28 +96,55 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onOp
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Atualizar perfil no store (persiste via Zustand middleware)
-    updateUserProfile({
-      name: formData.name,
-      email: formData.email,
-      site: formData.site,
-      phone: formData.phone,
-      photoUrl: avatarPreview || undefined
-    });
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
     
-    toast.success('Perfil atualizado com sucesso!', {
-      description: 'Suas informações foram salvas.',
-    });
-    
-    onOpenChange(false);
+    try {
+      // 1. Upload avatar if changed
+      if (hasAvatarChanged && avatarFile) {
+        await uploadAvatar(avatarFile);
+        toast.success('Avatar atualizado!');
+      } else if (hasAvatarChanged && !avatarPreview) {
+        // Avatar was removed
+        await removeAvatar();
+        toast.success('Avatar removido!');
+      }
+
+      // 2. Update profile data
+      const updates: any = {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        phone: formData.phone || null,
+        bio: formData.bio || null,
+      };
+
+      await updateUserProfile(updates);
+      
+      toast.success('Perfil atualizado com sucesso!', {
+        description: 'Suas informações foram salvas.',
+      });
+      
+      onOpenChange(false);
+    } catch (error: any) {
+      console.error('Erro ao atualizar perfil:', error);
+      toast.error('Erro ao atualizar perfil', {
+        description: error.message || 'Tente novamente mais tarde.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handlePasswordChange = (e: React.FormEvent) => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (isChangingPassword) return;
+
     // Validação de senha
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast.error('As senhas não coincidem', {
@@ -113,19 +160,33 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onOp
       return;
     }
 
-    // TODO: Implementar alteração de senha via API
-    console.log('Alteração de senha:', passwordData);
-    
-    toast.success('Senha alterada com sucesso!', {
-      description: 'Sua senha foi atualizada.',
-    });
+    setIsChangingPassword(true);
 
-    // Limpar campos
-    setPasswordData({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    });
+    try {
+      await authService.changePassword({
+        old_password: passwordData.currentPassword,
+        new_password: passwordData.newPassword,
+        new_password_confirm: passwordData.confirmPassword,
+      });
+      
+      toast.success('Senha alterada com sucesso!', {
+        description: 'Sua senha foi atualizada.',
+      });
+
+      // Limpar campos
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+    } catch (error: any) {
+      console.error('Erro ao alterar senha:', error);
+      toast.error('Erro ao alterar senha', {
+        description: error.message || 'Verifique sua senha atual e tente novamente.',
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   const handleAvatarClick = () => {
@@ -151,7 +212,14 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onOp
     try {
       // Aplicar crop quadrado centralizado
       const croppedDataUrl = await cropToSquare(file, 256);
+      
+      // Create a new File from the data URL
+      const blob = await (await fetch(croppedDataUrl)).blob();
+      const croppedFile = new File([blob], file.name, { type: file.type });
+      
       setAvatarPreview(croppedDataUrl);
+      setAvatarFile(croppedFile);
+      setHasAvatarChanged(true);
       
       toast.success('Foto processada com sucesso', {
         description: 'Clique em "Salvar Alterações" para confirmar.',
@@ -164,6 +232,13 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onOp
     } finally {
       setIsProcessingImage(false);
     }
+  };
+
+  const handleRemoveAvatar = () => {
+    setAvatarPreview(null);
+    setAvatarFile(null);
+    setHasAvatarChanged(true);
+    toast.info('Avatar será removido ao salvar');
   };
 
   if (!user) return null;
@@ -262,17 +337,32 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onOp
               <div className="space-y-4">
                 {/* Nome */}
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="flex items-center gap-2">
+                  <Label htmlFor="firstName" className="flex items-center gap-2">
                     <User className="w-4 h-4 text-muted-foreground" />
-                    Nome Completo
+                    Nome
                   </Label>
                   <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Seu nome completo"
+                    id="firstName"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    placeholder="Seu primeiro nome"
                     className="h-11"
                     required
+                  />
+                </div>
+
+                {/* Sobrenome */}
+                <div className="space-y-2">
+                  <Label htmlFor="lastName" className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-muted-foreground" />
+                    Sobrenome
+                  </Label>
+                  <Input
+                    id="lastName"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    placeholder="Seu sobrenome"
+                    className="h-11"
                   />
                 </div>
 
@@ -312,17 +402,17 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onOp
                   </p>
                 </div>
 
-                {/* Site/Local */}
+                {/* Bio/Descrição */}
                 <div className="space-y-2">
-                  <Label htmlFor="site" className="flex items-center gap-2">
+                  <Label htmlFor="bio" className="flex items-center gap-2">
                     <Building className="w-4 h-4 text-muted-foreground" />
-                    Site/Local
+                    Sobre você
                   </Label>
                   <Input
-                    id="site"
-                    value={formData.site}
-                    onChange={(e) => setFormData({ ...formData, site: e.target.value })}
-                    placeholder="Data Center Principal"
+                    id="bio"
+                    value={formData.bio}
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                    placeholder="Breve descrição sobre você"
                     className="h-11"
                   />
                 </div>
@@ -333,11 +423,23 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onOp
                   type="button"
                   variant="outline"
                   onClick={() => onOpenChange(false)}
+                  disabled={isSubmitting}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" className="bg-primary hover:bg-primary/90">
-                  Salvar Alterações
+                <Button 
+                  type="submit" 
+                  className="bg-primary hover:bg-primary/90"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    'Salvar Alterações'
+                  )}
                 </Button>
               </DialogFooter>
             </form>
@@ -483,6 +585,7 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onOp
                       confirmPassword: '',
                     });
                   }}
+                  disabled={isChangingPassword}
                 >
                   Limpar
                 </Button>
@@ -490,6 +593,7 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onOp
                   type="submit" 
                   className="bg-primary hover:bg-primary/90"
                   disabled={
+                    isChangingPassword ||
                     !passwordData.currentPassword ||
                     !passwordData.newPassword ||
                     !passwordData.confirmPassword ||
@@ -497,7 +601,14 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onOp
                     passwordData.newPassword.length < 8
                   }
                 >
-                  Alterar Senha
+                  {isChangingPassword ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Alterando...
+                    </>
+                  ) : (
+                    'Alterar Senha'
+                  )}
                 </Button>
               </DialogFooter>
             </form>
