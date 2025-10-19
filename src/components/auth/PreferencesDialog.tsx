@@ -81,6 +81,7 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
   const [regionalization, setRegionalization] = useState({
     language: 'pt-br',
     timezone: 'America/Sao_Paulo',
+    time_format: '24h' as '12h' | '24h',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -99,11 +100,13 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
       setRegionalization({
         language: user.language || 'pt-br',
         timezone: user.timezone || 'America/Sao_Paulo',
+        time_format: user.time_format || '24h',
       });
       
       console.log('✅ useEffect: Regionalization setado para:', {
         language: user.language || 'pt-br',
         timezone: user.timezone || 'America/Sao_Paulo',
+        time_format: user.time_format || '24h',
       });
     }
   }, [user, open]);
@@ -120,6 +123,7 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
       await updateUserProfile({
         language: regionalization.language,
         timezone: regionalization.timezone,
+        time_format: regionalization.time_format,
       });
 
       console.log('✅ Preferências salvas com sucesso!'); // Debug
@@ -159,6 +163,7 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
       setRegionalization({
         language: user.language || 'pt-br',
         timezone: user.timezone || 'America/Sao_Paulo',
+        time_format: user.time_format || '24h',
       });
     }
     
@@ -416,6 +421,65 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
                         dateStyle: 'short',
                         timeStyle: 'medium',
                       })}
+                    </p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Formato de Hora */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-muted-foreground" />
+                    <Label className="text-base font-semibold">Formato de Hora</Label>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Escolha entre formato 12 horas (AM/PM) ou 24 horas
+                  </p>
+
+                  <Select
+                    value={regionalization.time_format}
+                    onValueChange={(value: '12h' | '24h') =>
+                      setRegionalization({ ...regionalization, time_format: value })
+                    }
+                  >
+                    <SelectTrigger className="w-full h-12">
+                      <SelectValue placeholder="Selecione o formato" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="24h">
+                        <div className="flex flex-col">
+                          <span>24 horas</span>
+                          <span className="text-xs text-muted-foreground">
+                            Exemplo: 23:30:45
+                          </span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="12h">
+                        <div className="flex flex-col">
+                          <span>12 horas (AM/PM)</span>
+                          <span className="text-xs text-muted-foreground">
+                            Exemplo: 11:30:45 PM
+                          </span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Preview do formato */}
+                  <div className="p-3 rounded-lg bg-muted/50 border">
+                    <p className="text-sm">
+                      <span className="font-medium">Pré-visualização:</span>{' '}
+                      {new Date().toLocaleTimeString(
+                        regionalization.language || 'pt-BR',
+                        {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                          hour12: regionalization.time_format === '12h',
+                          timeZone: regionalization.timezone,
+                        }
+                      )}
                     </p>
                   </div>
                 </div>

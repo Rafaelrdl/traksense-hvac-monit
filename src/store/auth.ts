@@ -19,6 +19,7 @@ export interface User {
   bio?: string | null;
   timezone?: string;
   language?: string;
+  time_format?: '12h' | '24h'; // Formato de hora: 12h (AM/PM) ou 24h
   email_verified?: boolean;
   is_active?: boolean;
   is_staff?: boolean;
@@ -195,7 +196,8 @@ export const useAuthStore = create<AuthState>()(
           const updatedUser = await authService.updateProfile(backendUpdates);
 
           console.log('✅ Store: Usuário atualizado:', updatedUser); // Debug
-          console.log('💾 Store: Salvando no state...'); // Debug
+          console.log('� Store: time_format na resposta =', updatedUser?.time_format); // Debug
+          console.log('�💾 Store: Salvando no state...'); // Debug
 
           set({
             user: updatedUser,
@@ -213,6 +215,7 @@ export const useAuthStore = create<AuthState>()(
             const parsed = JSON.parse(savedData);
             console.log('👤 localStorage user.language =', parsed?.state?.user?.language); // Debug
             console.log('⏰ localStorage user.timezone =', parsed?.state?.user?.timezone); // Debug
+            console.log('🕐 localStorage user.time_format =', parsed?.state?.user?.time_format); // Debug
           }
         } catch (error: any) {
           console.error('❌ Store: Erro ao atualizar:', error); // Debug

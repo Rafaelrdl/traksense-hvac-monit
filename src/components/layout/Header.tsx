@@ -43,6 +43,8 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
   // Configurações de timezone e idioma do usuário
   const userTimezone = user?.timezone || 'America/Sao_Paulo';
   const userLanguage = user?.language || 'pt-BR';
+  const userTimeFormat = user?.time_format || '24h';
+  const hour12 = userTimeFormat === '12h';
   
   // Update current time every second
   useEffect(() => {
@@ -125,7 +127,8 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
                   hour: '2-digit', 
                   minute: '2-digit',
                   second: '2-digit',
-                  timeZone: userTimezone
+                  timeZone: userTimezone,
+                  hour12: hour12
                 })}
               </span>
             </div>
@@ -133,7 +136,8 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
             {lastUpdateTime && (
               <div className="text-xs opacity-75">
                 Última atualização: {lastUpdateTime.toLocaleTimeString(userLanguage, {
-                  timeZone: userTimezone
+                  timeZone: userTimezone,
+                  hour12: hour12
                 })}
               </div>
             )}

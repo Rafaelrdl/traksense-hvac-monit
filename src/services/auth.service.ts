@@ -36,6 +36,7 @@ export interface UserProfileUpdate {
   bio?: string;
   timezone?: string;
   language?: string;
+  time_format?: '12h' | '24h';
 }
 
 export interface ChangePasswordData {
@@ -67,6 +68,7 @@ export interface BackendUser {
   bio: string | null;
   timezone: string;
   language: string;
+  time_format: '12h' | '24h';
   email_verified: boolean;
   is_active: boolean;
   is_staff: boolean;
@@ -80,17 +82,21 @@ export interface BackendUser {
  * Converte BackendUser para User (formato do frontend)
  */
 const mapBackendUserToUser = (backendUser: BackendUser): User => {
-  return {
+  console.log('🔄 mapBackendUserToUser - Input:', backendUser); // Debug
+  console.log('🕐 mapBackendUserToUser - time_format recebido:', backendUser.time_format); // Debug
+  
+  const mappedUser: User = {
     id: backendUser.id.toString(),
     email: backendUser.email,
     name: backendUser.full_name || backendUser.username,
-    role: backendUser.is_staff ? 'admin' : 'operator', // Ajustar conforme regras de negócio
+    role: (backendUser.is_staff ? 'admin' : 'operator') as 'admin' | 'operator' | 'viewer', // Ajustar conforme regras de negócio
     site: undefined, // Será definido quando implementarmos Sites
     photoUrl: backendUser.avatar || undefined,
     phone: backendUser.phone || undefined,
     // Regionalização
     language: backendUser.language || 'pt-br',
     timezone: backendUser.timezone || 'America/Sao_Paulo',
+    time_format: backendUser.time_format || '24h',
     // Outros campos do perfil
     bio: backendUser.bio || undefined,
     first_name: backendUser.first_name || undefined,
@@ -102,6 +108,11 @@ const mapBackendUserToUser = (backendUser: BackendUser): User => {
     is_staff: backendUser.is_staff,
     date_joined: backendUser.date_joined,
   };
+  
+  console.log('✅ mapBackendUserToUser - Output:', mappedUser); // Debug
+  console.log('🕐 mapBackendUserToUser - time_format mapeado:', mappedUser.time_format); // Debug
+  
+  return mappedUser;
 };
 
 /**
