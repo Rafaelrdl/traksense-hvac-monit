@@ -143,7 +143,7 @@ export function mapApiSensorSummaryToFrontend(apiSensor: any): SensorSummary {
     unit: apiSensor.unit || '',
     isOnline: apiSensor.is_online ?? false,
     lastValue: apiSensor.last_value ?? null,
-    lastReadingAt: apiSensor.last_reading_at ?? null,
+    lastReadingAt: apiSensor.last_reading ?? null, // Backend retorna 'last_reading', não 'last_reading_at'
     statistics24h: {
       avg: apiSensor.statistics_24h?.avg ?? null,
       min: apiSensor.statistics_24h?.min ?? null,
