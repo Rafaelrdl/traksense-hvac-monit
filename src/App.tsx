@@ -19,19 +19,22 @@ function App() {
   const selectedAssetId = useAppStore(state => state.selectedAssetId);
   const { add: addNotification, items: notifications } = useNotifications();
 
-  // Start simulation on app load
-  useEffect(() => {
-    const { startSimulation, isSimulationRunning, stopSimulation } = useAppStore.getState();
-    
-    if (!isSimulationRunning) {
-      startSimulation();
-    }
-
-    // Cleanup on unmount
-    return () => {
-      stopSimulation();
-    };
-  }, []); // Empty dependency array to run only once
+  // NOTA: Simulação desabilitada - agora usamos dados reais da API
+  // A simulação só deve ser ativada manualmente para testes/desenvolvimento
+  // Se necessário, reative comentando o código abaixo
+  
+  // useEffect(() => {
+  //   const { startSimulation, isSimulationRunning, stopSimulation } = useAppStore.getState();
+  //   
+  //   if (!isSimulationRunning) {
+  //     startSimulation();
+  //   }
+  //
+  //   // Cleanup on unmount
+  //   return () => {
+  //     stopSimulation();
+  //   };
+  // }, []); // Empty dependency array to run only once
   
   // Seed notifications in development mode
   useEffect(() => {

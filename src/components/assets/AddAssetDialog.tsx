@@ -25,7 +25,7 @@ import { HVACAsset, EquipmentType } from '@/types/hvac';
 import { EquipmentTypeField } from './EquipmentTypeField';
 
 interface AddAssetDialogProps {
-  onAddAsset: (asset: Omit<HVACAsset, 'id' | 'healthScore' | 'powerConsumption' | 'status' | 'operatingHours' | 'lastMaintenance'>) => void;
+  onAddAsset: (asset: Omit<HVACAsset, 'id' | 'healthScore' | 'powerConsumption' | 'status' | 'operatingHours' | 'lastMaintenance'>) => Promise<void>;
 }
 
 export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) => {
@@ -72,7 +72,7 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
     setActiveTab('basic');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validação básica
@@ -132,10 +132,15 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
       },
     };
 
-    onAddAsset(newAsset);
-    toast.success(`Ativo ${tag} adicionado com sucesso!`);
-    setOpen(false);
-    resetForm();
+    try {
+      await onAddAsset(newAsset);
+      toast.success(`Ativo ${tag} adicionado com sucesso!`);
+      setOpen(false);
+      resetForm();
+    } catch (error) {
+      toast.error('Erro ao adicionar ativo. Tente novamente.');
+      console.error('Erro ao adicionar ativo:', error);
+    }
   };
 
   return (

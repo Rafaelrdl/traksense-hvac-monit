@@ -4,7 +4,7 @@ import { HVACAsset, Sensor, Alert, SimulationScenario, TelemetryPoint, Maintenan
 import { simEngine } from '../lib/simulation';
 import { assetsService } from '@/services/assetsService';
 import { sitesService } from '@/services/sitesService';
-import { mapApiAssetsToHVACAssets } from '@/lib/mappers/assetMapper';
+import { mapApiAssetsToHVACAssets, mapHVACAssetToApiAsset, mapApiAssetToHVACAsset } from '@/lib/mappers/assetMapper';
 
 interface AppState {
   // Current data
@@ -45,7 +45,7 @@ interface AppState {
   resolveAlert: (alertId: string) => void;
   
   // Asset actions
-  addAsset: (asset: Omit<HVACAsset, 'id' | 'healthScore' | 'powerConsumption' | 'status' | 'operatingHours' | 'lastMaintenance'>) => void;
+  addAsset: (asset: Omit<HVACAsset, 'id' | 'healthScore' | 'powerConsumption' | 'status' | 'operatingHours' | 'lastMaintenance'>) => Promise<void>;
   
   // Maintenance actions
   addMaintenanceTask: (task: Omit<MaintenanceTask, 'id' | 'createdDate' | 'createdBy'>) => void;
@@ -194,19 +194,64 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   // Asset actions
-  addAsset: (assetData) => {
-    const newAsset: HVACAsset = {
-      ...assetData,
-      id: `asset-${Date.now()}-${Math.random().toString(36).substring(7)}`,
-      healthScore: 100, // New asset starts with perfect health
-      powerConsumption: 0, // Will be calculated by simulation
-      status: 'OK',
-      operatingHours: 0,
-      lastMaintenance: new Date(),
-    };
-    
-    const currentAssets = get().assets;
-    set({ assets: [...currentAssets, newAsset] });
+  addAsset: async (assetData) => {
+    try {
+      // 1. Buscar ou criar site padrão
+      let siteId = 1; // Default para Uberlândia Medical Center
+      
+      try {
+        // Tentar buscar sites existentes
+        const sitesResponse = await sitesService.getAll();
+        if (sitesResponse.results.length > 0) {
+          // Usar primeiro site disponível
+          siteId = sitesResponse.results[0].id;
+        }
+      } catch (siteError) {
+        console.warn('⚠️ Não foi possível buscar sites, usando ID padrão:', siteError);
+      }
+
+      // 2. Converter dados do frontend para formato da API usando mapper
+      const apiAssetData = mapHVACAssetToApiAsset(
+        {
+          ...assetData,
+          healthScore: 100,
+          status: 'OK',
+          lastMaintenance: new Date(),
+        },
+        siteId
+      );
+
+      // 3. Criar asset na API
+      const createdApiAsset = await assetsService.create(apiAssetData);
+      
+      // 4. Converter resposta da API para formato do frontend
+      const createdHVACAsset = mapApiAssetToHVACAsset(createdApiAsset);
+      
+      // 5. Adicionar asset criado ao estado local
+      const currentAssets = get().assets;
+      set({ assets: [...currentAssets, createdHVACAsset] });
+      
+      console.log('✅ Asset criado com sucesso na API:', createdHVACAsset.tag);
+    } catch (error) {
+      console.error('❌ Erro ao criar asset na API:', error);
+      
+      // Fallback: adicionar localmente se API falhar
+      const newAsset: HVACAsset = {
+        ...assetData,
+        id: `asset-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+        healthScore: 100,
+        powerConsumption: 0,
+        status: 'OK',
+        operatingHours: 0,
+        lastMaintenance: new Date(),
+      };
+      
+      const currentAssets = get().assets;
+      set({ assets: [...currentAssets, newAsset] });
+      
+      // Re-throw para exibir erro ao usuário
+      throw error;
+    }
   },
 
   // Maintenance actions
