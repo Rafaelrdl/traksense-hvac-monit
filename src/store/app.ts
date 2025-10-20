@@ -5,6 +5,19 @@ import { simEngine } from '../lib/simulation';
 import { assetsService } from '@/services/assetsService';
 import { sitesService } from '@/services/sitesService';
 import { mapApiAssetsToHVACAssets, mapHVACAssetToApiAsset, mapApiAssetToHVACAsset } from '@/lib/mappers/assetMapper';
+import { telemetryService } from '@/services/telemetryService';
+import { 
+  LatestReadingsResponse, 
+  DeviceHistoryResponse, 
+  DeviceSummaryResponse,
+  TelemetryReading,
+  SensorSummary 
+} from '@/types/telemetry';
+import {
+  mapApiLatestReadingsToFrontend,
+  mapApiDeviceHistoryToFrontend,
+  mapApiDeviceSummaryToFrontend
+} from '@/lib/mappers/telemetryMapper';
 
 interface AppState {
   // Current data
@@ -15,6 +28,19 @@ interface AppState {
   maintenanceTasks: MaintenanceTask[];
   maintenanceSchedules: MaintenanceSchedule[];
   maintenanceHistory: MaintenanceHistory[];
+  
+  // Telemetry data (FASE 3)
+  telemetry: {
+    currentDevice: string | null; // Device ID selecionado
+    latestReadings: LatestReadingsResponse | null; // Últimas leituras
+    history: DeviceHistoryResponse | null; // Histórico temporal
+    summary: DeviceSummaryResponse | null; // Resumo do device
+    isLoading: boolean; // Loading state
+    error: string | null; // Erro
+    lastUpdate: Date | null; // Última atualização
+    autoRefreshEnabled: boolean; // Auto-refresh ativo
+    pollingCleanup: (() => void) | null; // Função de cleanup do polling
+  };
   
   // Loading states
   isLoadingAssets: boolean;
@@ -57,6 +83,14 @@ interface AppState {
   
   // API actions
   loadAssetsFromApi: () => Promise<void>;
+  
+  // Telemetry actions (FASE 3)
+  setCurrentDevice: (deviceId: string | null) => void;
+  loadTelemetryForDevice: (deviceId: string, options?: { skipHistory?: boolean }) => Promise<void>;
+  refreshTelemetry: () => Promise<void>;
+  startTelemetryAutoRefresh: (deviceId: string, intervalMs?: number) => void;
+  stopTelemetryAutoRefresh: () => void;
+  clearTelemetry: () => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -68,6 +102,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   maintenanceTasks: simEngine.getMaintenanceTasks(),
   maintenanceSchedules: simEngine.getMaintenanceSchedules(),
   maintenanceHistory: simEngine.getMaintenanceHistory(),
+  
+  // Telemetry initial state (FASE 3)
+  telemetry: {
+    currentDevice: null,
+    latestReadings: null,
+    history: null,
+    summary: null,
+    isLoading: false,
+    error: null,
+    lastUpdate: null,
+    autoRefreshEnabled: false,
+    pollingCleanup: null,
+  },
   
   // Loading states
   isLoadingAssets: true, // Inicia como loading
@@ -347,6 +394,222 @@ export const useAppStore = create<AppState>((set, get) => ({
       });
     }
   },
+
+  /**
+   * TELEMETRY ACTIONS (FASE 3)
+   */
+
+  /**
+   * Define o device atual para telemetria.
+   */
+  setCurrentDevice: (deviceId) => {
+    const currentTelemetry = get().telemetry;
+    
+    // Se mudou de device, limpar dados antigos
+    if (currentTelemetry.currentDevice !== deviceId) {
+      set({
+        telemetry: {
+          ...currentTelemetry,
+          currentDevice: deviceId,
+          latestReadings: null,
+          history: null,
+          summary: null,
+          error: null,
+        }
+      });
+    } else {
+      set({
+        telemetry: {
+          ...currentTelemetry,
+          currentDevice: deviceId,
+        }
+      });
+    }
+  },
+
+  /**
+   * Carrega telemetria completa para um device.
+   * Busca: latest readings, summary e opcionalmente history (24h).
+   */
+  loadTelemetryForDevice: async (deviceId, options = {}) => {
+    const { skipHistory = false } = options;
+    
+    set({
+      telemetry: {
+        ...get().telemetry,
+        currentDevice: deviceId,
+        isLoading: true,
+        error: null,
+      }
+    });
+
+    try {
+      // Buscar latest readings e summary em paralelo
+      const [latestResponse, summaryResponse] = await Promise.all([
+        telemetryService.getLatest(deviceId),
+        telemetryService.getDeviceSummary(deviceId),
+      ]);
+
+      // Mapear respostas para formato frontend
+      const latestReadings = mapApiLatestReadingsToFrontend(latestResponse);
+      const summary = mapApiDeviceSummaryToFrontend(summaryResponse);
+
+      // Buscar histórico se não skipado
+      let history: DeviceHistoryResponse | null = null;
+      if (!skipHistory) {
+        const historyResponse = await telemetryService.getHistoryLastHours(deviceId, 24);
+        history = mapApiDeviceHistoryToFrontend(historyResponse);
+      }
+
+      set({
+        telemetry: {
+          ...get().telemetry,
+          latestReadings,
+          summary,
+          history,
+          isLoading: false,
+          lastUpdate: new Date(),
+          error: null,
+        }
+      });
+
+      console.log(`✅ Telemetria carregada para device: ${deviceId}`);
+    } catch (error: any) {
+      console.error('❌ Erro ao carregar telemetria:', error);
+      set({
+        telemetry: {
+          ...get().telemetry,
+          isLoading: false,
+          error: error.message || 'Erro ao carregar telemetria',
+        }
+      });
+    }
+  },
+
+  /**
+   * Atualiza telemetria do device atual (apenas latest readings).
+   * Usado para auto-refresh.
+   */
+  refreshTelemetry: async () => {
+    const currentDevice = get().telemetry.currentDevice;
+    
+    if (!currentDevice) {
+      console.warn('⚠️ Nenhum device selecionado para refresh');
+      return;
+    }
+
+    try {
+      const latestResponse = await telemetryService.getLatest(currentDevice);
+      const latestReadings = mapApiLatestReadingsToFrontend(latestResponse);
+
+      set({
+        telemetry: {
+          ...get().telemetry,
+          latestReadings,
+          lastUpdate: new Date(),
+          error: null,
+        }
+      });
+
+      console.log(`🔄 Telemetria atualizada: ${currentDevice}`);
+    } catch (error: any) {
+      console.error('❌ Erro ao atualizar telemetria:', error);
+      set({
+        telemetry: {
+          ...get().telemetry,
+          error: error.message || 'Erro ao atualizar telemetria',
+        }
+      });
+    }
+  },
+
+  /**
+   * Inicia auto-refresh de telemetria.
+   * Atualiza latest readings periodicamente.
+   */
+  startTelemetryAutoRefresh: (deviceId, intervalMs = 30000) => {
+    // Parar auto-refresh anterior se existir
+    const currentCleanup = get().telemetry.pollingCleanup;
+    if (currentCleanup) {
+      currentCleanup();
+    }
+
+    // Definir device e carregar dados iniciais
+    get().setCurrentDevice(deviceId);
+    get().loadTelemetryForDevice(deviceId);
+
+    // Configurar polling
+    const cleanup = telemetryService.startPolling(
+      deviceId,
+      (data) => {
+        const latestReadings = mapApiLatestReadingsToFrontend(data);
+        set({
+          telemetry: {
+            ...get().telemetry,
+            latestReadings,
+            lastUpdate: new Date(),
+          }
+        });
+      },
+      intervalMs
+    );
+
+    set({
+      telemetry: {
+        ...get().telemetry,
+        autoRefreshEnabled: true,
+        pollingCleanup: cleanup,
+      }
+    });
+
+    console.log(`🔄 Auto-refresh iniciado para device: ${deviceId} (${intervalMs}ms)`);
+  },
+
+  /**
+   * Para auto-refresh de telemetria.
+   */
+  stopTelemetryAutoRefresh: () => {
+    const currentCleanup = get().telemetry.pollingCleanup;
+    
+    if (currentCleanup) {
+      currentCleanup();
+      set({
+        telemetry: {
+          ...get().telemetry,
+          autoRefreshEnabled: false,
+          pollingCleanup: null,
+        }
+      });
+      console.log('⏸️ Auto-refresh de telemetria parado');
+    }
+  },
+
+  /**
+   * Limpa todos os dados de telemetria.
+   */
+  clearTelemetry: () => {
+    // Parar auto-refresh se ativo
+    const currentCleanup = get().telemetry.pollingCleanup;
+    if (currentCleanup) {
+      currentCleanup();
+    }
+
+    set({
+      telemetry: {
+        currentDevice: null,
+        latestReadings: null,
+        history: null,
+        summary: null,
+        isLoading: false,
+        error: null,
+        lastUpdate: null,
+        autoRefreshEnabled: false,
+        pollingCleanup: null,
+      }
+    });
+
+    console.log('🗑️ Dados de telemetria limpos');
+  },
 }));
 
 // Carregar assets automaticamente ao inicializar
@@ -361,6 +624,14 @@ export const useSelectedAsset = () => {
   const assets = useAppStore(state => state.assets);
   return selectedAssetId ? assets.find(a => a.id === selectedAssetId) : null;
 };
+
+// Telemetry hooks (FASE 3)
+export const useTelemetry = () => useAppStore(state => state.telemetry);
+export const useTelemetryLatest = () => useAppStore(state => state.telemetry.latestReadings);
+export const useTelemetryHistory = () => useAppStore(state => state.telemetry.history);
+export const useTelemetrySummary = () => useAppStore(state => state.telemetry.summary);
+export const useTelemetryLoading = () => useAppStore(state => state.telemetry.isLoading);
+export const useTelemetryError = () => useAppStore(state => state.telemetry.error);
 
 // Get time range in milliseconds for data queries
 export const useTimeRangeMs = () => {
