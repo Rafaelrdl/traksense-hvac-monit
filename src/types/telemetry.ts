@@ -267,7 +267,18 @@ export const SENSOR_METADATA: Record<string, SensorMetadata> = {
  * Helper para obter metadata de um sensor.
  * Retorna metadata padrão se tipo não existir.
  */
-export function getSensorMetadata(sensorType: string): SensorMetadata {
+export function getSensorMetadata(sensorType: string | null | undefined): SensorMetadata {
+  // Validação defensiva
+  if (!sensorType || typeof sensorType !== 'string') {
+    return {
+      sensorType: 'unknown',
+      displayName: 'UNKNOWN',
+      unit: '',
+      icon: 'CircleDashed',
+      color: '#64748b', // slate-500
+    };
+  }
+  
   return SENSOR_METADATA[sensorType] || {
     sensorType,
     displayName: sensorType.replace(/_/g, ' ').toUpperCase(),
@@ -295,14 +306,23 @@ export function formatSensorValue(
  * Helper para determinar se um sensor está online.
  * Considera online se última leitura < 5 minutos.
  */
-export function isSensorOnline(lastReadingAt: string | null): boolean {
-  if (!lastReadingAt) return false;
+export function isSensorOnline(lastReadingAt: string | null | undefined): boolean {
+  if (!lastReadingAt || typeof lastReadingAt !== 'string') return false;
   
-  const lastReading = new Date(lastReadingAt);
-  const now = new Date();
-  const diffMinutes = (now.getTime() - lastReading.getTime()) / (1000 * 60);
-  
-  return diffMinutes < 5; // Online se leitura < 5 minutos
+  try {
+    const lastReading = new Date(lastReadingAt);
+    
+    // Validar se data é válida
+    if (isNaN(lastReading.getTime())) return false;
+    
+    const now = new Date();
+    const diffMinutes = (now.getTime() - lastReading.getTime()) / (1000 * 60);
+    
+    return diffMinutes < 5; // Online se leitura < 5 minutos
+  } catch (error) {
+    console.warn('Erro ao validar lastReadingAt:', lastReadingAt, error);
+    return false;
+  }
 }
 
 /**

@@ -13,8 +13,8 @@ import {
   HistoryQueryParams,
   TelemetryReading,
   SensorTimeSeries,
-  DeviceSummaryResponse as ApiDeviceSummary,
 } from '@/types/telemetry';
+import { mapApiDeviceSummaryToFrontend } from '@/lib/mappers/telemetryMapper';
 
 /**
  * TelemetryService - Métodos para consumir API de telemetria.
@@ -80,8 +80,10 @@ class TelemetryService {
    */
   async getDeviceSummary(deviceId: string): Promise<DeviceSummaryResponse> {
     const url = `${this.baseUrl}/device/${deviceId}/summary/`;
-    const response = await api.get<ApiDeviceSummary>(url);
-    return response.data;
+    const response = await api.get<any>(url);
+    
+    // Mapear response do backend (snake_case) para frontend (camelCase)
+    return mapApiDeviceSummaryToFrontend(response.data);
   }
 
   /**

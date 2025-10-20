@@ -75,38 +75,12 @@ export const useSensorsStore = create<SensorsStore>()(
       },
 
       initializeFromAppStore: () => {
-        // Convert app store sensors to enhanced sensors format
-        const appSensors = useAppStore.getState().sensors;
-        const appAssets = useAppStore.getState().assets;
+        // FASE 3: Não usa mais dados mockados do app store
+        // Dados vêm exclusivamente de loadRealTelemetry()
+        console.log('⚠️ initializeFromAppStore: Método deprecated. Use loadRealTelemetry() para carregar sensores.');
         
-        const enhancedSensors: EnhancedSensor[] = appSensors.map(sensor => {
-          const asset = appAssets.find(asset => asset.id === sensor.assetId);
-          
-          return {
-            id: sensor.id,
-            name: sensor.tag,
-            tag: sensor.tag,
-            status: sensor.online ? 'online' : 'offline',
-            equipmentId: sensor.assetId,
-            equipmentName: asset?.tag || 'Equipamento não encontrado',
-            type: sensor.type,
-            unit: sensor.unit,
-            lastReading: sensor.lastReading ? {
-              value: sensor.lastReading.value,
-              timestamp: sensor.lastReading.timestamp instanceof Date 
-                ? sensor.lastReading.timestamp 
-                : new Date(sensor.lastReading.timestamp),
-            } : null,
-            availability: sensor.availability,
-            lastSeenAt: sensor.lastReading ? 
-              (sensor.lastReading.timestamp instanceof Date 
-                ? sensor.lastReading.timestamp.getTime() 
-                : new Date(sensor.lastReading.timestamp).getTime())
-              : undefined,
-          };
-        });
-
-        set({ items: enhancedSensors });
+        // Define lista vazia - força uso de telemetria real
+        set({ items: [] });
       },
 
       resetFilters: () => {
@@ -127,33 +101,42 @@ export const useSensorsStore = create<SensorsStore>()(
         set({ isLoadingTelemetry: true, telemetryError: null });
         
         try {
+          console.log(`🔄 Carregando telemetria para device: ${deviceId}`);
+          
           // Buscar summary do device (contém lista de sensores)
           const summary = await telemetryService.getDeviceSummary(deviceId);
+          console.log(`📦 Summary recebido:`, summary);
           
           // Buscar assets para enriquecer dados
           const appAssets = useAppStore.getState().assets;
           
           // Converter SensorSummary para EnhancedSensor
-          const enhancedSensors: EnhancedSensor[] = summary.sensors.map(sensor => {
+          const enhancedSensors: EnhancedSensor[] = summary.sensors.map((sensor, index) => {
+            console.log(`🔍 Processando sensor ${index + 1}/${summary.sensors.length}:`, {
+              sensorId: sensor.sensorId,
+              sensorType: sensor.sensorType,
+              lastReadingAt: sensor.lastReadingAt,
+            });
+            
             // Tentar encontrar asset relacionado (simplificado por enquanto)
             const asset = appAssets[0]; // Usa primeiro asset como fallback
             
-            // Determinar status online/offline
+            // Determinar status online/offline (com validação defensiva)
             const isOnline = isSensorOnline(sensor.lastReadingAt);
             
-            // Obter metadata do sensor
+            // Obter metadata do sensor (com validação defensiva)
             const metadata = getSensorMetadata(sensor.sensorType);
             
             return {
               id: sensor.sensorId,
-              name: sensor.sensorName,
-              tag: sensor.sensorName,
+              name: sensor.sensorName || sensor.sensorId,
+              tag: sensor.sensorName || sensor.sensorId,
               status: isOnline ? 'online' : 'offline',
               equipmentId: asset?.id || deviceId,
-              equipmentName: asset?.tag || summary.deviceName,
-              type: metadata.displayName || sensor.sensorType,
-              unit: sensor.unit,
-              lastReading: sensor.lastValue !== null ? {
+              equipmentName: asset?.tag || summary.deviceName || 'Equipamento não encontrado',
+              type: metadata.displayName || sensor.sensorType || 'UNKNOWN',
+              unit: sensor.unit || '',
+              lastReading: sensor.lastValue !== null && sensor.lastValue !== undefined ? {
                 value: sensor.lastValue,
                 timestamp: sensor.lastReadingAt ? new Date(sensor.lastReadingAt) : new Date(),
               } : null,
@@ -161,6 +144,8 @@ export const useSensorsStore = create<SensorsStore>()(
               lastSeenAt: sensor.lastReadingAt ? new Date(sensor.lastReadingAt).getTime() : undefined,
             };
           });
+          
+          console.log(`✅ ${enhancedSensors.length} sensores convertidos para EnhancedSensor`);
           
           set({ 
             items: enhancedSensors, 
@@ -173,11 +158,12 @@ export const useSensorsStore = create<SensorsStore>()(
           console.error('❌ Erro ao carregar telemetria:', error);
           set({ 
             isLoadingTelemetry: false,
-            telemetryError: error.message || 'Erro ao carregar telemetria'
+            telemetryError: error.message || 'Erro ao carregar telemetria',
+            items: [] // Limpa lista em caso de erro - NÃO usa fallback mockado
           });
           
-          // Fallback: tentar usar dados do app store
-          get().initializeFromAppStore();
+          // REMOVIDO: Não usa mais dados mockados como fallback
+          // Usuário deve ver lista vazia com mensagem de erro
         }
       },
     }),

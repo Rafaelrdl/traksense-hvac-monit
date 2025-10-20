@@ -109,10 +109,10 @@ export function SensorsGrid({ sensors, onNavigateToEquipment }: SensorsGridProps
                     }`} />
                     <div>
                       <div className="font-medium text-foreground">
-                        {sensor.tag}
+                        {sensor.tag || 'Unknown'}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        ID: {sensor.id.slice(-8)}
+                        ID: {sensor.id ? sensor.id.slice(-8) : 'N/A'}
                       </div>
                     </div>
                   </div>
