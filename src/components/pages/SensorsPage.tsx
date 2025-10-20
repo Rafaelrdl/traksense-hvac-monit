@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/app';
 import { useSensorsStore } from '../../store/sensors';
 import { useSensorsURLParams } from '../../hooks/useSensorsURLParams';
@@ -6,14 +6,39 @@ import { SensorsHeaderControls } from '../../modules/sensors/SensorsHeaderContro
 import { SensorsGrid } from '../../modules/sensors/SensorsGrid';
 
 export const SensorsPage: React.FC = () => {
-  const { setSelectedAsset } = useAppStore();
-  const { setFilter, getPaginatedSensors, initializeFromAppStore } = useSensorsStore();
+  const { setSelectedAsset, startTelemetryAutoRefresh, stopTelemetryAutoRefresh } = useAppStore();
+  const { setFilter, getPaginatedSensors, initializeFromAppStore, loadRealTelemetry, isLoadingTelemetry, telemetryError } = useSensorsStore();
   const { params } = useSensorsURLParams();
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
-  // Initialize sensors from app store when component mounts
+  // Device ID para telemetria (pode ser dinâmico no futuro)
+  const DEVICE_ID = 'GW-1760908415'; // Device do teste
+
+  // Initialize sensors with real telemetry on mount
   useEffect(() => {
-    initializeFromAppStore();
-  }, [initializeFromAppStore]);
+    // Tentar carregar telemetria real
+    loadRealTelemetry(DEVICE_ID).catch(error => {
+      console.warn('Falha ao carregar telemetria, usando dados mock:', error);
+      // Fallback para dados do app store
+      initializeFromAppStore();
+    });
+
+    // Iniciar auto-refresh de telemetria (30 segundos)
+    startTelemetryAutoRefresh(DEVICE_ID, 30000);
+
+    // Configurar intervalo para atualizar timestamp
+    const updateInterval = setInterval(() => {
+      setLastUpdate(new Date());
+      // Recarregar telemetria
+      loadRealTelemetry(DEVICE_ID);
+    }, 30000); // 30 segundos
+
+    // Cleanup ao desmontar
+    return () => {
+      stopTelemetryAutoRefresh();
+      clearInterval(updateInterval);
+    };
+  }, []);
 
   // Sync URL params with store when URL changes
   useEffect(() => {
@@ -43,6 +68,29 @@ export const SensorsPage: React.FC = () => {
             Monitoramento em tempo real da rede de sensores IoT
           </p>
         </div>
+        
+        {/* Last Update Badge */}
+        <div className="flex items-center gap-2">
+          {isLoadingTelemetry && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
+              <span>Atualizando...</span>
+            </div>
+          )}
+          
+          {!isLoadingTelemetry && lastUpdate && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span>Última atualização: {lastUpdate.toLocaleTimeString()}</span>
+            </div>
+          )}
+          
+          {telemetryError && (
+            <div className="flex items-center gap-2 text-sm text-red-500">
+              <span>⚠️ {telemetryError}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Header Controls with Filters and Pagination */}
@@ -50,11 +98,37 @@ export const SensorsPage: React.FC = () => {
         onNavigateToEquipment={handleNavigateToEquipment}
       />
 
+      {/* Loading State */}
+      {isLoadingTelemetry && pageItems.length === 0 && (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Carregando sensores...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!isLoadingTelemetry && pageItems.length === 0 && (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-lg font-medium text-muted-foreground mb-2">
+              Nenhum sensor encontrado
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Verifique os filtros ou aguarde a sincronização com o backend
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Sensors Grid/Table */}
-      <SensorsGrid 
-        sensors={pageItems} 
-        onNavigateToEquipment={handleNavigateToEquipment}
-      />
+      {pageItems.length > 0 && (
+        <SensorsGrid 
+          sensors={pageItems} 
+          onNavigateToEquipment={handleNavigateToEquipment}
+        />
+      )}
     </div>
   );
 };

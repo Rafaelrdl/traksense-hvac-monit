@@ -2,11 +2,18 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { EnhancedSensor, SensorStatusFilter, SensorsPagination, SensorsState } from '@/types/sensor';
 import { useAppStore } from './app';
+import { telemetryService } from '@/services/telemetryService';
+import { getSensorMetadata, isSensorOnline } from '@/types/telemetry';
 
 interface SensorsStore extends SensorsState {
   // Additional store methods
   initializeFromAppStore: () => void;
   resetFilters: () => void;
+  
+  // Telemetry actions (FASE 3)
+  loadRealTelemetry: (deviceId: string) => Promise<void>;
+  isLoadingTelemetry: boolean;
+  telemetryError: string | null;
 }
 
 export const useSensorsStore = create<SensorsStore>()(
@@ -18,6 +25,10 @@ export const useSensorsStore = create<SensorsStore>()(
         page: 1,
         size: 25,
       },
+      
+      // Telemetry state (FASE 3)
+      isLoadingTelemetry: false,
+      telemetryError: null,
 
       setFilter: (newFilter) => {
         const currentFilter = get().filter;
@@ -106,6 +117,68 @@ export const useSensorsStore = create<SensorsStore>()(
             size: 25,
           },
         });
+      },
+
+      /**
+       * FASE 3: Carrega telemetria real do backend.
+       * Converte SensorSummary para EnhancedSensor.
+       */
+      loadRealTelemetry: async (deviceId: string) => {
+        set({ isLoadingTelemetry: true, telemetryError: null });
+        
+        try {
+          // Buscar summary do device (contém lista de sensores)
+          const summary = await telemetryService.getDeviceSummary(deviceId);
+          
+          // Buscar assets para enriquecer dados
+          const appAssets = useAppStore.getState().assets;
+          
+          // Converter SensorSummary para EnhancedSensor
+          const enhancedSensors: EnhancedSensor[] = summary.sensors.map(sensor => {
+            // Tentar encontrar asset relacionado (simplificado por enquanto)
+            const asset = appAssets[0]; // Usa primeiro asset como fallback
+            
+            // Determinar status online/offline
+            const isOnline = isSensorOnline(sensor.lastReadingAt);
+            
+            // Obter metadata do sensor
+            const metadata = getSensorMetadata(sensor.sensorType);
+            
+            return {
+              id: sensor.sensorId,
+              name: sensor.sensorName,
+              tag: sensor.sensorName,
+              status: isOnline ? 'online' : 'offline',
+              equipmentId: asset?.id || deviceId,
+              equipmentName: asset?.tag || summary.deviceName,
+              type: metadata.displayName || sensor.sensorType,
+              unit: sensor.unit,
+              lastReading: sensor.lastValue !== null ? {
+                value: sensor.lastValue,
+                timestamp: sensor.lastReadingAt ? new Date(sensor.lastReadingAt) : new Date(),
+              } : null,
+              availability: isOnline ? 95 : 0, // Simplificado: 95% se online, 0% se offline
+              lastSeenAt: sensor.lastReadingAt ? new Date(sensor.lastReadingAt).getTime() : undefined,
+            };
+          });
+          
+          set({ 
+            items: enhancedSensors, 
+            isLoadingTelemetry: false,
+            telemetryError: null
+          });
+          
+          console.log(`✅ Telemetria carregada: ${enhancedSensors.length} sensores do device ${deviceId}`);
+        } catch (error: any) {
+          console.error('❌ Erro ao carregar telemetria:', error);
+          set({ 
+            isLoadingTelemetry: false,
+            telemetryError: error.message || 'Erro ao carregar telemetria'
+          });
+          
+          // Fallback: tentar usar dados do app store
+          get().initializeFromAppStore();
+        }
       },
     }),
     {
