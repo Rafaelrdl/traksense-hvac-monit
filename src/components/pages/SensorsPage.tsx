@@ -6,39 +6,47 @@ import { SensorsHeaderControls } from '../../modules/sensors/SensorsHeaderContro
 import { SensorsGrid } from '../../modules/sensors/SensorsGrid';
 
 export const SensorsPage: React.FC = () => {
-  const { setSelectedAsset, startTelemetryAutoRefresh, stopTelemetryAutoRefresh } = useAppStore();
+  const { setSelectedAsset, startTelemetryAutoRefresh, stopTelemetryAutoRefresh, currentSite } = useAppStore();
   const { setFilter, getPaginatedSensors, initializeFromAppStore, loadRealTelemetry, isLoadingTelemetry, telemetryError } = useSensorsStore();
   const { params } = useSensorsURLParams();
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-
-  // Device ID para telemetria (pode ser dinâmico no futuro)
-  const DEVICE_ID = 'GW-1760908415'; // Device do teste
+  const [noDeviceAvailable, setNoDeviceAvailable] = useState(false);
 
   // Initialize sensors with real telemetry on mount
   useEffect(() => {
+    // Se não houver site selecionado, não tenta carregar
+    if (!currentSite) {
+      console.warn('⚠️ Nenhum site selecionado. Aguardando seleção de site...');
+      setNoDeviceAvailable(true);
+      return;
+    }
+    
+    // TODO: Buscar devices do site selecionado
+    // Por enquanto, usa device hardcoded para teste
+    const DEVICE_ID = 'GW-1760908415';
+    
+    console.log(`📡 Tentando carregar telemetria para site: ${currentSite.name}`);
+    
     // Tentar carregar telemetria real
-    loadRealTelemetry(DEVICE_ID).catch(error => {
-      console.warn('Falha ao carregar telemetria, usando dados mock:', error);
-      // Fallback para dados do app store
-      initializeFromAppStore();
-    });
+    loadRealTelemetry(DEVICE_ID)
+      .then(() => {
+        setNoDeviceAvailable(false);
+      })
+      .catch(error => {
+        console.warn('⚠️ Nenhum device/sensor encontrado para este site:', error);
+        setNoDeviceAvailable(true);
+        // Limpa lista de sensores
+        useSensorsStore.setState({ items: [] });
+      });
 
-    // Iniciar auto-refresh de telemetria (30 segundos)
-    startTelemetryAutoRefresh(DEVICE_ID, 30000);
-
-    // Configurar intervalo para atualizar timestamp
-    const updateInterval = setInterval(() => {
-      setLastUpdate(new Date());
-      // Recarregar telemetria
-      loadRealTelemetry(DEVICE_ID);
-    }, 30000); // 30 segundos
+    // Não inicia auto-refresh se não houver device
+    // startTelemetryAutoRefresh(DEVICE_ID, 30000);
 
     // Cleanup ao desmontar
     return () => {
       stopTelemetryAutoRefresh();
-      clearInterval(updateInterval);
     };
-  }, []);
+  }, [currentSite]); // Recarrega quando o site mudar
 
   // Sync URL params with store when URL changes
   useEffect(() => {
@@ -111,13 +119,33 @@ export const SensorsPage: React.FC = () => {
       {/* Empty State */}
       {!isLoadingTelemetry && pageItems.length === 0 && (
         <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <p className="text-lg font-medium text-muted-foreground mb-2">
-              Nenhum sensor encontrado
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Verifique os filtros ou aguarde a sincronização com o backend
-            </p>
+          <div className="text-center max-w-md">
+            {noDeviceAvailable ? (
+              <>
+                <p className="text-lg font-medium text-muted-foreground mb-2">
+                  📍 Nenhum device/sensor cadastrado para este site
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {currentSite 
+                    ? `O site "${currentSite.name}" ainda não possui devices ou sensores cadastrados.` 
+                    : 'Selecione um site no header para visualizar os sensores.'}
+                </p>
+                {currentSite && (
+                  <p className="text-xs text-muted-foreground mt-4">
+                    💡 Cadastre devices e sensores no Django Admin para visualizá-los aqui.
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="text-lg font-medium text-muted-foreground mb-2">
+                  Nenhum sensor encontrado
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Verifique os filtros ou aguarde a sincronização com o backend
+                </p>
+              </>
+            )}
           </div>
         </div>
       )}
