@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/app';
 import { useAuthStore } from '../../store/auth';
-import { Clock, Menu, LogOut, ChevronDown, Settings, UserCog, Users } from 'lucide-react';
+import { Clock, Menu, LogOut, ChevronDown, Settings, UserCog, Users, Building2 } from 'lucide-react';
 import logoImage from '@/assets/images/LOGO.png';
 import traksenseLogo from '@/assets/images/traksense-logo.png';
 import { HorizontalNav, MobileNav } from './HorizontalNav';
@@ -32,6 +32,11 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
   const alerts = useAppStore(state => state.alerts);
   const lastUpdateTime = useAppStore(state => state.lastUpdateTime);
+  const availableSites = useAppStore(state => state.availableSites);
+  const currentSite = useAppStore(state => state.currentSite);
+  const isLoadingSites = useAppStore(state => state.isLoadingSites);
+  const loadAvailableSites = useAppStore(state => state.loadAvailableSites);
+  const setCurrentSite = useAppStore(state => state.setCurrentSite);
   const { user, logout } = useAuthStore();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -44,6 +49,11 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
   const userTimezone = user?.timezone || 'America/Sao_Paulo';
   const userTimeFormat = user?.time_format || '24h';
   const hour12 = userTimeFormat === '12h';
+  
+  // Load available sites on mount
+  useEffect(() => {
+    loadAvailableSites();
+  }, [loadAvailableSites]);
   
   // Update current time every second
   useEffect(() => {
@@ -113,7 +123,44 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
             {/* Tenant/Site Selector */}
             <div className="hidden md:flex items-center space-x-2 text-sm opacity-90">
               <span>|</span>
-              <span>Uberlandia Medical Center</span>
+              {isLoadingSites ? (
+                <span className="text-xs">Carregando...</span>
+              ) : availableSites.length <= 1 ? (
+                <div className="flex items-center gap-1.5">
+                  <Building2 className="w-4 h-4" />
+                  <span>{currentSite?.name || 'Nenhum site disponível'}</span>
+                </div>
+              ) : (
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="flex items-center gap-1.5 hover:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 rounded px-2 py-1">
+                    <Building2 className="w-4 h-4" />
+                    <span>{currentSite?.name || 'Selecione um site'}</span>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-[280px]">
+                    <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase">
+                      Sites Disponíveis
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {availableSites.map((site) => (
+                      <DropdownMenuItem 
+                        key={site.id}
+                        onClick={() => setCurrentSite(site)}
+                        className={`cursor-pointer ${currentSite?.id === site.id ? 'bg-muted font-medium' : ''}`}
+                      >
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-medium">{site.name}</span>
+                          {(site.sector || site.company) && (
+                            <span className="text-xs text-muted-foreground">
+                              {site.sector || site.company}
+                            </span>
+                          )}
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
 

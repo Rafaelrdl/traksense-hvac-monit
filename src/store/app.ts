@@ -29,6 +29,11 @@ interface AppState {
   maintenanceSchedules: MaintenanceSchedule[];
   maintenanceHistory: MaintenanceHistory[];
   
+  // Site management
+  availableSites: any[]; // Lista de sites disponíveis
+  currentSite: any | null; // Site atualmente selecionado
+  isLoadingSites: boolean;
+  
   // Telemetry data (FASE 3)
   telemetry: {
     currentDevice: string | null; // Device ID selecionado
@@ -84,6 +89,10 @@ interface AppState {
   // API actions
   loadAssetsFromApi: () => Promise<void>;
   
+  // Site actions
+  loadAvailableSites: () => Promise<void>;
+  setCurrentSite: (site: any | null) => void;
+  
   // Telemetry actions (FASE 3)
   setCurrentDevice: (deviceId: string | null) => void;
   loadTelemetryForDevice: (deviceId: string, options?: { skipHistory?: boolean }) => Promise<void>;
@@ -102,6 +111,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   maintenanceTasks: simEngine.getMaintenanceTasks(),
   maintenanceSchedules: simEngine.getMaintenanceSchedules(),
   maintenanceHistory: simEngine.getMaintenanceHistory(),
+  
+  // Site initial state
+  availableSites: [],
+  currentSite: null,
+  isLoadingSites: false,
   
   // Telemetry initial state (FASE 3)
   telemetry: {
@@ -359,9 +373,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ isLoadingAssets: true, error: null });
     
     try {
+      // Obter site atual para filtrar
+      const currentSite = get().currentSite;
+      
       // Buscar todos os assets (ajustar limit conforme necessário)
       const assetsResponse = await assetsService.getAll({ 
-        limit: 100 
+        limit: 100,
+        ...(currentSite ? { site: currentSite.id } : {})
       });
       
       // Buscar sites para enriquecer dados
@@ -393,6 +411,52 @@ export const useAppStore = create<AppState>((set, get) => ({
         isLoadingAssets: false 
       });
     }
+  },
+
+  /**
+   * SITE MANAGEMENT ACTIONS
+   */
+  
+  /**
+   * Carrega todos os sites disponíveis do tenant
+   */
+  loadAvailableSites: async () => {
+    set({ isLoadingSites: true });
+    
+    try {
+      const sitesResponse = await sitesService.getAll({ limit: 100 });
+      const sites = sitesResponse.results;
+      
+      set({ 
+        availableSites: sites,
+        isLoadingSites: false
+      });
+      
+      // Se não houver site selecionado e existirem sites, selecionar o primeiro
+      const currentSite = get().currentSite;
+      if (!currentSite && sites.length > 0) {
+        set({ currentSite: sites[0] });
+      }
+      
+      console.log(`✅ Carregados ${sites.length} sites disponíveis`);
+    } catch (error) {
+      console.error('❌ Erro ao carregar sites:', error);
+      set({ isLoadingSites: false });
+    }
+  },
+  
+  /**
+   * Define o site atual e recarrega os dados filtrados
+   */
+  setCurrentSite: async (site) => {
+    set({ currentSite: site });
+    
+    // Recarregar assets filtrados pelo site
+    if (site) {
+      await get().loadAssetsFromApi();
+    }
+    
+    console.log(`✅ Site selecionado: ${site?.name || 'Nenhum'}`);
   },
 
   /**
