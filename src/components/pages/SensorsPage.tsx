@@ -4,6 +4,7 @@ import { useSensorsStore } from '../../store/sensors';
 import { useSensorsURLParams } from '../../hooks/useSensorsURLParams';
 import { SensorsHeaderControls } from '../../modules/sensors/SensorsHeaderControls';
 import { SensorsGrid } from '../../modules/sensors/SensorsGrid';
+import { devicesService, Device } from '../../services/devicesService';
 
 export const SensorsPage: React.FC = () => {
   const { setSelectedAsset, startTelemetryAutoRefresh, stopTelemetryAutoRefresh, currentSite } = useAppStore();
@@ -11,42 +12,80 @@ export const SensorsPage: React.FC = () => {
   const { params } = useSensorsURLParams();
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [noDeviceAvailable, setNoDeviceAvailable] = useState(false);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [isLoadingDevices, setIsLoadingDevices] = useState(false);
 
-  // Initialize sensors with real telemetry on mount
+  // Carregar devices do site selecionado
   useEffect(() => {
-    // Se não houver site selecionado, não tenta carregar
-    if (!currentSite) {
+    if (!currentSite?.id) {
       console.warn('⚠️ Nenhum site selecionado. Aguardando seleção de site...');
+      setDevices([]);
+      setSelectedDevice(null);
       setNoDeviceAvailable(true);
+      useSensorsStore.setState({ items: [] });
       return;
     }
-    
-    // TODO: Buscar devices do site selecionado
-    // Por enquanto, usa device hardcoded para teste
-    const DEVICE_ID = 'GW-1760908415';
-    
-    console.log(`📡 Tentando carregar telemetria para site: ${currentSite.name}`);
-    
-    // Tentar carregar telemetria real
-    loadRealTelemetry(DEVICE_ID)
-      .then(() => {
-        setNoDeviceAvailable(false);
+
+    console.log(`📡 Carregando devices do site: ${currentSite.name} (ID: ${currentSite.id})`);
+    setIsLoadingDevices(true);
+
+    devicesService.listBySite(currentSite.id)
+      .then((deviceList) => {
+        console.log(`✅ ${deviceList.length} device(s) encontrado(s) para o site ${currentSite.name}`);
+        setDevices(deviceList);
+
+        if (deviceList.length > 0) {
+          // Preferir GATEWAYs, ou usar o primeiro device disponível
+          const preferredDevice = deviceList.find(d => d.device_type === 'GATEWAY') || deviceList[0];
+          setSelectedDevice(preferredDevice);
+          setNoDeviceAvailable(false);
+          console.log(`🎯 Device selecionado: ${preferredDevice.name} (${preferredDevice.mqtt_client_id})`);
+        } else {
+          setSelectedDevice(null);
+          setNoDeviceAvailable(true);
+          useSensorsStore.setState({ items: [] });
+          console.warn('⚠️ Nenhum device encontrado para este site');
+        }
       })
-      .catch(error => {
-        console.warn('⚠️ Nenhum device/sensor encontrado para este site:', error);
+      .catch((error) => {
+        console.error('❌ Erro ao carregar devices:', error);
+        setDevices([]);
+        setSelectedDevice(null);
         setNoDeviceAvailable(true);
-        // Limpa lista de sensores
+        useSensorsStore.setState({ items: [] });
+      })
+      .finally(() => {
+        setIsLoadingDevices(false);
+      });
+  }, [currentSite?.id]);
+
+  // Carregar telemetria quando device for selecionado
+  useEffect(() => {
+    if (!selectedDevice) {
+      useSensorsStore.setState({ items: [] });
+      return;
+    }
+
+    console.log(`📊 Carregando telemetria do device: ${selectedDevice.mqtt_client_id}`);
+    
+    loadRealTelemetry(selectedDevice.mqtt_client_id)
+      .then(() => {
+        console.log('✅ Telemetria carregada com sucesso');
+        setLastUpdate(new Date());
+      })
+      .catch((error) => {
+        console.error('❌ Erro ao carregar telemetria:', error);
         useSensorsStore.setState({ items: [] });
       });
 
-    // Não inicia auto-refresh se não houver device
-    // startTelemetryAutoRefresh(DEVICE_ID, 30000);
+    // Auto-refresh a cada 30 segundos
+    // startTelemetryAutoRefresh(selectedDevice.mqtt_client_id, 30000);
 
-    // Cleanup ao desmontar
     return () => {
       stopTelemetryAutoRefresh();
     };
-  }, [currentSite]); // Recarrega quando o site mudar
+  }, [selectedDevice?.mqtt_client_id]);
 
   // Sync URL params with store when URL changes
   useEffect(() => {
@@ -107,23 +146,25 @@ export const SensorsPage: React.FC = () => {
       />
 
       {/* Loading State */}
-      {isLoadingTelemetry && pageItems.length === 0 && (
+      {(isLoadingTelemetry || isLoadingDevices) && pageItems.length === 0 && (
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Carregando sensores...</p>
+            <p className="text-muted-foreground">
+              {isLoadingDevices ? 'Carregando devices...' : 'Carregando sensores...'}
+            </p>
           </div>
         </div>
       )}
 
       {/* Empty State */}
-      {!isLoadingTelemetry && pageItems.length === 0 && (
+      {!isLoadingTelemetry && !isLoadingDevices && pageItems.length === 0 && (
         <div className="flex items-center justify-center h-64">
           <div className="text-center max-w-md">
             {noDeviceAvailable ? (
               <>
                 <p className="text-lg font-medium text-muted-foreground mb-2">
-                  📍 Nenhum device/sensor cadastrado para este site
+                  📍 {currentSite ? 'Nenhum device encontrado neste site' : 'Nenhum site selecionado'}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {currentSite 
@@ -132,7 +173,7 @@ export const SensorsPage: React.FC = () => {
                 </p>
                 {currentSite && (
                   <p className="text-xs text-muted-foreground mt-4">
-                    💡 Cadastre devices e sensores no Django Admin para visualizá-los aqui.
+                    💡 Cadastre devices e vincule-os a assets do site "${currentSite.name}" no Django Admin.
                   </p>
                 )}
               </>
