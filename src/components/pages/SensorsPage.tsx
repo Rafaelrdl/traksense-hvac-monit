@@ -64,11 +64,13 @@ export const SensorsPage: React.FC = () => {
   useEffect(() => {
     if (!selectedDevice) {
       useSensorsStore.setState({ items: [] });
+      stopTelemetryAutoRefresh();
       return;
     }
 
     console.log(`📊 Carregando telemetria do device: ${selectedDevice.mqtt_client_id}`);
     
+    // Carregar dados iniciais
     loadRealTelemetry(selectedDevice.mqtt_client_id)
       .then(() => {
         console.log('✅ Telemetria carregada com sucesso');
@@ -79,10 +81,23 @@ export const SensorsPage: React.FC = () => {
         useSensorsStore.setState({ items: [] });
       });
 
-    // Auto-refresh a cada 30 segundos
-    // startTelemetryAutoRefresh(selectedDevice.mqtt_client_id, 30000);
+    // 🔄 Auto-refresh a cada 30 segundos
+    console.log('🔄 Iniciando auto-refresh de telemetria (30s)');
+    const intervalId = setInterval(() => {
+      console.log('🔄 Atualizando telemetria automaticamente...');
+      loadRealTelemetry(selectedDevice.mqtt_client_id)
+        .then(() => {
+          setLastUpdate(new Date());
+          console.log('✅ Telemetria atualizada automaticamente');
+        })
+        .catch((error) => {
+          console.error('❌ Erro ao atualizar telemetria:', error);
+        });
+    }, 30000); // 30 segundos
 
     return () => {
+      console.log('⏸️ Parando auto-refresh de telemetria');
+      clearInterval(intervalId);
       stopTelemetryAutoRefresh();
     };
   }, [selectedDevice?.mqtt_client_id]);
@@ -105,6 +120,21 @@ export const SensorsPage: React.FC = () => {
     }));
   };
 
+  // Função para atualizar manualmente
+  const handleManualRefresh = () => {
+    if (selectedDevice) {
+      console.log('🔄 Atualização manual solicitada');
+      loadRealTelemetry(selectedDevice.mqtt_client_id)
+        .then(() => {
+          setLastUpdate(new Date());
+          console.log('✅ Atualização manual concluída');
+        })
+        .catch((error) => {
+          console.error('❌ Erro na atualização manual:', error);
+        });
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -116,8 +146,8 @@ export const SensorsPage: React.FC = () => {
           </p>
         </div>
         
-        {/* Last Update Badge */}
-        <div className="flex items-center gap-2">
+        {/* Last Update Badge and Manual Refresh */}
+        <div className="flex items-center gap-3">
           {isLoadingTelemetry && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
@@ -126,15 +156,31 @@ export const SensorsPage: React.FC = () => {
           )}
           
           {!isLoadingTelemetry && lastUpdate && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span>Última atualização: {lastUpdate.toLocaleTimeString()}</span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span>Atualizado às {lastUpdate.toLocaleTimeString()}</span>
+              </div>
+              <button
+                onClick={handleManualRefresh}
+                disabled={isLoadingTelemetry}
+                className="px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 rounded-md transition-colors disabled:opacity-50"
+                title="Atualizar agora (próxima atualização automática em 30s)"
+              >
+                🔄 Atualizar
+              </button>
             </div>
           )}
           
           {telemetryError && (
             <div className="flex items-center gap-2 text-sm text-red-500">
               <span>⚠️ {telemetryError}</span>
+            </div>
+          )}
+          
+          {selectedDevice && !isLoadingTelemetry && !telemetryError && (
+            <div className="text-xs text-muted-foreground border-l pl-3">
+              Auto-refresh: 30s
             </div>
           )}
         </div>
