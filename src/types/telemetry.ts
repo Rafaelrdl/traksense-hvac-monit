@@ -304,7 +304,9 @@ export function formatSensorValue(
 
 /**
  * Helper para determinar se um sensor está online.
- * Considera online se última leitura < 5 minutos.
+ * Considera online se última leitura < 60 minutos (1 hora).
+ * 
+ * IMPORTANTE: Deve estar alinhado com a regra do backend (1 hora).
  */
 export function isSensorOnline(lastReadingAt: string | null | undefined): boolean {
   if (!lastReadingAt || typeof lastReadingAt !== 'string') return false;
@@ -318,7 +320,7 @@ export function isSensorOnline(lastReadingAt: string | null | undefined): boolea
     const now = new Date();
     const diffMinutes = (now.getTime() - lastReading.getTime()) / (1000 * 60);
     
-    return diffMinutes < 5; // Online se leitura < 5 minutos
+    return diffMinutes < 60; // Online se leitura < 60 minutos (1 hora)
   } catch (error) {
     console.warn('Erro ao validar lastReadingAt:', lastReadingAt, error);
     return false;
