@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAppStore, useSelectedAsset, useTimeRangeMs } from '../../store/app';
 import { useFeaturesStore } from '../../store/features';
 import { simEngine } from '../../lib/simulation';
@@ -10,6 +10,9 @@ import { JE02SensorDetail } from './JE02SensorDetail';
 import { PerformanceEmpty } from '../assets/PerformanceEmpty';
 import { TrakNorCTA } from '../assets/TrakNorCTA';
 import { ContactSalesDialog } from '../common/ContactSalesDialog';
+import { assetsService } from '../../services/assetsService';
+import { telemetryService } from '../../services/telemetryService';
+import type { ApiSensor } from '../../types/api';
 import { 
   ArrowLeft, 
   ExternalLink, 
@@ -18,7 +21,8 @@ import {
   Gauge, 
   Zap,
   Activity,
-  AlertTriangle 
+  AlertTriangle,
+  Loader2 
 } from 'lucide-react';
 
 export const AssetDetailPage: React.FC = () => {
@@ -26,9 +30,16 @@ export const AssetDetailPage: React.FC = () => {
   const selectedAsset = useSelectedAsset();
   const timeRange = useTimeRangeMs();
   const hidePerformanceWhenNoSensors = useFeaturesStore(state => state.hidePerformanceWhenNoSensors);
-  const [selectedMetrics, setSelectedMetrics] = useState(['temp_supply', 'temp_return', 'power_kw']);
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('je02');
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
+  
+  // Estados para busca dinâmica de sensores
+  const [apiSensors, setApiSensors] = useState<ApiSensor[]>([]);
+  const [availableMetrics, setAvailableMetrics] = useState<Array<{id: string, label: string, unit: string}>>([]);
+  const [isLoadingSensors, setIsLoadingSensors] = useState(false);
+  const [telemetryChartData, setTelemetryChartData] = useState<any>(null);
+  const [isLoadingTelemetry, setIsLoadingTelemetry] = useState(false);
 
   if (!selectedAsset) {
     return (
@@ -106,20 +117,135 @@ export const AssetDetailPage: React.FC = () => {
     }];
   }, [selectedAsset, telemetryData]);
 
-  // Available metrics for selection
-  const availableMetrics = [
-    { id: 'temp_supply', label: 'Temp. Insuflamento', unit: '°C' },
-    { id: 'temp_return', label: 'Temp. Retorno', unit: '°C' },
-    { id: 'temp_setpoint', label: 'Setpoint', unit: '°C' },
-    { id: 'humidity', label: 'Umidade', unit: '%' },
-    { id: 'dp_filter', label: 'ΔP Filtro', unit: 'Pa' },
-    { id: 'pressure_suction', label: 'Pressão Sucção', unit: 'kPa' },
-    { id: 'pressure_discharge', label: 'Pressão Descarga', unit: 'kPa' },
-    { id: 'power_kw', label: 'Potência', unit: 'kW' },
-    { id: 'current', label: 'Corrente', unit: 'A' },
-    { id: 'vibration', label: 'Vibração', unit: 'mm/s' },
-    { id: 'airflow', label: 'Vazão de Ar', unit: 'm³/h' }
-  ];
+  // Mapeamento de tipos de métricas para labels amigáveis
+  const metricLabels: Record<string, { label: string; unit: string }> = {
+    // Temperatura
+    'temp_supply': { label: 'Temp. Insuflamento', unit: '°C' },
+    'temp_return': { label: 'Temp. Retorno', unit: '°C' },
+    'temp_setpoint': { label: 'Setpoint', unit: '°C' },
+    'temperature': { label: 'Temperatura', unit: '°C' },
+    
+    // Umidade
+    'humidity': { label: 'Umidade', unit: '%' },
+    
+    // Pressão
+    'pressure': { label: 'Pressão', unit: 'Pa' },
+    'dp_filter': { label: 'ΔP Filtro', unit: 'Pa' },
+    'pressure_suction': { label: 'Pressão Sucção', unit: 'kPa' },
+    'pressure_discharge': { label: 'Pressão Descarga', unit: 'kPa' },
+    
+    // Potência e Energia
+    'power_kw': { label: 'Potência', unit: 'kW' },
+    'current': { label: 'Corrente', unit: 'A' },
+    'voltage': { label: 'Tensão', unit: 'V' },
+    
+    // Vibração e Mecânica
+    'vibration': { label: 'Vibração', unit: 'mm/s' },
+    
+    // Vazão
+    'airflow': { label: 'Vazão de Ar', unit: 'm³/h' },
+    
+    // Sinal e Conectividade
+    'signal_strength': { label: 'Sinal RSSI', unit: 'dBm' },
+    'maintenance': { label: 'RSSI', unit: 'dBW' },
+  };
+
+  // Buscar sensores do ativo via API
+  useEffect(() => {
+    if (!selectedAsset?.id) {
+      setApiSensors([]);
+      setAvailableMetrics([]);
+      return;
+    }
+
+    const fetchAssetSensors = async () => {
+      setIsLoadingSensors(true);
+      try {
+        console.log(`🔍 Buscando sensores para o ativo ${selectedAsset.tag} (ID: ${selectedAsset.id})`);
+        const assetIdNum = typeof selectedAsset.id === 'string' ? parseInt(selectedAsset.id) : selectedAsset.id;
+        const sensorsData = await assetsService.getSensors(assetIdNum);
+        
+        setApiSensors(sensorsData);
+        
+        // Extrair tipos de métricas únicos e criar opções para checkboxes
+        const uniqueMetricTypes = [...new Set(sensorsData.map(s => s.metric_type))];
+        const metrics = uniqueMetricTypes.map(metricType => {
+          const meta = metricLabels[metricType] || { 
+            label: metricType, 
+            unit: sensorsData.find(s => s.metric_type === metricType)?.unit || '' 
+          };
+          return {
+            id: metricType,
+            label: meta.label,
+            unit: meta.unit
+          };
+        });
+        
+        setAvailableMetrics(metrics);
+        console.log(`✅ ${sensorsData.length} sensores carregados, ${metrics.length} tipos de métricas disponíveis`);
+        
+      } catch (error) {
+        console.error('❌ Erro ao carregar sensores do ativo:', error);
+        setApiSensors([]);
+        setAvailableMetrics([]);
+      } finally {
+        setIsLoadingSensors(false);
+      }
+    };
+
+    fetchAssetSensors();
+  }, [selectedAsset?.id]);
+
+  // Buscar dados de telemetria quando métricas são selecionadas
+  useEffect(() => {
+    if (!selectedAsset?.id || selectedMetrics.length === 0 || apiSensors.length === 0) {
+      setTelemetryChartData(null);
+      return;
+    }
+
+    const fetchTelemetryData = async () => {
+      setIsLoadingTelemetry(true);
+      try {
+        console.log(`📊 Buscando telemetria para métricas: ${selectedMetrics.join(', ')}`);
+        
+        // Filtrar sensores que correspondem às métricas selecionadas
+        const relevantSensors = apiSensors.filter(s => selectedMetrics.includes(s.metric_type));
+        
+        if (relevantSensors.length === 0) {
+          setTelemetryChartData(null);
+          return;
+        }
+
+        // Buscar dados para cada sensor (últimas 24h)
+        const deviceIds = [...new Set(relevantSensors.map(s => s.device_name))];
+        
+        // Buscar dados de telemetria para cada device
+        const telemetryPromises = deviceIds.map(async (deviceId) => {
+          try {
+            const data = await telemetryService.getHistoryLastHours(deviceId, 24);
+            return data;
+          } catch (error) {
+            console.error(`❌ Erro ao buscar dados do device ${deviceId}:`, error);
+            return { series: [] };
+          }
+        });
+
+        const results = await Promise.all(telemetryPromises);
+        const allData = results.flatMap(r => r.series || []);
+        
+        setTelemetryChartData(allData);
+        console.log(`✅ ${allData.length} pontos de telemetria carregados`);
+        
+      } catch (error) {
+        console.error('❌ Erro ao carregar dados de telemetria:', error);
+        setTelemetryChartData(null);
+      } finally {
+        setIsLoadingTelemetry(false);
+      }
+    };
+
+    fetchTelemetryData();
+  }, [selectedAsset?.id, selectedMetrics, apiSensors]);
 
   return (
     <div className="p-6 space-y-6">
@@ -234,44 +360,102 @@ export const AssetDetailPage: React.FC = () => {
           <div className="bg-card rounded-xl p-4 border shadow-sm">
             <h3 className="text-lg font-semibold mb-3">Selecionar Métricas</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-              {availableMetrics.map(metric => (
-                <label
-                  key={metric.id}
-                  className="flex items-center space-x-2 text-sm cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedMetrics.includes(metric.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedMetrics([...selectedMetrics, metric.id]);
-                      } else {
-                        setSelectedMetrics(selectedMetrics.filter(m => m !== metric.id));
-                      }
-                    }}
-                    className="rounded border-gray-300"
-                  />
-                  <span>{metric.label}</span>
-                </label>
-              ))}
+              {isLoadingSensors ? (
+                <div className="col-span-full flex items-center justify-center py-4">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <span className="text-sm text-muted-foreground">Carregando sensores...</span>
+                </div>
+              ) : availableMetrics.length > 0 ? (
+                availableMetrics.map(metric => (
+                  <label
+                    key={metric.id}
+                    className="flex items-center space-x-2 text-sm cursor-pointer hover:bg-muted/50 p-2 rounded transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedMetrics.includes(metric.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedMetrics([...selectedMetrics, metric.id]);
+                        } else {
+                          setSelectedMetrics(selectedMetrics.filter(m => m !== metric.id));
+                        }
+                      }}
+                      className="rounded border-gray-300"
+                    />
+                    <span className="font-medium">{metric.label}</span>
+                    <span className="text-xs text-muted-foreground">({metric.unit})</span>
+                  </label>
+                ))
+              ) : (
+                <div className="col-span-full flex flex-col items-center justify-center py-8 text-muted-foreground">
+                  <AlertTriangle className="h-8 w-8 mb-2" />
+                  <p className="text-sm">Nenhum sensor encontrado para este ativo.</p>
+                  <p className="text-xs mt-1">Verifique se há sensores vinculados na página de Sensores.</p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Time Series Chart */}
           <div className="bg-card rounded-xl p-6 border shadow-sm">
-            <h3 className="text-lg font-semibold mb-4">Séries Temporais</h3>
-            {selectedMetrics.includes('temp_supply') && selectedMetrics.includes('temp_return') ? (
-              <LineChartTemp 
-                data={{
-                  supply: telemetryData.temp_supply || [],
-                  return: telemetryData.temp_return || [],
-                  setpoint: telemetryData.temp_setpoint || []
-                }}
-                height={400}
-              />
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Séries Temporais</h3>
+              {selectedMetrics.length > 0 && (
+                <span className="text-sm text-muted-foreground">
+                  {selectedMetrics.length} métrica{selectedMetrics.length > 1 ? 's' : ''} selecionada{selectedMetrics.length > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+            
+            {isLoadingTelemetry ? (
+              <div className="h-96 flex items-center justify-center">
+                <div className="flex flex-col items-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                  <span className="text-sm text-muted-foreground">Carregando dados de telemetria...</span>
+                </div>
+              </div>
+            ) : telemetryChartData && telemetryChartData.length > 0 ? (
+              <div className="h-96">
+                <LineChartTemp 
+                  data={{
+                    supply: telemetryChartData.filter((s: any) => s.sensorId.includes('temp')) || [],
+                    return: [],
+                    setpoint: []
+                  }}
+                  height={400}
+                />
+                <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    📊 <strong>{telemetryChartData.length}</strong> pontos de dados carregados (últimas 24h)
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Dados atualizados automaticamente a cada 30 segundos
+                  </p>
+                </div>
+              </div>
+            ) : selectedMetrics.length > 0 ? (
+              <div className="h-96 flex items-center justify-center">
+                <div className="flex flex-col items-center text-center max-w-md">
+                  <AlertTriangle className="h-12 w-12 text-amber-500 mb-3" />
+                  <h4 className="text-lg font-medium mb-2">Sem dados disponíveis</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Não foram encontrados dados de telemetria para as métricas selecionadas nas últimas 24 horas.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Verifique se os sensores estão enviando dados corretamente.
+                  </p>
+                </div>
+              </div>
             ) : (
-              <div className="h-96 flex items-center justify-center text-muted-foreground">
-                <p>Selecione temp_supply e temp_return para visualizar o gráfico</p>
+              <div className="h-96 flex items-center justify-center">
+                <div className="flex flex-col items-center text-center max-w-md">
+                  <Activity className="h-12 w-12 text-primary mb-3" />
+                  <h4 className="text-lg font-medium mb-2">Selecione métricas para visualizar</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Escolha uma ou mais métricas acima para exibir os dados no gráfico temporal.
+                  </p>
+                </div>
               </div>
             )}
           </div>
