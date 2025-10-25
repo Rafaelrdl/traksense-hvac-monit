@@ -203,6 +203,22 @@ export const AssetDetailPage: React.FC = () => {
       return;
     }
 
+    // Função auxiliar para extrair o device_id correto
+    const getDeviceId = (sensor: typeof apiSensors[0]): string => {
+      // 1. Tenta device_name (campo usado pelo serializer)
+      let deviceId = sensor.device_name || '';
+      
+      // 2. Se começar com "Device ", remove o prefixo (formato incorreto)
+      if (deviceId.startsWith('Device ')) {
+        deviceId = deviceId.replace('Device ', '');
+      }
+      
+      // 3. Log para debug
+      console.log(`  🔍 Sensor ${sensor.tag}: device_name="${sensor.device_name}" -> usando deviceId="${deviceId}"`);
+      
+      return deviceId;
+    };
+
     const fetchTelemetryData = async () => {
       setIsLoadingTelemetry(true);
       try {
@@ -217,15 +233,25 @@ export const AssetDetailPage: React.FC = () => {
         }
 
         // Buscar dados para cada sensor (últimas 24h)
-        const deviceIds = [...new Set(relevantSensors.map(s => s.device_name))];
+        // CORREÇÃO: Usar função auxiliar para extrair device_id corretamente
+        const deviceIds = [...new Set(relevantSensors.map(getDeviceId))].filter(Boolean);
         
         // Buscar dados de telemetria para cada device
+        console.log(`🔍 Buscando dados de ${deviceIds.length} device(s):`, deviceIds);
+        
+        // Verificar se os IDs estão corretos
+        if (deviceIds.length > 0) {
+          console.log(`🔎 Exemplo de ID correto: "${deviceIds[0]}" (sem prefixo "Device ")`);
+        }
+        
         const telemetryPromises = deviceIds.map(async (deviceId) => {
           try {
+            console.log(`  📡 Chamando API para device: ${deviceId}`);
             const data = await telemetryService.getHistoryLastHours(deviceId, 24);
+            console.log(`  ✅ Device ${deviceId} retornou:`, data);
             return data;
           } catch (error) {
-            console.error(`❌ Erro ao buscar dados do device ${deviceId}:`, error);
+            console.error(`  ❌ Erro ao buscar dados do device ${deviceId}:`, error);
             return { series: [] };
           }
         });
@@ -233,8 +259,80 @@ export const AssetDetailPage: React.FC = () => {
         const results = await Promise.all(telemetryPromises);
         const allData = results.flatMap(r => r.series || []);
         
-        setTelemetryChartData(allData);
-        console.log(`✅ ${allData.length} pontos de telemetria carregados`);
+        console.log(`📊 Total de séries agregadas: ${allData.length}`);
+        console.log('📊 Estrutura dos dados:', allData);
+        
+        // Criar um mapa de sensor_id -> metric_type dos sensores da API
+        const sensorMetricMap = new Map<string, string>();
+        relevantSensors.forEach(sensor => {
+          // Adicionar múltiplas variações do sensor ID para cobrir todos os casos
+          sensorMetricMap.set(sensor.tag, sensor.metric_type);
+          sensorMetricMap.set(sensor.id?.toString() || '', sensor.metric_type);
+          
+          // Se o tag contém o device_name como prefixo, adicionar também sem prefixo
+          if (sensor.tag.includes('_')) {
+            const parts = sensor.tag.split('_');
+            if (parts.length > 1) {
+              // Ex: "4b686f6d70107115_A_temp" -> também mapear "A_temp"
+              const suffix = parts.slice(1).join('_');
+              sensorMetricMap.set(suffix, sensor.metric_type);
+            }
+          }
+        });
+        
+        console.log('📋 Mapa de sensores (sample):', {
+          totalEntries: sensorMetricMap.size,
+          entries: Array.from(sensorMetricMap.entries()).slice(0, 5)
+        });
+        
+        // Enriquecer as séries com metricType baseado no sensor_id
+        const enrichedData = allData.map((series: any) => {
+          // Tentar múltiplos campos possíveis para sensorId
+          const sensorId = series.sensorId || series.sensor_id || series.sensorName || '';
+          
+          // Tentar encontrar no mapa
+          let metricType = sensorMetricMap.get(sensorId) || '';
+          
+          // Se não encontrou, tentar variações
+          if (!metricType && sensorId.includes('_')) {
+            const suffix = sensorId.split('_').slice(1).join('_');
+            metricType = sensorMetricMap.get(suffix) || '';
+          }
+          
+          console.log(`  🔍 Série "${sensorId}": metricType="${metricType}", série completa:`, {
+            sensorId: series.sensorId,
+            sensor_id: series.sensor_id,
+            sensorName: series.sensorName,
+            sensorType: series.sensorType,
+            dataPoints: series.data?.length || 0
+          });
+          
+          return {
+            ...series,
+            metricType,
+            sensorType: metricType // Adicionar também como sensorType para compatibilidade
+          };
+        });
+        
+        // Filtrar apenas as séries das métricas selecionadas
+        const filteredData = enrichedData.filter((series: any) => {
+          const isSelected = selectedMetrics.includes(series.metricType);
+          console.log(`  ✅ Série ${series.sensorId || series.sensorName}: tipo="${series.metricType}", selecionado=${isSelected}`);
+          return isSelected;
+        });
+        
+        console.log(`📊 Séries filtradas: ${filteredData.length} de ${enrichedData.length}`);
+        
+        // Se nenhuma série foi filtrada mas temos séries disponíveis, mostrar todas
+        // (fallback para quando o mapeamento falhar)
+        if (filteredData.length === 0 && enrichedData.length > 0) {
+          console.warn('⚠️ Nenhuma série correspondeu aos filtros. Mostrando todas as séries disponíveis como fallback.');
+          setTelemetryChartData(enrichedData);
+          console.log(`✅ ${enrichedData.length} série(s) de telemetria carregadas (fallback - todas)`);
+        } else {
+          setTelemetryChartData(filteredData);
+          console.log(`✅ ${filteredData.length} série(s) de telemetria carregadas (filtradas)`);
+        }
         
       } catch (error) {
         console.error('❌ Erro ao carregar dados de telemetria:', error);
@@ -419,18 +517,78 @@ export const AssetDetailPage: React.FC = () => {
               <div className="h-96">
                 <LineChartTemp 
                   data={{
-                    supply: telemetryChartData.filter((s: any) => s.sensorId.includes('temp')) || [],
-                    return: [],
-                    setpoint: []
+                    supply: (() => {
+                      // Encontrar séries do tipo temp_supply
+                      const supplySeries = telemetryChartData.filter((s: any) => 
+                        s.sensorType === 'temp_supply' || s.metricType === 'temp_supply'
+                      );
+                      
+                      // Combinar todos os pontos de todas as séries temp_supply
+                      const allPoints: any[] = [];
+                      supplySeries.forEach((series: any) => {
+                        const points = series.data || series.points || [];
+                        points.forEach((point: any) => {
+                          allPoints.push({
+                            timestamp: new Date(point.timestamp),
+                            value: point.avg !== undefined ? point.avg : (point.value !== undefined ? point.value : 0)
+                          });
+                        });
+                      });
+                      
+                      // Ordenar por timestamp
+                      return allPoints.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+                    })(),
+                    
+                    return: (() => {
+                      // Encontrar séries do tipo temp_return
+                      const returnSeries = telemetryChartData.filter((s: any) => 
+                        s.sensorType === 'temp_return' || s.metricType === 'temp_return'
+                      );
+                      
+                      const allPoints: any[] = [];
+                      returnSeries.forEach((series: any) => {
+                        const points = series.data || series.points || [];
+                        points.forEach((point: any) => {
+                          allPoints.push({
+                            timestamp: new Date(point.timestamp),
+                            value: point.avg !== undefined ? point.avg : (point.value !== undefined ? point.value : 0)
+                          });
+                        });
+                      });
+                      
+                      return allPoints.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+                    })(),
+                    
+                    setpoint: (() => {
+                      // Encontrar séries do tipo temp_setpoint ou humidity (outras métricas)
+                      const setpointSeries = telemetryChartData.filter((s: any) => 
+                        s.sensorType === 'temp_setpoint' || s.metricType === 'temp_setpoint' ||
+                        s.sensorType === 'humidity' || s.metricType === 'humidity' ||
+                        s.sensorType === 'maintenance' || s.metricType === 'maintenance'
+                      );
+                      
+                      const allPoints: any[] = [];
+                      setpointSeries.forEach((series: any) => {
+                        const points = series.data || series.points || [];
+                        points.forEach((point: any) => {
+                          allPoints.push({
+                            timestamp: new Date(point.timestamp),
+                            value: point.avg !== undefined ? point.avg : (point.value !== undefined ? point.value : 0)
+                          });
+                        });
+                      });
+                      
+                      return allPoints.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+                    })()
                   }}
                   height={400}
                 />
                 <div className="mt-4 p-4 bg-muted/50 rounded-lg">
                   <p className="text-sm text-muted-foreground">
-                    📊 <strong>{telemetryChartData.length}</strong> pontos de dados carregados (últimas 24h)
+                    📊 <strong>{telemetryChartData.length}</strong> série(s) de dados carregadas (últimas 24h)
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Dados atualizados automaticamente a cada 30 segundos
+                    Sensores: {telemetryChartData.map((s: any) => s.sensorId || s.sensorName).join(', ')}
                   </p>
                 </div>
               </div>
