@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Calendar, Clock, User, Wrench, Plus, Filter, CheckCircle, AlertTriangle, Tool, History } from '@phosphor-icons/react';
+import { Calendar, Clock, User, Wrench, Plus, Filter, CheckCircle, AlertTriangle, Settings, History } from 'lucide-react';
 import { useAppStore } from '@/store/app';
 import { MaintenanceTask, MaintenanceSchedule } from '@/types/hvac';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -499,7 +499,7 @@ export const MaintenancePage: React.FC = () => {
                     
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <Tool size={16} />
+                        <Settings size={16} />
                         <span>{task.assetTag}</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
@@ -553,7 +553,7 @@ export const MaintenancePage: React.FC = () => {
                     
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <Tool size={16} />
+                        <Settings size={16} />
                         <span>{schedule.assetTag}</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
@@ -599,7 +599,7 @@ export const MaintenancePage: React.FC = () => {
                     
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <Tool size={16} />
+                        <Settings size={16} />
                         <span>{record.assetTag}</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">

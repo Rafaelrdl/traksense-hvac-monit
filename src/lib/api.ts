@@ -35,6 +35,9 @@ api.interceptors.request.use(
     
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else if (!token && !config.url?.includes('/auth/login') && !config.url?.includes('/auth/register')) {
+      // Só loga warning para endpoints que REQUEREM autenticação
+      console.warn('⚠️ Requisição sem token:', config.url);
     }
     
     return config;
@@ -49,6 +52,7 @@ api.interceptors.request.use(
  * Gerencia refresh automático de tokens expirados
  */
 let isRefreshing = false;
+let isRedirecting = false; // Flag para prevenir múltiplos redirects
 let failedQueue: Array<{
   resolve: (value?: unknown) => void;
   reject: (reason?: unknown) => void;
@@ -69,6 +73,12 @@ const processQueue = (error: AxiosError | null, token: string | null = null) => 
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
+    // Ignorar erros de cancelamento - não tentar refresh
+    if (error.code === 'ECONNABORTED' || error.code === 'ERR_CANCELED' || error.name === 'CanceledError') {
+      console.log('⏹️ Requisição cancelada - ignorando');
+      return Promise.reject(error);
+    }
+
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
     };
@@ -100,10 +110,16 @@ api.interceptors.response.use(
     const refreshToken = localStorage.getItem('refresh_token');
 
     if (!refreshToken) {
-      // Sem refresh token, redireciona para login
+      // Sem refresh token, redireciona para login (uma vez apenas)
       isRefreshing = false;
-      localStorage.clear();
-      window.location.href = '/login';
+      
+      if (!isRedirecting) {
+        isRedirecting = true;
+        localStorage.clear();
+        console.log('🔒 Sem refresh token - redirecionando para login');
+        window.location.href = '/login';
+      }
+      
       return Promise.reject(error);
     }
 
@@ -138,12 +154,16 @@ api.interceptors.response.use(
       // Retenta a requisição original
       return api(originalRequest);
     } catch (refreshError) {
-      // Falha no refresh, limpa tudo e redireciona
+      // Falha no refresh, limpa tudo e redireciona (uma vez apenas)
       processQueue(refreshError as AxiosError, null);
       isRefreshing = false;
 
-      localStorage.clear();
-      window.location.href = '/login';
+      if (!isRedirecting) {
+        isRedirecting = true;
+        localStorage.clear();
+        console.log('🔒 Falha ao renovar token - redirecionando para login');
+        window.location.href = '/login';
+      }
 
       return Promise.reject(refreshError);
     }

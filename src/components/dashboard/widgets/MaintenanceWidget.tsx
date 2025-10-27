@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, AlertTriangle, CheckCircle, Wrench } from '@phosphor-icons/react';
+import { Calendar, Clock, AlertTriangle, CheckCircle, Wrench } from 'lucide-react';
 import { useAppStore } from '@/store/app';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
 

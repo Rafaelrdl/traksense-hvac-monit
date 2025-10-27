@@ -370,6 +370,13 @@ export const useAppStore = create<AppState>((set, get) => ({
    * Esta função substitui o uso do simEngine quando useApiData = true
    */
   loadAssetsFromApi: async () => {
+    // Verificar se há token antes de tentar carregar
+    if (!localStorage.getItem('access_token')) {
+      console.warn('⚠️ loadAssetsFromApi: Sem token - abortando carregamento');
+      set({ isLoadingAssets: false, error: 'Não autenticado' });
+      return;
+    }
+
     set({ isLoadingAssets: true, error: null });
     
     try {
@@ -676,8 +683,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 }));
 
-// Carregar assets automaticamente ao inicializar
-useAppStore.getState().loadAssetsFromApi();
+// Carregar assets automaticamente ao inicializar (somente se autenticado)
+if (localStorage.getItem('access_token')) {
+  console.log('✅ Token encontrado - carregando assets da API');
+  useAppStore.getState().loadAssetsFromApi();
+} else {
+  console.log('⚠️ Sem token - pulando carregamento automático de assets');
+}
 
 // Utility hooks for specific data
 export const useAssets = () => useAppStore(state => state.assets);

@@ -1,6 +1,5 @@
 /**
- * Simulação de KV storage (localStorage em dev, spark.kv em produção)
- * Em produção com Spark, substituir por spark.kv.set/get
+ * KV storage usando localStorage
  */
 
 interface KVRecord {
@@ -21,11 +20,6 @@ export async function kvSet(key: string, value: any, ttlSeconds?: number): Promi
   };
   
   try {
-    // TODO: Em produção, usar spark.kv.set
-    // const { spark } = await import('@github/spark');
-    // await spark.kv.set(key, record);
-    
-    // Fallback para localStorage em desenvolvimento
     localStorage.setItem(`kv:${key}`, JSON.stringify(record));
   } catch (error) {
     console.error('Erro ao salvar no KV:', error);
@@ -40,11 +34,6 @@ export async function kvSet(key: string, value: any, ttlSeconds?: number): Promi
  */
 export async function kvGet<T = any>(key: string): Promise<T | null> {
   try {
-    // TODO: Em produção, usar spark.kv.get
-    // const { spark } = await import('@github/spark');
-    // const record = await spark.kv.get(key);
-    
-    // Fallback para localStorage em desenvolvimento
     const stored = localStorage.getItem(`kv:${key}`);
     if (!stored) return null;
     
@@ -69,11 +58,6 @@ export async function kvGet<T = any>(key: string): Promise<T | null> {
  */
 export async function kvDelete(key: string): Promise<void> {
   try {
-    // TODO: Em produção, usar spark.kv.delete
-    // const { spark } = await import('@github/spark');
-    // await spark.kv.delete(key);
-    
-    // Fallback para localStorage em desenvolvimento
     localStorage.removeItem(`kv:${key}`);
   } catch (error) {
     console.error('Erro ao deletar do KV:', error);
