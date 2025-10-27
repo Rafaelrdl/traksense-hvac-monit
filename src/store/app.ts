@@ -377,32 +377,40 @@ export const useAppStore = create<AppState>((set, get) => ({
       return;
     }
 
+    console.log('🔄 loadAssetsFromApi: Iniciando carregamento...');
     set({ isLoadingAssets: true, error: null });
     
     try {
       // Obter site atual para filtrar
       const currentSite = get().currentSite;
+      console.log('📍 Site atual:', currentSite);
       
       // Buscar todos os assets (ajustar limit conforme necessário)
+      console.log('📦 Buscando assets da API...');
       const assetsResponse = await assetsService.getAll({ 
         limit: 100,
         ...(currentSite ? { site: currentSite.id } : {})
       });
+      console.log('📦 Assets recebidos:', assetsResponse);
       
       // Buscar sites para enriquecer dados
+      console.log('📍 Buscando sites da API...');
       const sitesResponse = await sitesService.getAll({ 
         limit: 100 
       });
+      console.log('📍 Sites recebidos:', sitesResponse);
       
       const sitesMap = new Map(
         sitesResponse.results.map(s => [s.id, s])
       );
       
       // Mapear para formato do frontend
+      console.log('🔄 Mapeando assets para formato do frontend...');
       const assets = mapApiAssetsToHVACAssets(
         assetsResponse.results,
         sitesMap
       );
+      console.log('✅ Assets mapeados:', assets);
       
       set({ 
         assets, 

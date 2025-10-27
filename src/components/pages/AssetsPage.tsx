@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAppStore } from '../../store/app';
 import { HVACAsset } from '../../types/hvac';
 import { Search, ExternalLink, Heart, Zap, AlertCircle } from 'lucide-react';
@@ -11,11 +11,18 @@ export const AssetsPage: React.FC = () => {
     setSelectedAsset, 
     addAsset, 
     isLoadingAssets,
-    error 
+    error,
+    loadAssetsFromApi 
   } = useAppStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+
+  // Carregar assets da API quando o componente montar
+  useEffect(() => {
+    loadAssetsFromApi();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Executar apenas uma vez ao montar
 
   const filteredAssets = useMemo(() => {
     return assets.filter(asset => {
