@@ -562,11 +562,11 @@ export const MaintenancePage: React.FC = () => {
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Clock size={16} />
-                        <span>{schedule.estimatedDuration} min</span>
+                        <span>{schedule.duration} min</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Calendar size={16} />
-                        <span>Next: {format(new Date(schedule.nextDue), 'MMM d')}</span>
+                        <span>Next: {schedule.nextDue ? format(new Date(schedule.nextDue), 'MMM d') : 'N/A'}</span>
                       </div>
                     </div>
                   </div>

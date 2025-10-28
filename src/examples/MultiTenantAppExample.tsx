@@ -6,21 +6,20 @@
  */
 
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+// import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { TenantProvider } from '@/components/providers/TenantProvider';
 import { TenantDebugPanel } from '@/components/debug/TenantDebugPanel';
 import { runStorageMigration } from '@/lib/migrations/storageMigration';
 
-// Importar páginas
-import { LoginPage } from '@/components/pages/LoginPage';
-import { DashboardPage } from '@/components/pages/DashboardPage';
-import { AssetsPage } from '@/components/pages/AssetsPage';
-// ... outras páginas
+// Nota: Este arquivo contém apenas exemplos de código.
+// Os componentes reais (LoginPage, DashboardPage, etc.) estão em src/components/pages/
 
 /**
- * Componente principal com suporte a multi-tenant
+ * EXEMPLO: Componente principal com suporte a multi-tenant
+ * 
+ * Use este padrão no seu App.tsx real
  */
-export const App: React.FC = () => {
+export const MultiTenantAppExample: React.FC = () => {
   
   // Executar migração de storage na primeira carga
   useEffect(() => {
@@ -29,19 +28,33 @@ export const App: React.FC = () => {
 
   return (
     <TenantProvider>
+      {/* 
+        NOTA: Para usar rotas, instale react-router-dom:
+        npm install react-router-dom
+        
+        Então descomente o código abaixo:
+      */}
+      {/*
       <Router>
         <div className="app">
           <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/" element={<DashboardPage />} />
+            <Route path="/login" element={<ExampleLoginPage />} />
+            <Route path="/" element={<ExampleDashboardPage />} />
             <Route path="/assets" element={<AssetsPage />} />
-            {/* ... outras rotas */}
           </Routes>
           
-          {/* Debug panel (apenas em desenvolvimento) */}
           <TenantDebugPanel />
         </div>
       </Router>
+      */}
+      
+      <div className="app">
+        <h1>Multi-Tenant App Example</h1>
+        <p>Este é um componente de exemplo. Veja os padrões abaixo.</p>
+        
+        {/* Debug panel (apenas em desenvolvimento) */}
+        <TenantDebugPanel />
+      </div>
     </TenantProvider>
   );
 };
@@ -51,12 +64,18 @@ export const App: React.FC = () => {
 // ============================================
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import { tenantAuthService } from '@/services/tenantAuthService';
 import { TenantLogo } from '@/components/tenant/TenantLogo';
 
-export const LoginPage: React.FC = () => {
-  const navigate = useNavigate();
+/**
+ * EXEMPLO de LoginPage com autenticação multi-tenant
+ * 
+ * Este é apenas um exemplo. O componente real está em:
+ * src/components/pages/LoginPage.tsx
+ */
+export const ExampleLoginPage: React.FC = () => {
+  // const navigate = useNavigate(); // Descomente se usar react-router-dom
   const [credentials, setCredentials] = useState({
     username_or_email: '',
     password: ''
@@ -75,8 +94,9 @@ export const LoginPage: React.FC = () => {
       
       console.log('✅ Login bem-sucedido:', response.user);
       
-      // Redirecionar para dashboard
-      navigate('/');
+      // Redirecionar para dashboard (descomente se usar react-router-dom)
+      // navigate('/');
+      window.location.href = '/'; // Alternativa sem react-router
     } catch (err: any) {
       console.error('❌ Erro no login:', err);
       setError(err.response?.data?.detail || 'Credenciais inválidas');
@@ -147,13 +167,17 @@ export const LoginPage: React.FC = () => {
 
 import { useTenantBranding } from '@/hooks/useTenantBranding';
 
-export const Header: React.FC = () => {
-  const navigate = useNavigate();
+/**
+ * EXEMPLO de Header com branding multi-tenant
+ */
+export const ExampleHeader: React.FC = () => {
+  // const navigate = useNavigate(); // Descomente se usar react-router-dom
   const branding = useTenantBranding();
 
   const handleLogout = async () => {
     await tenantAuthService.logout();
-    navigate('/login');
+    // navigate('/login'); // Descomente se usar react-router-dom
+    window.location.href = '/login'; // Alternativa sem react-router
   };
 
   return (
@@ -183,7 +207,13 @@ export const Header: React.FC = () => {
 // EXEMPLO: Dashboard com Branding Dinâmico
 // ============================================
 
-export const DashboardPage: React.FC = () => {
+/**
+ * EXEMPLO de DashboardPage com branding multi-tenant
+ * 
+ * Este é apenas um exemplo. O componente real está em:
+ * src/components/pages/DashboardPage.tsx
+ */
+export const ExampleDashboardPage: React.FC = () => {
   const branding = useTenantBranding();
 
   return (

@@ -60,7 +60,7 @@ interface AppState {
   // Real-time simulation
   isSimulationRunning: boolean;
   lastUpdateTime: Date | null;
-  refreshInterval: number | null;
+  refreshInterval: ReturnType<typeof setInterval> | null;
   
   // Actions
   setSelectedAsset: (assetId: string | null) => void;

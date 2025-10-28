@@ -162,12 +162,12 @@ const { primaryColor, name } = useTenantBranding();
 // Default tenants in src/lib/tenant.ts
 UMC (Uberlândia Medical Center):
   - Slug: umc
-  - Color: #0A5F7F
+  - Primary Color: 0A5F7F (teal)
   - API: http://umc.localhost:8000/api
 
 ACME (Example):
   - Slug: acme  
-  - Color: #FF6B00
+  - Primary Color: FF6B00 (orange)
   - API: http://acme.localhost:8000/api
 ```
 
