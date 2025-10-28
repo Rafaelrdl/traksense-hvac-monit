@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/auth';
-import { useTeamStore, initializeDemoTeam } from '../../store/team';
 import {
   Dialog,
   DialogContent,
@@ -26,9 +25,11 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
-  KeyRound,
-  Copy,
-  Loader2
+  Loader2,
+  Eye,
+  Wrench,
+  Key,
+  Crown
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -45,30 +46,10 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { generateInviteToken, generatePasswordResetToken } from '@/lib/token';
-import { saveInviteToken, savePasswordResetToken } from '@/lib/kv';
-import { renderInviteEmail } from '@/emails/invite-email';
-import { renderPasswordResetEmail } from '@/emails/password-reset-email';
-import { sendInviteEmail, sendPasswordResetEmail } from '@/services/email.provider';
 import { getInitials } from '@/lib/get-initials';
-
-interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'operator' | 'viewer';
-  status: 'active' | 'pending' | 'inactive';
-  joinedAt: Date;
-  site?: string;
-}
-
-interface PendingInvite {
-  id: string;
-  email: string;
-  role: 'admin' | 'operator' | 'viewer';
-  invitedAt: Date;
-  invitedBy: string;
-}
+import teamService, { TeamMember, Invite } from '@/services/teamService';
+import { RoleBadge } from '@/components/team/RoleBadge';
+import { StatusBadge } from '@/components/team/StatusBadge';
 
 interface TeamManagementDialogProps {
   open: boolean;
@@ -78,55 +59,49 @@ interface TeamManagementDialogProps {
 export const TeamManagementDialog: React.FC<TeamManagementDialogProps> = ({ open, onOpenChange }) => {
   const user = useAuthStore(state => state.user);
   
-  // Mock data - substituir com dados reais da API
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
-    {
-      id: '1',
-      name: 'Admin TrakSense',
-      email: 'admin@traksense.com',
-      role: 'admin',
-      status: 'active',
-      joinedAt: new Date('2024-01-15'),
-      site: 'Data Center Principal'
-    },
-    {
-      id: '2',
-      name: 'João Silva',
-      email: 'joao@traksense.com',
-      role: 'operator',
-      status: 'active',
-      joinedAt: new Date('2024-03-20'),
-      site: 'Data Center Principal'
-    },
-    {
-      id: '3',
-      name: 'Maria Santos',
-      email: 'maria@traksense.com',
-      role: 'viewer',
-      status: 'active',
-      joinedAt: new Date('2024-05-10'),
-      site: 'Data Center Secundário'
-    }
-  ]);
-
-  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([
-    {
-      id: 'inv-1',
-      email: 'novo@traksense.com',
-      role: 'operator',
-      invitedAt: new Date('2024-10-01'),
-      invitedBy: 'Admin TrakSense'
-    }
-  ]);
+  // Estado real da API
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [pendingInvites, setPendingInvites] = useState<Invite[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [inviteData, setInviteData] = useState({
     email: '',
     role: 'viewer' as 'admin' | 'operator' | 'viewer',
+    message: '',
   });
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSendingInvite, setIsSendingInvite] = useState(false);
-  const [isSendingReset, setIsSendingReset] = useState<string | null>(null);
+
+  // Carregar dados quando o modal abre
+  useEffect(() => {
+    if (open) {
+      loadData();
+    }
+  }, [open]);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const [members, invites] = await Promise.all([
+        teamService.getMembers(),
+        teamService.getInvites(),
+      ]);
+      
+      // Garantir que sempre sejam arrays
+      setTeamMembers(Array.isArray(members) ? members : []);
+      setPendingInvites(Array.isArray(invites) ? invites : []);
+    } catch (error: any) {
+      console.error('Erro ao carregar dados da equipe:', error);
+      setTeamMembers([]);
+      setPendingInvites([]);
+      toast.error('Erro ao carregar dados', {
+        description: error.response?.data?.detail || 'Erro ao buscar dados da equipe',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleInviteMember = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,199 +115,101 @@ export const TeamManagementDialog: React.FC<TeamManagementDialogProps> = ({ open
       return;
     }
 
-    // Verificar se já existe
-    const emailExists = teamMembers.some(member => member.email === inviteData.email);
-    const inviteExists = pendingInvites.some(invite => invite.email === inviteData.email);
-
-    if (emailExists || inviteExists) {
-      toast.error('Email já cadastrado', {
-        description: 'Este email já está na equipe ou possui convite pendente.',
-      });
-      return;
-    }
-
     setIsSendingInvite(true);
 
     try {
-      // Gerar token único
-      const token = generateInviteToken();
-      
-      // Obter URL base da aplicação
-      const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
-      const inviteUrl = `${appUrl}/accept-invite?token=${token}`;
-      
-      // Salvar no KV (7 dias)
-      await saveInviteToken(token, {
-        teamId: 'team-1', // TODO: usar ID da equipe real
-        email: inviteData.email,
-        role: inviteData.role.toUpperCase() as 'ADMIN' | 'MEMBER',
-        invitedBy: user?.name || 'Você'
-      });
-      
-      // Renderizar template de e-mail
-      const emailTemplate = renderInviteEmail({
-        appName: 'TrakSense HVAC',
-        teamName: 'Equipe Principal', // TODO: usar nome da equipe real
-        invitedBy: user?.name || 'Administrador',
-        inviteUrl,
-        role: inviteData.role.toUpperCase() as 'ADMIN' | 'MEMBER'
-      });
-      
-      // Enviar e-mail
-      await sendInviteEmail(
-        inviteData.email,
-        emailTemplate.subject,
-        emailTemplate.html,
-        emailTemplate.text
-      );
-      
-      // Adicionar convite pendente na UI
-      const newInvite: PendingInvite = {
-        id: `inv-${Date.now()}`,
+      await teamService.createInvite({
         email: inviteData.email,
         role: inviteData.role,
-        invitedAt: new Date(),
-        invitedBy: user?.name || 'Você'
-      };
+        message: inviteData.message || undefined,
+      });
 
-      setPendingInvites([...pendingInvites, newInvite]);
-
-      // Em dev, oferecer copiar link
-      if (!import.meta.env.VITE_RESEND_API_KEY) {
-        toast.success('Convite criado (DEV)', {
-          description: 'Link do convite copiado para clipboard',
-          action: {
-            label: 'Copiar Link',
-            onClick: () => {
-              navigator.clipboard.writeText(inviteUrl);
-              toast.success('Link copiado!');
-            }
-          },
-          duration: 10000
-        });
-        
-        // Copiar automaticamente em dev
-        navigator.clipboard.writeText(inviteUrl);
-      } else {
-        toast.success('Convite enviado!', {
-          description: `Um convite foi enviado para ${inviteData.email}`,
-        });
-      }
+      toast.success('Convite enviado!', {
+        description: `Um convite foi enviado para ${inviteData.email}`,
+      });
 
       // Limpar formulário
-      setInviteData({ email: '', role: 'viewer' });
+      setInviteData({ email: '', role: 'viewer', message: '' });
       
-    } catch (error) {
-      console.error('Erro ao enviar convite:', error);
+      // Recarregar dados
+      loadData();
+      
+    } catch (error: any) {
       toast.error('Erro ao enviar convite', {
-        description: 'Ocorreu um erro ao processar o convite. Tente novamente.',
+        description: error.response?.data?.detail || error.response?.data?.email?.[0] || 'Erro desconhecido',
       });
     } finally {
       setIsSendingInvite(false);
     }
   };
 
-  const handleChangeRole = (memberId: string, newRole: 'admin' | 'operator' | 'viewer') => {
-    setTeamMembers(teamMembers.map(member => 
-      member.id === memberId ? { ...member, role: newRole } : member
-    ));
-
-    toast.success('Permissão atualizada', {
-      description: 'As permissões do membro foram alteradas.',
-    });
-  };
-
-  const handleRemoveMember = (memberId: string) => {
-    const member = teamMembers.find(m => m.id === memberId);
-    
-    if (member?.id === user?.id) {
-      toast.error('Ação não permitida', {
-        description: 'Você não pode remover sua própria conta.',
-      });
-      return;
-    }
-
-    setTeamMembers(teamMembers.filter(m => m.id !== memberId));
-    
-    toast.success('Membro removido', {
-      description: `${member?.name} foi removido da equipe.`,
-    });
-  };
-
-  const handleCancelInvite = (inviteId: string) => {
-    setPendingInvites(pendingInvites.filter(inv => inv.id !== inviteId));
-    
-    toast.success('Convite cancelado', {
-      description: 'O convite foi cancelado.',
-    });
-  };
-
-  const handleSendPasswordReset = async (member: TeamMember) => {
-    setIsSendingReset(member.id);
-
+  const handleChangeRole = async (memberId: number, newRole: 'owner' | 'admin' | 'operator' | 'viewer') => {
     try {
-      // Gerar token único para reset
-      const token = generatePasswordResetToken();
-      
-      // Obter URL base da aplicação
-      const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
-      const resetUrl = `${appUrl}/reset-password?token=${token}`;
-      
-      // Salvar no KV (1 hora)
-      await savePasswordResetToken(token, {
-        userId: member.id,
-        email: member.email
+      await teamService.updateMember(memberId, { role: newRole });
+
+      toast.success('Permissão atualizada', {
+        description: 'As permissões do membro foram alteradas.',
       });
-      
-      // Renderizar template de e-mail
-      const emailTemplate = renderPasswordResetEmail({
-        appName: 'TrakSense HVAC',
-        resetUrl,
-        userName: member.name
+
+      loadData();
+    } catch (error: any) {
+      toast.error('Erro ao atualizar permissão', {
+        description: error.response?.data?.detail || 'Erro desconhecido',
       });
+    }
+  };
+
+  const handleRemoveMember = async (member: TeamMember) => {
+    if (!confirm(`Tem certeza que deseja remover ${member.user.full_name}?`)) return;
+    
+    try {
+      await teamService.removeMember(member.id);
       
-      // Enviar e-mail
-      await sendPasswordResetEmail(
-        member.email,
-        emailTemplate.subject,
-        emailTemplate.html,
-        emailTemplate.text
-      );
-      
-      // Em dev, oferecer copiar link
-      if (!import.meta.env.VITE_RESEND_API_KEY) {
-        toast.success('Link de reset criado (DEV)', {
-          description: 'Link copiado para clipboard',
-          action: {
-            label: 'Copiar Link',
-            onClick: () => {
-              navigator.clipboard.writeText(resetUrl);
-              toast.success('Link copiado!');
-            }
-          },
-          duration: 10000
-        });
-        
-        // Copiar automaticamente em dev
-        navigator.clipboard.writeText(resetUrl);
-      } else {
-        toast.success('E-mail de redefinição enviado!', {
-          description: `${member.name} receberá instruções no e-mail ${member.email}`,
-        });
-      }
-      
-    } catch (error) {
-      console.error('Erro ao enviar e-mail de reset:', error);
-      toast.error('Erro ao enviar e-mail', {
-        description: 'Ocorreu um erro ao processar a solicitação. Tente novamente.',
+      toast.success('Membro removido', {
+        description: `${member.user.full_name} foi removido da equipe.`,
       });
-    } finally {
-      setIsSendingReset(null);
+
+      loadData();
+    } catch (error: any) {
+      toast.error('Erro ao remover membro', {
+        description: error.response?.data?.detail || 'Erro desconhecido',
+      });
+    }
+  };
+
+  const handleCancelInvite = async (inviteId: number) => {
+    try {
+      await teamService.cancelInvite(inviteId);
+      
+      toast.success('Convite cancelado', {
+        description: 'O convite foi cancelado.',
+      });
+
+      loadData();
+    } catch (error: any) {
+      toast.error('Erro ao cancelar convite', {
+        description: error.response?.data?.detail || 'Erro desconhecido',
+      });
+    }
+  };
+
+  const handleResendInvite = async (inviteId: number) => {
+    try {
+      await teamService.resendInvite(inviteId);
+      
+      toast.success('Convite reenviado!', {
+        description: 'Um novo email foi enviado com o convite.',
+      });
+    } catch (error: any) {
+      toast.error('Erro ao reenviar convite', {
+        description: error.response?.data?.detail || 'Erro desconhecido',
+      });
     }
   };
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
+      case 'owner': return 'default';
       case 'admin': return 'default';
       case 'operator': return 'secondary';
       case 'viewer': return 'outline';
@@ -342,6 +219,7 @@ export const TeamManagementDialog: React.FC<TeamManagementDialogProps> = ({ open
 
   const getRoleLabel = (role: string) => {
     switch (role) {
+      case 'owner': return 'Proprietário';
       case 'admin': return 'Administrador';
       case 'operator': return 'Operador';
       case 'viewer': return 'Visualizador';
@@ -349,12 +227,25 @@ export const TeamManagementDialog: React.FC<TeamManagementDialogProps> = ({ open
     }
   };
 
-  const filteredMembers = teamMembers.filter(member =>
-    member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    member.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'owner': return Crown;
+      case 'admin': return Key;
+      case 'operator': return Wrench;
+      case 'viewer': return Eye;
+      default: return Shield;
+    }
+  };
 
-  if (!user || user.role !== 'admin') return null;
+  const filteredMembers = Array.isArray(teamMembers) 
+    ? teamMembers.filter(member =>
+        member.user.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        member.user.email.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : [];
+
+  // Verificação de permissão - apenas admin e owner podem gerenciar equipe
+  if (!user || (user.role !== 'admin' && user.role !== 'owner')) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -401,110 +292,112 @@ export const TeamManagementDialog: React.FC<TeamManagementDialogProps> = ({ open
 
             {/* Members List */}
             <ScrollArea className="h-[400px] pr-4">
-              <div className="space-y-3">
-                {filteredMembers.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>Nenhum membro encontrado</p>
-                  </div>
-                ) : (
-                  filteredMembers.map((member) => (
-                    <div
-                      key={member.id}
-                      className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                    >
-                      <Avatar className="w-10 h-10">
-                        <AvatarFallback className="bg-primary/20 text-primary text-sm font-semibold">
-                          {getInitials(member.name)}
-                        </AvatarFallback>
-                      </Avatar>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-sm truncate">{member.name}</p>
-                          {member.id === user.id && (
-                            <Badge variant="secondary" className="text-xs">Você</Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground truncate">{member.email}</p>
-                        {member.site && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{member.site}</p>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Select
-                          value={member.role}
-                          onValueChange={(value: any) => handleChangeRole(member.id, value)}
-                          disabled={member.id === user.id}
-                        >
-                          <SelectTrigger className="w-[130px] h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="admin">
-                              <div className="flex items-center gap-2">
-                                <Shield className="w-3 h-3" />
-                                Administrador
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="operator">
-                              <div className="flex items-center gap-2">
-                                <Users className="w-3 h-3" />
-                                Operador
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="viewer">
-                              <div className="flex items-center gap-2">
-                                <Users className="w-3 h-3" />
-                                Visualizador
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8"
-                              aria-label="Ações do membro"
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-64">
-                            {/* Apenas admin pode enviar reset de senha */}
-                            {user.role === 'admin' && member.id !== user.id && (
-                              <DropdownMenuItem
-                                onClick={() => handleSendPasswordReset(member)}
-                                disabled={isSendingReset === member.id}
-                                className="gap-2"
-                              >
-                                {isSendingReset === member.id ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <KeyRound className="w-4 h-4" />
-                                )}
-                                Enviar redefinição de senha
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem
-                              onClick={() => handleRemoveMember(member.id)}
-                              disabled={member.id === user.id}
-                              className="text-destructive focus:text-destructive gap-2"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Remover da equipe
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+              {isLoading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin" />
+                  <p>Carregando membros...</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredMembers.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>Nenhum membro encontrado</p>
                     </div>
-                  ))
-                )}
-              </div>
+                  ) : (
+                    filteredMembers.map((member) => {
+                      const RoleIcon = getRoleIcon(member.role);
+                      return (
+                        <div
+                          key={member.id}
+                          className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                        >
+                          <Avatar className="w-10 h-10">
+                            <AvatarFallback className="bg-primary/20 text-primary text-sm font-semibold">
+                              {getInitials(member.user.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-sm truncate">{member.user.full_name}</p>
+                              {member.user.id === Number(user?.id) && (
+                                <Badge variant="secondary" className="text-xs">Você</Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate">{member.user.email}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <RoleBadge role={member.role} />
+                              <StatusBadge status={member.status} />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <Select
+                              value={member.role}
+                              onValueChange={(value: any) => handleChangeRole(member.id, value)}
+                              disabled={member.user.id === Number(user?.id)}
+                            >
+                              <SelectTrigger className="w-[140px] h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="owner">
+                                  <div className="flex items-center gap-2">
+                                    <Crown className="w-3 h-3" />
+                                    Proprietário
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="admin">
+                                  <div className="flex items-center gap-2">
+                                    <Key className="w-3 h-3" />
+                                    Administrador
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="operator">
+                                  <div className="flex items-center gap-2">
+                                    <Wrench className="w-3 h-3" />
+                                    Operador
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="viewer">
+                                  <div className="flex items-center gap-2">
+                                    <Eye className="w-3 h-3" />
+                                    Visualizador
+                                  </div>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8"
+                                  aria-label="Ações do membro"
+                                >
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuItem
+                                  onClick={() => handleRemoveMember(member)}
+                                  disabled={member.user.id === Number(user?.id)}
+                                  className="text-destructive focus:text-destructive gap-2"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  Remover da equipe
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </ScrollArea>
           </TabsContent>
 
@@ -607,26 +500,34 @@ export const TeamManagementDialog: React.FC<TeamManagementDialogProps> = ({ open
                         <div className="flex-1">
                           <p className="font-medium text-sm">{invite.email}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <Badge variant={getRoleBadgeVariant(invite.role)} className="text-xs">
-                              {getRoleLabel(invite.role)}
-                            </Badge>
+                            <RoleBadge role={invite.role} />
                             <span className="text-xs text-muted-foreground">
-                              Convidado por {invite.invitedBy}
+                              Convidado por {invite.invited_by.full_name}
                             </span>
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
-                            {invite.invitedAt.toLocaleDateString('pt-BR')}
+                            {new Date(invite.created_at).toLocaleDateString('pt-BR')}
                           </p>
                         </div>
 
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleCancelInvite(invite.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <XCircle className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleResendInvite(invite.id)}
+                            className="h-8 text-xs"
+                          >
+                            Reenviar
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleCancelInvite(invite.id)}
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>

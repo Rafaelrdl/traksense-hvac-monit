@@ -11,7 +11,7 @@ export interface User {
   full_name?: string;
   initials?: string;
   name: string; // Legacy field for compatibility
-  role: 'admin' | 'operator' | 'viewer';
+  role: 'admin' | 'operator' | 'viewer' | 'owner';
   site?: string; // Legacy field
   avatar?: string | null; // Backend field
   photoUrl?: string; // Legacy frontend field
@@ -51,6 +51,16 @@ interface AuthState {
 
 // Demo users for testing (mantido para fallback)
 const DEMO_USERS: Record<string, { password: string; user: User }> = {
+  'admin@umc.com': {
+    password: 'admin123',
+    user: {
+      id: '1',
+      email: 'admin@umc.com',
+      name: 'Admin UMC',
+      role: 'owner',
+      site: 'UMC Hospital'
+    }
+  },
   'admin@traksense.com': {
     password: 'admin123',
     user: {
@@ -59,6 +69,46 @@ const DEMO_USERS: Record<string, { password: string; user: User }> = {
       name: 'Admin TrakSense',
       role: 'admin',
       site: 'OncoCentro'
+    }
+  },
+  'gerente@umc.com': {
+    password: 'senha123',
+    user: {
+      id: '4',
+      email: 'gerente@umc.com',
+      name: 'Carlos Gerente',
+      role: 'admin',
+      site: 'UMC Hospital'
+    }
+  },
+  'operador@umc.com': {
+    password: 'senha123',
+    user: {
+      id: '5',
+      email: 'operador@umc.com',
+      name: 'João Silva',
+      role: 'operator',
+      site: 'UMC Hospital'
+    }
+  },
+  'visualizador@umc.com': {
+    password: 'senha123',
+    user: {
+      id: '6',
+      email: 'visualizador@umc.com',
+      name: 'Maria Santos',
+      role: 'viewer',
+      site: 'UMC Hospital'
+    }
+  },
+  'operador2@umc.com': {
+    password: 'senha123',
+    user: {
+      id: '7',
+      email: 'operador2@umc.com',
+      name: 'Pedro Oliveira',
+      role: 'operator',
+      site: 'UMC Hospital'
     }
   },
   'viewer@traksense.com': {

@@ -70,6 +70,8 @@ export interface BackendUser {
   email_verified: boolean;
   is_active: boolean;
   is_staff: boolean;
+  role: string;  // Role from TenantMembership
+  site: string;  // Tenant name
   date_joined: string;
   last_login: string | null;
   created_at: string;
@@ -82,13 +84,15 @@ export interface BackendUser {
 const mapBackendUserToUser = (backendUser: BackendUser): User => {
   console.log('🔄 mapBackendUserToUser - Input:', backendUser); // Debug
   console.log('🕐 mapBackendUserToUser - time_format recebido:', backendUser.time_format); // Debug
+  console.log('👤 mapBackendUserToUser - role recebido:', backendUser.role); // Debug
+  console.log('🏢 mapBackendUserToUser - site recebido:', backendUser.site); // Debug
   
   const mappedUser: User = {
     id: backendUser.id.toString(),
     email: backendUser.email,
     name: backendUser.full_name || backendUser.username,
-    role: (backendUser.is_staff ? 'admin' : 'operator') as 'admin' | 'operator' | 'viewer', // Ajustar conforme regras de negócio
-    site: undefined, // Será definido quando implementarmos Sites
+    role: backendUser.role as 'admin' | 'operator' | 'viewer' | 'owner', // Use role from backend (TenantMembership)
+    site: backendUser.site || undefined, // Use site from backend (Tenant name)
     photoUrl: backendUser.avatar || undefined,
     phone: backendUser.phone || undefined,
     // Preferências

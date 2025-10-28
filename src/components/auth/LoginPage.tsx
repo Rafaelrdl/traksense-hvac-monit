@@ -53,13 +53,19 @@ export const LoginPage: React.FC = () => {
 
   const handleDemoLogin = (demoEmail: string, role: string) => {
     setEmail(demoEmail);
-    const passwords: Record<string, string> = {
-      admin: 'admin123',
-      operator: 'operator123',
-      technician: 'tech123',
-      viewer: 'viewer123'
+    
+    // Define passwords based on email
+    const passwordMap: Record<string, string> = {
+      'admin@umc.com': 'admin123',
+      'admin@traksense.com': 'admin123',
+      'gerente@umc.com': 'senha123',
+      'operador@umc.com': 'senha123',
+      'visualizador@umc.com': 'senha123',
+      'operador2@umc.com': 'senha123',
+      'viewer@traksense.com': 'viewer123'
     };
-    setPassword(passwords[role] || 'demo123');
+    
+    setPassword(passwordMap[demoEmail] || 'demo123');
     setShowDemoUsers(false);
   };
 
