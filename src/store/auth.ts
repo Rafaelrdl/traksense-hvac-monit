@@ -61,16 +61,6 @@ const DEMO_USERS: Record<string, { password: string; user: User }> = {
       site: 'UMC Hospital'
     }
   },
-  'admin@traksense.com': {
-    password: 'admin123',
-    user: {
-      id: '1',
-      email: 'admin@traksense.com',
-      name: 'Admin TrakSense',
-      role: 'admin',
-      site: 'OncoCentro'
-    }
-  },
   'gerente@umc.com': {
     password: 'senha123',
     user: {
@@ -99,26 +89,6 @@ const DEMO_USERS: Record<string, { password: string; user: User }> = {
       name: 'Maria Santos',
       role: 'viewer',
       site: 'UMC Hospital'
-    }
-  },
-  'operador2@umc.com': {
-    password: 'senha123',
-    user: {
-      id: '7',
-      email: 'operador2@umc.com',
-      name: 'Pedro Oliveira',
-      role: 'operator',
-      site: 'UMC Hospital'
-    }
-  },
-  'viewer@traksense.com': {
-    password: 'viewer123',
-    user: {
-      id: '2',
-      email: 'viewer@traksense.com',
-      name: 'Visualizador',
-      role: 'viewer',
-      site: 'Fábrica Industrial'
     }
   }
 };

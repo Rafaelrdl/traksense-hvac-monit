@@ -57,12 +57,9 @@ export const LoginPage: React.FC = () => {
     // Define passwords based on email
     const passwordMap: Record<string, string> = {
       'admin@umc.com': 'admin123',
-      'admin@traksense.com': 'admin123',
       'gerente@umc.com': 'senha123',
       'operador@umc.com': 'senha123',
-      'visualizador@umc.com': 'senha123',
-      'operador2@umc.com': 'senha123',
-      'viewer@traksense.com': 'viewer123'
+      'visualizador@umc.com': 'senha123'
     };
     
     setPassword(passwordMap[demoEmail] || 'demo123');
