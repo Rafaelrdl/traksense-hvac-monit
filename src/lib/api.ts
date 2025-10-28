@@ -2,22 +2,27 @@
  * API Client with Axios
  * 
  * Configuração centralizada do cliente HTTP com:
- * - Base URL configurável
+ * - Base URL configurável por tenant
  * - Interceptors para JWT authentication
  * - Auto-refresh de tokens expirados
  * - CORS credentials
+ * - Multi-tenant awareness
  */
 
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { getTenantApiUrl } from './tenant';
+import { tenantStorage } from './tenantStorage';
 
-// Base URL da API (configurável via env)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://umc.localhost:8000/api';
+// Base URL da API (dinâmica por tenant)
+const getApiBaseUrl = (): string => {
+  return getTenantApiUrl();
+};
 
 /**
  * Cliente Axios configurado
  */
 export const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getApiBaseUrl(),
   withCredentials: true, // Importante para cookies HttpOnly
   headers: {
     'Content-Type': 'application/json',
@@ -26,12 +31,23 @@ export const api = axios.create({
 });
 
 /**
+ * Reconfigura a API base URL dinamicamente
+ * Chamado após login para ajustar ao tenant do usuário
+ */
+export const reconfigureApiForTenant = (tenantSlug: string): void => {
+  const newBaseUrl = `http://${tenantSlug}.localhost:8000/api`;
+  api.defaults.baseURL = newBaseUrl;
+  console.log(`🔄 API reconfigurada para tenant: ${tenantSlug} (${newBaseUrl})`);
+};
+
+/**
  * Interceptor de Request
  * Adiciona o token JWT em todas as requisições autenticadas
+ * Usa tenantStorage para isolar tokens por tenant
  */
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('access_token');
+    const token = tenantStorage.get<string>('access_token') || localStorage.getItem('access_token');
     
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -107,7 +123,7 @@ api.interceptors.response.use(
     originalRequest._retry = true;
     isRefreshing = true;
 
-    const refreshToken = localStorage.getItem('refresh_token');
+    const refreshToken = tenantStorage.get<string>('refresh_token') || localStorage.getItem('refresh_token');
 
     if (!refreshToken) {
       // Sem refresh token, redireciona para login (uma vez apenas)
@@ -115,6 +131,7 @@ api.interceptors.response.use(
       
       if (!isRedirecting) {
         isRedirecting = true;
+        tenantStorage.clear();
         localStorage.clear();
         console.log('🔒 Sem refresh token - redirecionando para login');
         window.location.href = '/login';
@@ -126,18 +143,20 @@ api.interceptors.response.use(
     try {
       // Tenta fazer refresh do token
       const { data } = await axios.post(
-        `${API_BASE_URL}/auth/token/refresh/`,
+        `${api.defaults.baseURL}/auth/token/refresh/`,
         { refresh: refreshToken },
         { withCredentials: true }
       );
 
       const newAccessToken = data.access;
       
-      // Salva novo access token
-      localStorage.setItem('access_token', newAccessToken);
+      // Salva novo access token (tenant-aware)
+      tenantStorage.set('access_token', newAccessToken);
+      localStorage.setItem('access_token', newAccessToken); // Fallback
 
       // Se retornou novo refresh token, salva também
       if (data.refresh) {
+        tenantStorage.set('refresh_token', data.refresh);
         localStorage.setItem('refresh_token', data.refresh);
       }
 
@@ -160,6 +179,7 @@ api.interceptors.response.use(
 
       if (!isRedirecting) {
         isRedirecting = true;
+        tenantStorage.clear();
         localStorage.clear();
         console.log('🔒 Falha ao renovar token - redirecionando para login');
         window.location.href = '/login';

@@ -1,186 +1,527 @@
-# TrakSense HVAC — GitHub Spark IoT Monitoring Platform
+# TrakSense HVAC — Multi-Tenant IoT Monitoring Platform (Frontend)
 
 ## Project Overview
 
-TrakSense is an **IoT HVAC monitoring platform** built on **GitHub Spark** that provides real-time visibility, predictive alerts, and asset lifecycle insights for critical HVAC systems in hospitals, industry, data centers, and commercial buildings.
+TrakSense is an **IoT HVAC monitoring platform** that provides real-time visibility, predictive alerts, and asset lifecycle insights for critical HVAC systems in hospitals, industry, data centers, and commercial buildings.
 
 **Core Technology Stack:**
-- Frontend: React 19 + TypeScript running inside **GitHub Spark environment**
-- State: Zustand stores with real-time simulation engine
-- UI: shadcn/ui components (Radix UI primitives) + Tailwind CSS v4
-- Charts: ECharts via `echarts-for-react` 
-- Data Flow: Simulation engine → Zustand stores → React components
+- **Frontend**: React 19 + TypeScript + Vite 6.3.5
+- **State Management**: Zustand stores with API integration
+- **UI Components**: shadcn/ui (Radix UI primitives) + Tailwind CSS v4
+- **Charts**: ECharts via `echarts-for-react` 
+- **HTTP Client**: Axios with JWT authentication
+- **Architecture**: Multi-tenant aware frontend (tenant detection, isolated storage, dynamic branding)
+- **Data Flow**: Django API → Axios → Zustand stores → React components
 
 ---
 
-## Critical Spark Integration Rules
+## ⚠️ Important: Spark Integration REMOVED
 
-### Protected Files (NEVER MODIFY)
+**GitHub Spark has been completely removed from this project.** All Spark-specific code, dependencies, and configurations have been eliminated.
 
-```
-src/main.tsx          ❌ integrates with Spark runtime
-src/main.css          ❌ Spark structural styles
-index.html            ⚠️  only <title> and meta tags
-package.json scripts  ❌ "dev", "build", "preview" are immutable
-vite.config.ts        ⚠️  maintain sparkPlugin() and createIconImportProxy()
-```
+### Files Modified (Spark Removal)
+- ✅ `vite.config.ts` - Removed sparkPlugin and icon proxy
+- ✅ `package.json` - Removed @github/spark dependency
+- ✅ `main.tsx` - Removed Spark import
+- ✅ Icon imports - Migrated from @phosphor-icons to lucide-react
+- ✅ Error fallback - Removed Spark-specific messages
 
-**Why:** Spark provides the execution environment. These files contain critical bindings that cannot be altered without breaking the integration.
-
-### Vite Configuration Pattern
+### Current Vite Configuration
 
 ```ts
-// vite.config.ts - REQUIRED plugins in this order
-import sparkPlugin from "@github/spark/spark-vite-plugin";
-import createIconImportProxy from "@github/spark/vitePhosphorIconProxyPlugin";
+// vite.config.ts - Standard Vite + React setup
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    createIconImportProxy() as PluginOption,  // REQUIRED
-    sparkPlugin() as PluginOption,            // REQUIRED
-  ]
+  ],
+  resolve: {
+    alias: {
+      '@': '/src',
+    },
+  },
+  server: {
+    port: 5173,
+    host: true,
+  },
 })
 ```
 
-### Asset Import Rules
+---
 
-**ALWAYS use explicit imports:**
-```tsx
-// ✅ Correct
-import logo from '@/assets/logo.png'
-<img src={logo} />
+## 🏢 Multi-Tenant Architecture (IMPLEMENTED)
 
-// ❌ Wrong - breaks in Spark build
-<img src="/assets/logo.png" />
-<img src={`/assets/${name}.png`} />
+**The frontend now supports multi-tenant awareness with complete data isolation.**
+
+### Key Features
+
+1. **Tenant Detection** (`src/lib/tenant.ts`)
+   - Automatic detection from JWT token (after login)
+   - Fallback to hostname (nginx multi-domain)
+   - Fallback to localStorage (previous tenant)
+   - Default configuration
+
+2. **Isolated Storage** (`src/lib/tenantStorage.ts`)
+   - Data isolated by tenant namespace
+   - Format: `{tenantSlug}:key` (e.g., `umc:access_token`)
+   - Prevents data leakage between tenants
+   - Backup/restore utilities included
+
+3. **Dynamic Branding** (`src/hooks/useTenantBranding.ts`, `src/components/providers/TenantProvider.tsx`)
+   - Logo customization per tenant
+   - Color schemes (primary/secondary)
+   - Dynamic favicon and page title
+   - TenantLogo component for easy integration
+
+4. **API Reconfiguration** (`src/lib/api.ts`, `src/services/tenantAuthService.ts`)
+   - API base URL changes per tenant
+   - Automatic reconfiguration after login
+   - Token isolation per tenant
+   - Example: `http://umc.localhost:8000/api` for UMC tenant
+
+### Multi-Tenant Files Structure
+
+```
+src/
+├── lib/
+│   ├── tenant.ts              # Tenant detection and configuration
+│   ├── tenantStorage.ts       # Isolated localStorage wrapper
+│   ├── api.ts                 # Multi-tenant aware Axios client
+│   └── migrations/
+│       └── storageMigration.ts # Legacy data migration
+│
+├── services/
+│   └── tenantAuthService.ts   # Tenant-aware authentication
+│
+├── hooks/
+│   └── useTenantBranding.ts   # Branding hooks (useT enantConfig, useTenantBranding)
+│
+├── components/
+│   ├── providers/
+│   │   └── TenantProvider.tsx # React provider for branding
+│   ├── tenant/
+│   │   └── TenantLogo.tsx     # Dynamic logo component
+│   └── debug/
+│       └── TenantDebugPanel.tsx # Dev debug panel
+│
+└── examples/
+    └── MultiTenantAppExample.tsx # Integration examples
 ```
 
-### Available Spark APIs
+### Usage Examples
 
-**Currently documented APIs:**
-- `spark.llm()` - LLM integration
-- `spark.kv` - Key-value persistence
-- `spark.user()` - User context
+**1. Wrap App with TenantProvider:**
+```tsx
+import { TenantProvider } from '@/components/providers/TenantProvider';
 
-**DO NOT** import undocumented Spark hooks beyond those explicitly approved in Spark documentation.
+<TenantProvider>
+  <App />
+</TenantProvider>
+```
+
+**2. Use Tenant-Aware Authentication:**
+```tsx
+import { tenantAuthService } from '@/services/tenantAuthService';
+
+// Login automatically detects and configures tenant
+await tenantAuthService.login(credentials);
+
+// Logout clears tenant data
+await tenantAuthService.logout();
+```
+
+**3. Use Isolated Storage:**
+```tsx
+import { tenantStorage } from '@/lib/tenantStorage';
+
+// Save (isolated by tenant)
+tenantStorage.set('preferences', { theme: 'dark' });
+
+// Read (isolated by tenant)
+const prefs = tenantStorage.get('preferences');
+```
+
+**4. Use Dynamic Branding:**
+```tsx
+import { useTenantBranding } from '@/hooks/useTenantBranding';
+import { TenantLogo } from '@/components/tenant/TenantLogo';
+
+const { primaryColor, name } = useTenantBranding();
+
+<TenantLogo size="md" showName />
+<div style={{ color: primaryColor }}>{name}</div>
+```
+
+### Configured Tenants
+
+```typescript
+// Default tenants in src/lib/tenant.ts
+UMC (Uberlândia Medical Center):
+  - Slug: umc
+  - Color: #0A5F7F
+  - API: http://umc.localhost:8000/api
+
+ACME (Example):
+  - Slug: acme  
+  - Color: #FF6B00
+  - API: http://acme.localhost:8000/api
+```
+
+### Documentation
+- **MULTI_TENANT_FRONTEND_GUIDE.md** - Complete implementation guide
+- **MULTI_TENANT_SUMMARY.md** - Executive summary
+- **TENANT_TEST_COMMANDS.md** - Testing commands and scenarios
 
 ---
 
 ## State Management Architecture
 
-### Zustand Store Pattern (Current Implementation)
+### Zustand Store Pattern
 
 **Main App Store:** `src/store/app.ts`
 ```ts
 // Centralized state for HVAC data and UI
 interface AppState {
-  assets: HVACAsset[]           // Equipment inventory
+  assets: HVACAsset[]           // Equipment inventory (loaded from API)
   sensors: Sensor[]             // Sensor registry
   alerts: Alert[]               // Active alerts
   maintenanceTasks: MaintenanceTask[]
+  availableSites: any[]         // Sites from API
+  currentSite: any | null       // Selected site
   selectedAssetId: string | null
   selectedTimeRange: '1h' | '6h' | '24h' | '7d' | '30d'
   sidebarCollapsed: boolean
   
-  // Real-time simulation controls
-  isSimulationRunning: boolean
-  startSimulation: () => void
-  stopSimulation: () => void
+  // Loading states
+  isLoadingAssets: boolean
+  isLoadingSites: boolean
+  error: string | null
+  
+  // API actions
+  loadAssetsFromApi: () => Promise<void>
+  loadAvailableSites: () => Promise<void>
+  
+  // Telemetry (Phase 3)
+  telemetry: {
+    currentDevice: string | null
+    latestReadings: LatestReadingsResponse | null
+    history: DeviceHistoryResponse | null
+    summary: DeviceSummaryResponse | null
+    isLoading: boolean
+    error: string | null
+  }
 }
 
 // Usage in components
-const { assets, selectedAssetId } = useAppStore()
-const setSelectedAsset = useAppStore(state => state.setSelectedAsset)
+const { assets, isLoadingAssets } = useAppStore()
+const loadAssets = useAppStore(state => state.loadAssetsFromApi)
 ```
 
-**Dashboard Store:** `src/store/dashboard.ts`
+**Auth Store:** `src/store/auth.ts`
 ```ts
-// Manages custom dashboard layouts
-interface DashboardState {
-  layouts: DashboardLayout[]        // Multiple saved layouts
-  currentLayoutId: string
-  editMode: boolean
-  
-  // Widget CRUD operations
-  addWidget: (layoutId, widgetType, position) => void
-  moveWidget: (layoutId, widgetId, position) => void
-  removeWidget: (layoutId, widgetId) => void
+// Tenant-aware authentication (uses tenantAuthService)
+interface AuthState {
+  user: User | null
+  isAuthenticated: boolean
+  login: (credentials: Credentials) => Promise<void>  // Auto-configures tenant
+  logout: () => Promise<void>                         // Clears tenant storage
+  checkAuth: () => Promise<boolean>
 }
 ```
 
-### Persistence Strategy
+### Store Principles
 
-**Current approach:**
-- Zustand stores for reactive state
-- `localStorage` for simple persistence (e.g., `sidebarCollapsed`)
-- **No backend integration yet** - all data comes from simulation engine
+1. **Tenant-Aware Storage**: Use `tenantStorage` for isolated data
+   ```ts
+   // Good - isolated by tenant ✓
+   import { tenantStorage } from '@/lib/tenantStorage'
+   tenantStorage.set('preferences', userPrefs)
+   
+   // Avoid - shared across tenants ✗
+   localStorage.setItem('preferences', JSON.stringify(userPrefs))
+   ```
 
-**Future migration path:** Consider `spark.kv` for persistent storage when backend integration is implemented.
+2. **Selector Usage**: Extract only what you need
+   ```ts
+   // Good ✓
+   const assets = useAppStore(state => state.assets)
+   
+   // Avoid - causes unnecessary re-renders ✗
+   const allState = useAppStore()
+   ```
+
+3. **Actions for API Calls**: Keep async logic in store actions
+   ```ts
+   loadAssetsFromApi: async () => {
+     set({ isLoadingAssets: true, error: null })
+     try {
+       const response = await apiClient.get('/assets/')
+       set({ assets: response.data, isLoadingAssets: false })
+     } catch (error) {
+       set({ error: error.message, isLoadingAssets: false })
+     }
+   }
+   ```
+
+4. **Multi-Tenant Data Loading**: Re-load when tenant changes
+   ```ts
+   useEffect(() => {
+     loadAssetsFromApi()  // Uses correct tenant API
+   }, [currentTenant])
+   ```
 
 ---
 
-## Simulation Engine Architecture
+## API Integration (Backend)
 
-**Location:** `src/lib/simulation.ts` (~1500 lines)
+**API Client:** `src/lib/api.ts`
 
-The simulation engine (`SimulationEngine` class) is the **data source of truth**. It generates realistic HVAC telemetry, equipment status, alerts, and maintenance data.
+### Multi-Tenant Aware Axios Client
 
-**Key Responsibilities:**
-1. Generate 12+ HVAC assets (AHUs, Chillers, VRFs, RTUs, Cooling Towers)
-2. Create 100+ sensors with realistic readings (temp, pressure, power, vibration)
-3. Simulate telemetry history (time-series data)
-4. Generate alerts based on threshold rules
-5. Manage maintenance schedules and history
-
-**Integration with Store:**
 ```ts
-// src/store/app.ts initialization
-assets: simEngine.getAssets(),
-sensors: simEngine.getSensors(),
-alerts: simEngine.getAlerts(),
+import { apiClient } from '@/lib/api'
 
-// Real-time updates every 5 minutes
-startSimulation: () => {
-  simEngine.startRealTimeSimulation(300000)
-  const refreshInterval = setInterval(() => {
-    set({
-      assets: simEngine.getAssets(),
-      sensors: simEngine.getSensors(),
-      alerts: simEngine.getAlerts(),
-      lastUpdateTime: new Date()
-    })
-  }, 300000)
+// Base URL changes per tenant automatically
+// Example: http://umc.localhost:8000/api for UMC tenant
+
+// GET request
+const assets = await apiClient.get('/assets/')
+
+// POST request  
+const newAsset = await apiClient.post('/assets/', data)
+
+// PUT request
+await apiClient.put(`/assets/${id}/`, updatedData)
+
+// DELETE request
+await apiClient.delete(`/assets/${id}/`)
+```
+
+### Key Features
+
+- **Automatic Tenant URL**: Base URL set via `getTenantApiUrl()`
+- **Token Management**: JWT access/refresh tokens in HttpOnly cookies
+- **Interceptors**: 
+  - Request: Adds `Authorization: Bearer {token}` header
+  - Response: Auto-refresh on 401 errors
+- **Tenant Reconfiguration**: `reconfigureApiForTenant(slug)` updates base URL
+
+### Main Endpoints
+
+**Authentication:**
+```ts
+POST /auth/register/     // User registration
+POST /auth/login/        // Login (returns JWT tokens)
+POST /auth/logout/       // Logout
+GET  /auth/me/           // Current user info
+POST /auth/change-password/
+POST /auth/avatar/       // Upload avatar
+```
+
+**Assets (CRUD):**
+```ts
+GET    /assets/sites/      // List all sites
+POST   /assets/sites/      // Create site
+GET    /assets/sites/:id/  // Get site details
+PUT    /assets/sites/:id/  // Update site
+DELETE /assets/sites/:id/  // Delete site
+
+// Similar patterns for:
+/assets/assets/   // HVAC equipment
+/assets/devices/  // Physical devices  
+/assets/sensors/  // Individual sensors
+```
+
+**Telemetry (Phase 3):**
+```ts
+POST /ingest/                    // MQTT webhook ingestion
+GET  /ingest/telemetry/          // Query telemetry data
+GET  /ingest/latest/:device_id/  // Latest readings
+GET  /ingest/history/:device_id/ // Historical data
+GET  /ingest/summary/:device_id/ // Summary statistics
+GET  /ingest/aggregates/         // Time-series aggregates
+```
+
+### Error Handling
+
+```ts
+try {
+  const response = await apiClient.get('/assets/')
+  return response.data
+} catch (error) {
+  if (error.response?.status === 401) {
+    // Unauthorized - redirect to login
+  } else if (error.response?.status === 404) {
+    // Not found
+  } else {
+    console.error('API Error:', error.response?.data || error.message)
+  }
 }
 ```
-
-**HVAC Asset Types:**
-```ts
-type AssetType = 'AHU' | 'Chiller' | 'VRF' | 'RTU' | 'Boiler' | 'CoolingTower'
-type SensorType = 'temp_supply' | 'temp_return' | 'pressure_suction' 
-  | 'power_kw' | 'vibration' | 'dp_filter' | /* 20+ more */
-```
-
-**Critical:** When adding features that need data, extend `SimulationEngine` methods rather than creating separate mock data.
 
 ---
 
 ## Component Architecture
 
-### Routing Structure
+### Page Components (`src/components/pages/`)
 
-**Single-page navigation** via state changes in `App.tsx` (no react-router):
+**Pattern:** Full-page views that connect to Zustand stores and API
+
 ```tsx
-// src/App.tsx
-const [currentPage, setCurrentPage] = useState('overview')
+// Example: AssetsPage.tsx
+export const AssetsPage = () => {
+  const { assets, isLoadingAssets, loadAssetsFromApi } = useAppStore()
+  
+  // Load assets from API on mount
+  useEffect(() => {
+    loadAssetsFromApi()
+  }, [loadAssetsFromApi])
+  
+  if (isLoadingAssets) return <LoadingSpinner />
+  if (assets.length === 0) return <EmptyState />
+  
+  return (
+    <div className="space-y-6">
+      <AssetList assets={assets} />
+      <AssetDetails assetId={selectedAssetId} />
+    </div>
+  )
+}
+```
 
-// Pages defined in src/components/pages/
-- OverviewPage      // Dashboard with KPIs and charts
-- CustomDashboard   // Drag-and-drop widget builder
-- AssetsPage        // Equipment grid view
-- AssetDetailPage   // Single asset deep-dive
-- SensorsPage       // Sensor catalog
+**Key Pages:**
+- `DashboardPage.tsx` - Main overview with widget grid
+- `AssetsPage.tsx` - Equipment inventory (loads from API)
+- `SensorsPage.tsx` - Sensor registry and status (Phase 3)
+- `AssetDetailsPage.tsx` - Individual asset telemetry (Phase 3)
+- `AlertsPage.tsx` - Active alerts and history
+- `MaintenancePage.tsx` - Maintenance schedules
+- `AnalyticsPage.tsx` - Reports and trends
+- `SettingsPage.tsx` - User preferences (tenant-isolated)
+
+### Feature Components (`src/components/`)
+
+**Asset Management:**
+- `AssetCard.tsx` - Equipment card with status
+- `AssetList.tsx` - Grid/list view of assets
+- `AssetStatusBadge.tsx` - Online/offline/warning indicator
+
+**Telemetry Visualization:**
+- `TelemetryChart.tsx` - ECharts time-series (Phase 3)
+- `GaugeWidget.tsx` - Real-time metrics
+- `HistoricalChart.tsx` - Historical trends
+
+**Alerts:**
+- `AlertList.tsx` - Alert feed
+- `AlertCard.tsx` - Individual alert details
+
+**Tenant Components:**
+- `TenantLogo.tsx` - Dynamic logo per tenant
+- `TenantProvider.tsx` - Branding context
+- `TenantDebugPanel.tsx` - Development debug panel
+
+### shadcn/ui Integration
+
+**Installed Components:** (via `npx shadcn@latest add <component>`)
+- `button`, `card`, `badge`, `avatar`
+- `dialog`, `dropdown-menu`, `select`
+- `table`, `tabs`, `toast`
+- `form`, `input`, `label`, `checkbox`
+- `chart` (for dashboards)
+- `sidebar` (collapsible navigation)
+
+**Usage Pattern:**
+```tsx
+import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+
+<Card>
+  <CardHeader>
+    <CardTitle>Chiller Status <Badge variant="success">Online</Badge></CardTitle>
+  </CardHeader>
+  <CardContent>
+    <Button variant="outline" size="sm">View Details</Button>
+  </CardContent>
+</Card>
+```
+
+### ECharts Visualization
+
+**Location:** `src/components/charts/` (Phase 3 telemetry charts)
+
+**Example: Telemetry Chart**
+```tsx
+import ReactECharts from 'echarts-for-react'
+
+const TelemetryChart = ({ data, metricType }: Props) => {
+  const option = {
+    xAxis: { type: 'time' },
+    yAxis: { type: 'value', name: metricType },
+    series: [{
+      type: 'line',
+      smooth: true,
+      data: data.map(d => [d.timestamp, d.value])
+    }],
+    tooltip: { trigger: 'axis' }
+  }
+  
+  return <ReactECharts option={option} style={{ height: '400px' }} />
+}
+```
+
+**Chart Types Used:**
+- Line charts: Temperature, pressure trends
+- Bar charts: Power consumption comparison
+- Gauge charts: Real-time metrics (efficiency, load)
+- Heatmaps: Multi-sensor correlation (advanced analytics)
+
+---
+
+## Routing Structure
+
+**React Router** for navigation (`src/App.tsx`)
+
+**Main Routes:**
+```tsx
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+
+<Routes>
+  <Route path="/login" element={<LoginPage />} />
+  <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+  <Route path="/assets" element={<ProtectedRoute><AssetsPage /></ProtectedRoute>} />
+  <Route path="/assets/:id" element={<ProtectedRoute><AssetDetailsPage /></ProtectedRoute>} />
+  <Route path="/sensors" element={<ProtectedRoute><SensorsPage /></ProtectedRoute>} />
+  <Route path="/alerts" element={<ProtectedRoute><AlertsPage /></ProtectedRoute>} />
+  <Route path="/maintenance" element={<ProtectedRoute><MaintenancePage /></ProtectedRoute>} />
+  <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
+  <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+</Routes>
+```
+
+**ProtectedRoute Pattern:**
+```tsx
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated } = useAuthStore()
+  const { checkAuth } = useAuthStore()
+  
+  useEffect(() => {
+    checkAuth()
+  }, [])
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+  
+  return children
+}
+```
+
+---
 - AlertsPage        // Alert management
 - MaintenancePage   // Task scheduling
 - ReportsPage       // Analytics exports
@@ -255,333 +596,428 @@ import { SortableContext, useSortable } from '@dnd-kit/sortable'
 
 ---
 
-## Charting Pattern
-
-**Library:** ECharts (NOT Recharts) via `echarts-for-react`
-
-**Example:** `src/components/charts/LineChartTemp.tsx`
-```tsx
-import ReactECharts from 'echarts-for-react'
-
-export const LineChartTemp = ({ data }) => {
-  const option = {
-    tooltip: { trigger: 'axis' },
-    legend: { data: ['Fornecimento', 'Retorno', 'Setpoint'] },
-    xAxis: { type: 'time' },
-    yAxis: { type: 'value', name: 'Temperatura (°C)' },
-    series: [
-      { name: 'Fornecimento', type: 'line', data: data.supply },
-      { name: 'Retorno', type: 'line', data: data.return },
-      { name: 'Setpoint', type: 'line', data: data.setpoint }
-    ]
-  }
-  
-  return <ReactECharts option={option} style={{ height: '300px' }} />
-}
-```
-
-**Other Chart Components:**
-- `BarChartEnergy.tsx` - Energy consumption bars
-- `GaugeFilterHealth.tsx` - Filter health indicator
-- `HeatmapAlarms.tsx` - Alert density heatmap
-- `ScatterPerformance.tsx` - Performance scatter plot
-
----
-
 ## TypeScript Patterns
 
-### Type Definitions
+### Strict Type Safety
 
-**Main types:** `src/types/hvac.ts` (248 lines)
+**tsconfig.json settings:**
+```json
+{
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  }
+}
+```
+
+**Type Definitions:** `src/types/`
+
 ```ts
-interface HVACAsset {
+// src/types/asset.ts
+export interface HVACAsset {
   id: string
-  tag: string                    // Equipment identifier (e.g., "AHU-001")
+  name: string
   type: 'AHU' | 'Chiller' | 'VRF' | 'RTU' | 'Boiler' | 'CoolingTower'
+  status: 'online' | 'offline' | 'warning' | 'error'
   location: string
-  healthScore: number            // 0-100
-  powerConsumption: number       // kWh/day
-  status: 'OK' | 'Maintenance' | 'Stopped' | 'Alert'
-  operatingHours: number
-  lastMaintenance: Date
-  specifications: Record<string, any>
+  model: string
+  capacity?: string
+  lastMaintenance?: Date
+  sensors: Sensor[]
+  metadata?: Record<string, unknown>
 }
 
-interface Sensor {
-  id: string
-  tag: string                    // Sensor tag (e.g., "TEMP-001")
-  assetId: string                // Parent equipment
-  type: SensorType
-  unit: string
-  online: boolean
-  lastReading: SensorReading | null
-  availability: number           // uptime percentage
-}
-
-interface Alert {
+// src/types/sensor.ts
+export interface Sensor {
   id: string
   assetId: string
-  severity: 'Low' | 'Medium' | 'High' | 'Critical'
-  type: string
-  message: string
-  timestamp: Date
-  acknowledged: boolean
-  resolved: boolean
+  name: string
+  type: SensorType
+  unit: string
+  value: number
+  min: number
+  max: number
+  threshold?: { warning: number; critical: number }
+  lastUpdate: Date
+  status: 'normal' | 'warning' | 'critical'
+}
+
+// src/types/telemetry.ts (Phase 3)
+export interface TelemetryReading {
+  timestamp: string  // ISO 8601
+  device_id: string
+  sensor_type: string
+  value: number
+  unit: string
+}
+
+export interface LatestReadingsResponse {
+  device_id: string
+  readings: Array<{
+    sensor_type: string
+    value: number
+    unit: string
+    timestamp: string
+  }>
 }
 ```
 
-### Path Aliases
+### Component Props Patterns
 
-**Configured in `vite.config.ts` and `tsconfig.json`:**
-```ts
-'@' → 'src/'
-'@/components' → 'src/components'
-'@/lib' → 'src/lib'
-'@/hooks' → 'src/hooks'
+**Prefer explicit interfaces over inline types:**
+```tsx
+// Good ✓
+interface AssetCardProps {
+  asset: HVACAsset
+  onClick?: (id: string) => void
+  variant?: 'default' | 'compact'
+}
+
+export const AssetCard = ({ asset, onClick, variant = 'default' }: AssetCardProps) => {
+  // ...
+}
+
+// Avoid inline types ✗
+export const AssetCard = ({ asset, onClick }: { asset: HVACAsset; onClick: () => void }) => {
+  // ...
+}
 ```
 
-**Usage:**
+**Use discriminated unions for complex state:**
 ```tsx
-import { useAppStore } from '@/store/app'
-import { Button } from '@/components/ui/button'
-import { simEngine } from '@/lib/simulation'
+type LoadingState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; data: HVACAsset[] }
+  | { status: 'error'; error: string }
+
+const [state, setState] = useState<LoadingState>({ status: 'idle' })
+
+// Type-safe pattern matching
+if (state.status === 'success') {
+  console.log(state.data) // TypeScript knows data exists
+}
+```
+
+### API Response Typing
+
+**Always type API responses:**
+```tsx
+import { apiClient } from '@/lib/api'
+import type { HVACAsset } from '@/types/asset'
+
+const loadAssets = async () => {
+  const response = await apiClient.get<{ results: HVACAsset[] }>('/assets/')
+  return response.data.results
+}
+
+// With error handling
+const loadAssets = async (): Promise<HVACAsset[]> => {
+  try {
+    const response = await apiClient.get<{ results: HVACAsset[] }>('/assets/')
+    return response.data.results
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.response?.data?.message || 'Failed to load assets')
+    }
+    throw error
+  }
+}
 ```
 
 ---
-
-## Styling System
-
-### Tailwind CSS v4 + Custom Theme
-
-**Configuration:** `tailwind.config.js` reads from `theme.json`
-
-**Color System:** Uses CSS variables defined in `src/styles/theme.css`
-```css
---color-neutral-1 through --color-neutral-12  /* Gray scale */
---color-accent-1 through --color-accent-12    /* Primary brand */
---color-fg, --color-fg-secondary              /* Text colors */
---color-bg, --color-bg-inset, --color-bg-overlay
-```
-
-**Spacing:** Uses Spark's 8pt grid system via CSS variables:
-```
---size-0, --size-1, --size-2, ... --size-96
-```
-
-**Usage in components:**
-```tsx
-<div className="bg-bg text-fg rounded-lg p-4 space-y-3">
-  <h2 className="text-2xl font-semibold text-accent-11">
-    Equipment Status
-  </h2>
-</div>
-```
-
-### Responsive Design
-
-**NO `useIsMobile()` hook currently** - use Tailwind responsive classes:
-```tsx
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-```
 
 ---
 
 ## Development Workflow
 
-### Running the Application
+### Local Development
 
-```bash
-# Start development server (port 5173)
+**Start development server:**
+```powershell
 npm run dev
+```
 
-# Build for production
+**Access:**
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:8000/api (ensure backend is running)
+- Multi-tenant URLs: http://umc.localhost:5173, http://acme.localhost:5173
+
+### Build & Preview
+
+```powershell
+# Production build
 npm run build
 
 # Preview production build
 npm run preview
+```
 
-# Lint code
+### Code Quality
+
+```powershell
+# TypeScript type checking
+npm run type-check
+
+# Linting (ESLint)
 npm run lint
+
+# Linting with auto-fix
+npm run lint:fix
 ```
 
-**NEVER** run `vite dev` or `tsc` directly - use npm scripts.
+### Testing Multi-Tenant Features
 
-### Adding Dependencies
-
-**Check Spark compatibility first** - especially for React/Vite versions:
-```bash
-# Safe to add utilities and UI libraries
-npm install date-fns
-npm install clsx
-
-# AVOID changing these versions without testing in Spark
-react@19.0.0
-react-dom@19.0.0
-vite@6.3.5
+**1. Test Tenant Detection:**
+```typescript
+// In browser console
+import { getTenantConfig } from '@/lib/tenant'
+console.log(getTenantConfig())
 ```
 
-### Adding shadcn/ui Components
-
-```bash
-# Use the official CLI
-npx shadcn@latest add card
-npx shadcn@latest add select
-
-# Components are added to src/components/ui/
+**2. Test Isolated Storage:**
+```typescript
+// In browser console
+import { tenantStorage } from '@/lib/tenantStorage'
+tenantStorage.set('test', { value: 123 })
+console.log(tenantStorage.keys())  // Shows all keys for current tenant
 ```
 
----
+**3. Test Branding:**
+- Visit http://umc.localhost:5173 → Should show UMC branding (blue)
+- Visit http://acme.localhost:5173 → Should show ACME branding (orange)
 
-## Testing Strategy
-
-**Current state:** No test framework configured yet.
-
-**Recommended approach when implementing:**
-- Vitest for unit tests (React component testing)
-- Testing Library for component interaction tests
-- Mock `simEngine` for predictable test data
-
-**Do NOT add Cypress/Playwright yet** - keep it lightweight for Spark environment.
-
----
-
-## Troubleshooting Common Issues
-
-### Spark Integration Failures
-
-**Symptom:** App doesn't load or shows blank screen
-**Check:**
-1. `src/main.tsx` imports `@github/spark/spark`
-2. `vite.config.ts` has both required Spark plugins
-3. No modifications to `src/main.css`
-4. Port 5173 is accessible
-
-### Chart Rendering Issues
-
-**Symptom:** ECharts not displaying
-**Solutions:**
-1. Verify data format matches ECharts series structure
-2. Check explicit height is set: `style={{ height: '300px' }}`
-3. Ensure data arrays are not empty
-4. Add loading states with early returns
-
-### State Update Problems
-
-**Symptom:** UI not updating when data changes
-**Solutions:**
-1. Verify Zustand selector is correctly extracting state
-2. Check simulation engine is running: `isSimulationRunning: true`
-3. Use devtools to inspect store: `import { devtools } from 'zustand/middleware'`
-
----
-
-## Project-Specific Patterns
-
-### Time Range Calculations
-
-**Pattern:** Use hook that computes time ranges from selectedTimeRange:
-```ts
-// From src/store/app.ts
-export const useTimeRangeMs = () => {
-  const range = useAppStore(state => state.selectedTimeRange)
-  
-  return useMemo(() => {
-    const now = Date.now()
-    switch (range) {
-      case '1h': return { start: new Date(now - 60 * 60 * 1000), end: new Date(now) }
-      case '24h': return { start: new Date(now - 24 * 60 * 60 * 1000), end: new Date(now) }
-      // ...
-    }
-  }, [range])
-}
-```
-
-### Asset Selection Flow
-
-**Pattern:** Asset selection drives navigation:
+**4. Debug Panel (Development Only):**
 ```tsx
-// Setting selected asset
-useAppStore.getState().setSelectedAsset('ahu-001')
+import { TenantDebugPanel } from '@/components/debug/TenantDebugPanel'
 
-// Component reads selection
-const selectedAssetId = useAppStore(state => state.selectedAssetId)
-const selectedAsset = useSelectedAsset() // helper hook
+// Add to App.tsx temporarily
+{import.meta.env.DEV && <TenantDebugPanel />}
+```
 
-// App.tsx conditionally renders AssetDetailPage
-if (selectedAssetId && currentPage === 'assets') {
-  return <AssetDetailPage />
+### Debugging Tips
+
+**API Calls:**
+```ts
+// Enable Axios request/response logging
+import { apiClient } from '@/lib/api'
+
+apiClient.interceptors.request.use(config => {
+  console.log('🚀 API Request:', config.method?.toUpperCase(), config.url)
+  return config
+})
+
+apiClient.interceptors.response.use(
+  response => {
+    console.log('✅ API Response:', response.status, response.config.url)
+    return response
+  },
+  error => {
+    console.error('❌ API Error:', error.response?.status, error.config?.url)
+    return Promise.reject(error)
+  }
+)
+```
+
+**Zustand DevTools:**
+```ts
+// In store definition
+import { devtools } from 'zustand/middleware'
+
+export const useAppStore = create(
+  devtools(
+    (set, get) => ({
+      // ...state and actions
+    }),
+    { name: 'AppStore' }
+  )
+)
+```
+
+**React DevTools:**
+- Install React DevTools extension
+- Use Components tab to inspect state
+- Use Profiler to find performance bottlenecks
+
+---
+
+## Common Patterns & Best Practices
+
+### 1. Loading States Pattern
+
+```tsx
+const SomeComponent = () => {
+  const { data, isLoading, error } = useAppStore()
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Spinner className="h-8 w-8" />
+        <span className="ml-2">Carregando...</span>
+      </div>
+    )
+  }
+  
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Erro</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    )
+  }
+  
+  return <div>{/* render data */}</div>
 }
 ```
 
-### Alert Acknowledgment
+### 2. Empty State Pattern
 
-**Pattern:** In-memory acknowledgment (no backend):
+```tsx
+if (!data || data.length === 0) {
+  return (
+    <Card className="flex flex-col items-center justify-center h-64">
+      <InboxIcon className="h-16 w-16 text-muted-foreground mb-4" />
+      <h3 className="text-lg font-semibold">Nenhum ativo encontrado</h3>
+      <p className="text-sm text-muted-foreground mb-4">
+        Comece adicionando seu primeiro equipamento
+      </p>
+      <Button onClick={() => openAddAssetDialog()}>
+        <Plus className="h-4 w-4 mr-2" />
+        Adicionar Ativo
+      </Button>
+    </Card>
+  )
+}
+```
+
+### 3. Form Handling Pattern
+
+```tsx
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+
+const assetSchema = z.object({
+  name: z.string().min(1, 'Nome é obrigatório'),
+  type: z.enum(['AHU', 'Chiller', 'VRF']),
+  location: z.string().min(1, 'Localização é obrigatória'),
+})
+
+type AssetFormData = z.infer<typeof assetSchema>
+
+const AssetForm = () => {
+  const { register, handleSubmit, formState: { errors } } = useForm<AssetFormData>({
+    resolver: zodResolver(assetSchema)
+  })
+  
+  const onSubmit = async (data: AssetFormData) => {
+    try {
+      await apiClient.post('/assets/', data)
+      toast.success('Ativo criado com sucesso')
+    } catch (error) {
+      toast.error('Erro ao criar ativo')
+    }
+  }
+  
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <Input {...register('name')} />
+      {errors.name && <span className="text-destructive">{errors.name.message}</span>}
+      {/* more fields */}
+    </form>
+  )
+}
+```
+
+### 4. Conditional Rendering Pattern
+
+```tsx
+// Good - early returns ✓
+if (!asset) return null
+if (asset.status === 'offline') return <OfflineState />
+
+return <OnlineState asset={asset} />
+
+// Avoid - nested ternaries ✗
+return asset ? (
+  asset.status === 'offline' ? <OfflineState /> : <OnlineState asset={asset} />
+) : null
+```
+
+### 5. Component Composition Pattern
+
+```tsx
+// Good - composable components ✓
+<Card>
+  <CardHeader>
+    <CardTitle>{asset.name}</CardTitle>
+    <CardDescription>{asset.location}</CardDescription>
+  </CardHeader>
+  <CardContent>
+    <AssetMetrics asset={asset} />
+  </CardContent>
+  <CardFooter>
+    <Button variant="outline">Ver Detalhes</Button>
+  </CardFooter>
+</Card>
+
+// Avoid - monolithic components ✗
+<AssetCard asset={asset} showHeader showMetrics showFooter />
+```
+
+---
+
+## File Naming Conventions
+
+- **Components**: PascalCase (`AssetCard.tsx`, `TelemetryChart.tsx`)
+- **Utilities**: camelCase (`api.ts`, `tenant.ts`, `tenantStorage.ts`)
+- **Types**: camelCase (`asset.ts`, `sensor.ts`, `telemetry.ts`)
+- **Hooks**: camelCase with `use` prefix (`useTenantBranding.ts`, `useAssets.ts`)
+- **Pages**: PascalCase with `Page` suffix (`DashboardPage.tsx`, `AssetsPage.tsx`)
+- **Store**: camelCase (`app.ts`, `auth.ts`)
+
+---
+
+## Environment Variables
+
+**File:** `.env` (not committed to git)
+
+```env
+# API Configuration
+VITE_API_BASE_URL=http://localhost:8000/api
+
+# Multi-tenant configuration (optional)
+VITE_DEFAULT_TENANT=umc
+
+# Feature flags (optional)
+VITE_ENABLE_DEBUG_PANEL=true
+```
+
+**Usage in code:**
 ```ts
-const acknowledgeAlert = useAppStore(state => state.acknowledgeAlert)
-
-// Updates alert object
-acknowledgeAlert(alertId)  
-// Sets: acknowledged: true, acknowledgedAt: new Date()
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
+const debugEnabled = import.meta.env.VITE_ENABLE_DEBUG_PANEL === 'true'
 ```
 
 ---
 
-## Key Architectural Decisions
+## Additional Resources
 
-### Why No React Router?
-**Decision:** Use simple state-based navigation via `currentPage` state.
-**Rationale:** Simpler for Spark environment, no URL management needed for SPA.
-
-### Why ECharts over Recharts?
-**Decision:** `echarts-for-react` for all charts.
-**Rationale:** More powerful, better performance with large datasets, professional industrial monitoring look.
-
-### Why Zustand over Redux?
-**Decision:** Zustand stores for state management.
-**Rationale:** Lighter weight, simpler API, no boilerplate, better TypeScript inference.
-
-### Why Simulation Engine?
-**Decision:** Robust simulation engine instead of static mock data.
-**Rationale:** Demonstrates real-time capabilities, realistic edge cases, supports time-based queries.
+- **Multi-Tenant Guide**: `MULTI_TENANT_FRONTEND_GUIDE.md`
+- **Multi-Tenant Summary**: `MULTI_TENANT_SUMMARY.md`
+- **Testing Commands**: `TENANT_TEST_COMMANDS.md`
+- **Backend README**: `../traksense-backend/README.md`
+- **shadcn/ui Docs**: https://ui.shadcn.com
+- **Zustand Docs**: https://docs.pmnd.rs/zustand
+- **ECharts Docs**: https://echarts.apache.org/en/index.html
+- **Tailwind CSS v4 Docs**: https://tailwindcss.com/docs
 
 ---
 
-## Essential Commands
-
-```bash
-# Development
-npm run dev          # Start Spark app on :5173
-
-# Code Quality
-npm run lint         # ESLint check
-
-# Build
-npm run build        # TypeScript compile + Vite build
-npm run preview      # Test production build
-
-# Utilities
-npm run kill         # Kill process on port 5000 (if needed)
-npm run optimize     # Vite dependency optimization
-```
-
----
-
-## When to Extend vs Modify
-
-### Always Extend (Add New Files)
-- New pages in `src/components/pages/`
-- New chart types in `src/components/charts/`
-- New widgets in `src/components/dashboard/widgets/`
-- New types in `src/types/`
-
-### Modify Carefully (Existing Files)
-- `src/store/app.ts` - adding state properties
-- `src/lib/simulation.ts` - extending simulation data
-- `src/App.tsx` - adding navigation routes
-
-### Never Modify (Protected)
-- `src/main.tsx`
-- `src/main.css`
-- `src/components/ui/*` (regenerate instead)
-- `vite.config.ts` plugin order
-- `package.json` scripts
+**Last Updated:** 2025
+**Multi-Tenant System:** Implemented ✅
+**Spark Integration:** Removed ✅
