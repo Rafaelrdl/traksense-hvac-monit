@@ -222,7 +222,8 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
                       <span className="text-xs opacity-75">
                         {user.role === 'operator' ? 'Operador' :
                          user.role === 'viewer' ? 'Visualizador' : 
-                         user.role === 'admin' ? 'Administrador' : user.role}
+                         user.role === 'admin' ? 'Administrador' :
+                         user.role === 'owner' ? 'Owner' : user.role}
                       </span>
                     </div>
                     <ChevronDown className="w-4 h-4 opacity-75" />
@@ -243,7 +244,8 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
                     >
                       {user.role === 'operator' ? 'Operador' :
                        user.role === 'viewer' ? 'Visualizador' : 
-                       user.role === 'admin' ? 'Administrador' : user.role}
+                       user.role === 'admin' ? 'Administrador' :
+                       user.role === 'owner' ? 'Owner' : user.role}
                     </Badge>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -254,7 +256,7 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
                     <UserCog className="mr-2 h-4 w-4" />
                     <span>Editar Perfil</span>
                   </DropdownMenuItem>
-                  {user.role === 'admin' && (
+                  {(user.role === 'admin' || user.role === 'owner') && (
                     <DropdownMenuItem 
                       onClick={() => setIsTeamManagementOpen(true)}
                       className="cursor-pointer"

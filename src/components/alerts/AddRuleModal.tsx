@@ -51,7 +51,7 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
     threshold: '',
     duration: '5',
     severity: 'Medium' as ('Critical' | 'High' | 'Medium' | 'Low'),
-    actions: ['IN_APP'] as ('EMAIL' | 'IN_APP')[],
+    actions: ['IN_APP'] as ('EMAIL' | 'IN_APP' | 'SMS' | 'WHATSAPP')[],
   });
 
   // Dados derivados do equipamento selecionado
@@ -174,7 +174,7 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
     onOpenChange(false);
   };
 
-  const toggleAction = (action: 'EMAIL' | 'IN_APP') => {
+  const toggleAction = (action: 'EMAIL' | 'IN_APP' | 'SMS' | 'WHATSAPP') => {
     setFormData(prev => ({
       ...prev,
       actions: prev.actions.includes(action)
@@ -399,9 +399,13 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
               </div>
             </div>
 
-            {/* Ações ao disparar (sem WEBHOOK) */}
+            {/* Ações ao disparar */}
             <div className="space-y-2">
               <Label>Ações ao disparar *</Label>
+              <p className="text-xs text-muted-foreground">
+                Selecione quais canais de notificação devem ser acionados quando esta regra disparar.
+                As preferências individuais de cada usuário serão respeitadas.
+              </p>
               <div className="space-y-2">
                 {AVAILABLE_ACTIONS.map(action => (
                   <div
@@ -415,9 +419,6 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
                     />
                   </div>
                 ))}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                <strong>Nota:</strong> WebHook foi descontinuado. Use E-mail ou Notificação in-app.
               </div>
             </div>
 

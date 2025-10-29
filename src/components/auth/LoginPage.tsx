@@ -68,6 +68,7 @@ export const LoginPage: React.FC = () => {
 
   const getRoleColor = (role: string) => {
     switch (role) {
+      case 'owner': return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'admin': return 'bg-red-100 text-red-800 border-red-200';
       case 'operator': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'technician': return 'bg-green-100 text-green-800 border-green-200';
@@ -78,6 +79,7 @@ export const LoginPage: React.FC = () => {
 
   const getRoleIcon = (role: string) => {
     switch (role) {
+      case 'owner': return <Shield className="w-4 h-4" />;
       case 'admin': return <Users className="w-4 h-4" />;
       case 'operator': return <Activity className="w-4 h-4" />;
       case 'technician': return <Lock className="w-4 h-4" />;
@@ -328,7 +330,8 @@ export const LoginPage: React.FC = () => {
                       <Badge className={`${getRoleColor(user.role)} capitalize font-semibold px-3 py-1 shadow-sm`}>
                         {user.role === 'operator' ? 'operador' :
                          user.role === 'viewer' ? 'visualizador' : 
-                         user.role === 'admin' ? 'admin' : user.role}
+                         user.role === 'admin' ? 'admin' :
+                         user.role === 'owner' ? 'owner' : user.role}
                       </Badge>
                       <ArrowRight className="w-5 h-5 text-[#93BDC2] group-hover:text-[#076A75] group-hover:translate-x-1 transition-all" />
                     </div>

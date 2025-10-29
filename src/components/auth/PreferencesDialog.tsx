@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Settings, 
@@ -21,6 +22,8 @@ import {
   Smartphone,
   Clock,
   Loader2,
+  MessageSquare,
+  MessageCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -55,18 +58,24 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
   const user = useAuthStore(state => state.user);
   const updateUserProfile = useAuthStore(state => state.updateUserProfile);
 
-  // Preferências de notificações (locais - não salvas no backend ainda)
+  // Preferências de notificações (agora integradas com backend)
   const [preferences, setPreferences] = useState({
-    // Notificações
+    // Canais
     emailNotifications: true,
     pushNotifications: true,
     soundEnabled: true,
+    smsNotifications: false,
+    whatsappNotifications: false,
     
-    // Alertas
+    // Severidades
     criticalAlerts: true,
     highAlerts: true,
     mediumAlerts: true,
     lowAlerts: false,
+    
+    // Contatos (para SMS e WhatsApp)
+    phoneNumber: '',
+    whatsappNumber: '',
   });
 
   // Preferências de fusos horários (salvas no backend)
@@ -76,6 +85,42 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingPreferences, setIsLoadingPreferences] = useState(false);
+
+  // Carregar preferências de notificação do backend
+  useEffect(() => {
+    const loadNotificationPreferences = async () => {
+      if (!open) return;
+      
+      setIsLoadingPreferences(true);
+      
+      try {
+        const { preferencesApi } = await import('@/services/api/alerts');
+        const prefs = await preferencesApi.getMe();
+        
+        setPreferences({
+          emailNotifications: prefs.email_enabled,
+          pushNotifications: prefs.push_enabled,
+          soundEnabled: prefs.sound_enabled,
+          smsNotifications: prefs.sms_enabled,
+          whatsappNotifications: prefs.whatsapp_enabled,
+          criticalAlerts: prefs.critical_alerts,
+          highAlerts: prefs.high_alerts,
+          mediumAlerts: prefs.medium_alerts,
+          lowAlerts: prefs.low_alerts,
+          phoneNumber: prefs.phone_number || '',
+          whatsappNumber: prefs.whatsapp_number || '',
+        });
+      } catch (error) {
+        console.error('Failed to load notification preferences:', error);
+        // Manter valores padrão se falhar
+      } finally {
+        setIsLoadingPreferences(false);
+      }
+    };
+
+    loadNotificationPreferences();
+  }, [open]);
 
   // Sincronizar com dados do usuário quando o dialog abrir
   useEffect(() => {
@@ -114,10 +159,27 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
         time_format: timezonePrefs.time_format,
       });
 
-      console.log('✅ Preferências salvas com sucesso!'); // Debug
+      console.log('✅ Preferências de fuso horário salvas!'); // Debug
 
-      // TODO: Salvar preferências de notificações quando backend suportar
-      console.log('Preferências de notificações (local):', preferences);
+      // Salvar preferências de notificações no backend
+      console.log('🔄 Salvando preferências de notificações:', preferences);
+      
+      const { preferencesApi } = await import('@/services/api/alerts');
+      await preferencesApi.patchMe({
+        email_enabled: preferences.emailNotifications,
+        push_enabled: preferences.pushNotifications,
+        sound_enabled: preferences.soundEnabled,
+        sms_enabled: preferences.smsNotifications,
+        whatsapp_enabled: preferences.whatsappNotifications,
+        critical_alerts: preferences.criticalAlerts,
+        high_alerts: preferences.highAlerts,
+        medium_alerts: preferences.mediumAlerts,
+        low_alerts: preferences.lowAlerts,
+        phone_number: preferences.phoneNumber || undefined,
+        whatsapp_number: preferences.whatsappNumber || undefined,
+      });
+
+      console.log('✅ Preferências de notificações salvas!'); // Debug
       
       toast.success('Preferências salvas!', {
         description: 'Suas preferências foram atualizadas com sucesso.',
@@ -127,7 +189,7 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
     } catch (error: any) {
       console.error('❌ Erro ao salvar preferências:', error);
       toast.error('Erro ao salvar preferências', {
-        description: error.message || 'Tente novamente mais tarde.',
+        description: error.response?.data?.detail || error.message || 'Tente novamente mais tarde.',
       });
     } finally {
       setIsSubmitting(false);
@@ -140,10 +202,14 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
       emailNotifications: true,
       pushNotifications: true,
       soundEnabled: true,
+      smsNotifications: false,
+      whatsappNotifications: false,
       criticalAlerts: true,
       highAlerts: true,
       mediumAlerts: true,
       lowAlerts: false,
+      phoneNumber: '',
+      whatsappNumber: '',
     });
 
     // Resetar fusos horários para valores do usuário
@@ -183,6 +249,11 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
           {/* TAB: Notificações */}
           <TabsContent value="notifications" className="space-y-4 mt-4">
             <ScrollArea className="h-[400px] pr-4">
+              {isLoadingPreferences ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
               <div className="space-y-6">
                 {/* Canais de Notificação */}
                 <div className="space-y-4">
@@ -247,6 +318,80 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
                           setPreferences({ ...preferences, soundEnabled: checked })
                         }
                       />
+                    </div>
+
+                    {/* SMS */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between p-3 rounded-lg border">
+                        <div className="flex items-center gap-3">
+                          <MessageSquare className="w-5 h-5 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium">SMS</p>
+                            <p className="text-xs text-muted-foreground">
+                              Receber alertas via SMS
+                            </p>
+                          </div>
+                        </div>
+                        <Switch
+                          checked={preferences.smsNotifications}
+                          onCheckedChange={(checked) =>
+                            setPreferences({ ...preferences, smsNotifications: checked })
+                          }
+                        />
+                      </div>
+                      {preferences.smsNotifications && (
+                        <div className="ml-8 mr-3">
+                          <Input
+                            type="tel"
+                            placeholder="+55 11 99999-9999"
+                            value={preferences.phoneNumber}
+                            onChange={(e) =>
+                              setPreferences({ ...preferences, phoneNumber: e.target.value })
+                            }
+                            className="text-sm"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Formato: +[código país] [número]
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* WhatsApp */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between p-3 rounded-lg border">
+                        <div className="flex items-center gap-3">
+                          <MessageCircle className="w-5 h-5 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium">WhatsApp</p>
+                            <p className="text-xs text-muted-foreground">
+                              Receber alertas via WhatsApp
+                            </p>
+                          </div>
+                        </div>
+                        <Switch
+                          checked={preferences.whatsappNotifications}
+                          onCheckedChange={(checked) =>
+                            setPreferences({ ...preferences, whatsappNotifications: checked })
+                          }
+                        />
+                      </div>
+                      {preferences.whatsappNotifications && (
+                        <div className="ml-8 mr-3">
+                          <Input
+                            type="tel"
+                            placeholder="+55 11 99999-9999"
+                            value={preferences.whatsappNumber}
+                            onChange={(e) =>
+                              setPreferences({ ...preferences, whatsappNumber: e.target.value })
+                            }
+                            className="text-sm"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Formato: +[código país] [número]
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -327,6 +472,7 @@ export const PreferencesDialog: React.FC<PreferencesDialogProps> = ({ open, onOp
                   </div>
                 </div>
               </div>
+              )}
             </ScrollArea>
           </TabsContent>
 

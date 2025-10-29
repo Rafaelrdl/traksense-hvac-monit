@@ -1,4 +1,4 @@
-export type RuleAction = "EMAIL" | "IN_APP"; // "WEBHOOK" removido
+export type RuleAction = "EMAIL" | "IN_APP" | "SMS" | "WHATSAPP"; // Canais de notificação disponíveis
 
 export interface Rule {
   id: string;
@@ -13,7 +13,7 @@ export interface Rule {
   unit?: string;             // unidade do parâmetro
   duration: number;          // minutos que a condição deve persistir
   severity: 'Critical' | 'High' | 'Medium' | 'Low';
-  actions: RuleAction[];     // sem "WEBHOOK"
+  actions: RuleAction[];     // canais de notificação
   enabled: boolean;
   createdAt: number;
   needsReview?: boolean;     // flag para regras que precisam ser revisadas após migração
@@ -45,4 +45,6 @@ export const SEVERITIES = [
 export const AVAILABLE_ACTIONS = [
   { value: 'EMAIL', label: 'Enviar E-mail' },
   { value: 'IN_APP', label: 'Notificação In-app' },
+  { value: 'SMS', label: 'Enviar SMS' },
+  { value: 'WHATSAPP', label: 'Enviar WhatsApp' },
 ] as const;
