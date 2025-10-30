@@ -23,7 +23,7 @@ import { Alert, AlertCircle, Bell, CheckCircle2, Clock, Filter, Loader2, Plus, R
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AlertDetailsDialog } from './AlertDetailsDialog';
-import { AddRuleModal } from './AddRuleModal';
+import { AddRuleModalMultiParam } from './AddRuleModalMultiParam';
 
 const severityConfig: Record<Severity, { color: string; bg: string; label: string }> = {
   CRITICAL: { color: 'text-red-700', bg: 'bg-red-100 border-red-200', label: 'Crítico' },
@@ -296,7 +296,7 @@ export const AlertsPage: React.FC = () => {
         />
       )}
 
-      <AddRuleModal open={isAddRuleModalOpen} onOpenChange={setIsAddRuleModalOpen} />
+      <AddRuleModalMultiParam open={isAddRuleModalOpen} onOpenChange={setIsAddRuleModalOpen} />
     </div>
   );
 };

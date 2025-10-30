@@ -42,6 +42,7 @@ Detalhes técnicos de features específicas implementadas.
 
 **Conteúdo:**
 - `IMPLEMENTACAO_*.md` - Documentação de implementações de features
+- `IMPLEMENTACAO_MULTI_PARAMETRO_REGRAS.md` - ⭐ **NOVO**: Sistema de múltiplos parâmetros por regra
 - Detalhes técnicos de componentes
 - Fluxos de integração
 - Decisões arquiteturais

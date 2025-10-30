@@ -17,6 +17,19 @@ export type AlertStatus = 'active' | 'acknowledged' | 'resolved';
 export type NotificationAction = 'EMAIL' | 'IN_APP' | 'SMS' | 'WHATSAPP';
 export type Operator = '>' | '<' | '>=' | '<=' | '==' | '!=';
 
+// Novo tipo para parâmetros individuais de uma regra
+export interface RuleParameter {
+  id?: number;  // ID do parâmetro (para edição)
+  parameter_key: string;  // Ex: "sensor_123"
+  variable_key: string;   // Opcional
+  operator: Operator;     // Ex: ">"
+  threshold: number;      // Ex: 25.0
+  duration: number;       // Minutos de duração
+  severity: Severity;     // Ex: "HIGH"
+  message_template: string;  // Mensagem personalizada, ex: "Temperatura de {value}°C acima do limite"
+  unit?: string;          // Ex: "°C"
+}
+
 export interface Rule {
   id: number;
   name: string;
@@ -24,13 +37,19 @@ export interface Rule {
   equipment: number;
   equipment_name?: string;
   equipment_tag?: string;
-  parameter_key: string;
-  variable_key: string;
-  operator: Operator;
-  threshold: number;
+  
+  // NOVO: Array de parâmetros (múltiplos parâmetros por regra)
+  parameters: RuleParameter[];
+  
+  // DEPRECATED: Campos antigos (mantidos para compatibilidade)
+  parameter_key?: string;
+  variable_key?: string;
+  operator?: Operator;
+  threshold?: number;
   unit?: string;
-  duration: number;  // Backend usa 'duration' (não cooldown_minutes)
-  severity: Severity;
+  duration?: number;
+  severity?: Severity;
+  
   actions: NotificationAction[];
   enabled: boolean;
   created_by?: number;
@@ -111,15 +130,20 @@ export interface CreateRuleRequest {
   name: string;
   description: string;
   equipment: number;
-  parameter_key: string;
-  variable_key: string;
-  operator: Operator;
-  threshold: number;
-  unit?: string;
-  duration?: number;  // Backend usa 'duration' (minutos de cooldown)
-  severity: Severity;
   actions: NotificationAction[];
   enabled?: boolean;
+  
+  // NOVO FORMATO: Array de parâmetros
+  parameters?: RuleParameter[];
+  
+  // FORMATO ANTIGO (mantido para compatibilidade)
+  parameter_key?: string;
+  variable_key?: string;
+  operator?: Operator;
+  threshold?: number;
+  unit?: string;
+  duration?: number;  // Backend usa 'duration' (minutos de cooldown)
+  severity?: Severity;
 }
 
 export interface UpdateRuleRequest extends Partial<CreateRuleRequest> {}

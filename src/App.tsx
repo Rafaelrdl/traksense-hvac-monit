@@ -17,7 +17,6 @@ import { useNotifications } from './store/notifications';
 function App() {
   const [currentPage, setCurrentPage] = useState('overview');
   const selectedAssetId = useAppStore(state => state.selectedAssetId);
-  const { add: addNotification, items: notifications } = useNotifications();
 
   // NOTA: Simulação desabilitada - agora usamos dados reais da API
   // A simulação só deve ser ativada manualmente para testes/desenvolvimento
@@ -36,29 +35,30 @@ function App() {
   //   };
   // }, []); // Empty dependency array to run only once
   
-  // Seed notifications in development mode
-  useEffect(() => {
-    if (import.meta.env.DEV && notifications.length === 0) {
-      // Add some sample notifications for testing
-      addNotification({
-        title: 'HVAC: Consumo acima do esperado',
-        message: 'Zona L2 apresenta consumo 18% acima da meta estabelecida',
-        severity: 'warning',
-      });
-      
-      addNotification({
-        title: 'Sensores sincronizados',
-        message: 'Todos os sensores da planta foram sincronizados com sucesso',
-        severity: 'info',
-      });
-      
-      addNotification({
-        title: 'Alerta crítico: Temperatura alta',
-        message: 'Chiller 02 operando com temperatura de condensação acima do limite',
-        severity: 'critical',
-      });
-    }
-  }, [addNotification, notifications.length]);
+  // REMOVIDO: Seed de notificações mockadas
+  // As notificações agora devem vir APENAS do backend via API
+  // useEffect(() => {
+  //   if (import.meta.env.DEV && notifications.length === 0) {
+  //     // Add some sample notifications for testing
+  //     addNotification({
+  //       title: 'HVAC: Consumo acima do esperado',
+  //       message: 'Zona L2 apresenta consumo 18% acima da meta estabelecida',
+  //       severity: 'warning',
+  //     });
+  //     
+  //     addNotification({
+  //       title: 'Sensores sincronizados',
+  //       message: 'Todos os sensores da planta foram sincronizados com sucesso',
+  //       severity: 'info',
+  //     });
+  //     
+  //     addNotification({
+  //       title: 'Alerta crítico: Temperatura alta',
+  //       message: 'Chiller 02 operando com temperatura de condensação acima do limite',
+  //       severity: 'critical',
+  //     });
+  //   }
+  // }, [addNotification, notifications.length]);
 
   const handleNavigation = (page: string) => {
     setCurrentPage(page);

@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
-import { AddRuleModal } from './AddRuleModal';
+import { AddRuleModalMultiParam } from './AddRuleModalMultiParam';
 import {
   Plus,
   Trash2,
@@ -280,7 +280,7 @@ export const RuleBuilder: React.FC = () => {
       </div>
 
       {/* Add/Edit Rule Modal */}
-      <AddRuleModal
+      <AddRuleModalMultiParam
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         editingRule={editingRule}

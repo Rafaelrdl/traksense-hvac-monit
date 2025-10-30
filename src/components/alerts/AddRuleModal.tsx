@@ -134,20 +134,13 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
     return assetType?.label || assetTypeId;
   };
 
-  // Reset campos dependentes quando equipamento muda
-  useEffect(() => {
-    setParameterKey('');
-    setVariableKey('');
-  }, [equipmentId]);
-
-  // Reset variável quando parâmetro muda
-  useEffect(() => {
-    setVariableKey('');
-  }, [parameterKey]);
+  // Ref para controlar se está inicializando edição
+  const [isInitializing, setIsInitializing] = useState(false);
 
   // Preencher formulário quando editando
   useEffect(() => {
     if (editingRule && open) {
+      setIsInitializing(true);
       setEquipmentId(String(editingRule.equipment));
       setParameterKey(editingRule.parameter_key);
       setVariableKey(editingRule.variable_key || '');
@@ -170,8 +163,12 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
         severity: frontendSeverity,
         actions: editingRule.actions,
       });
+      
+      // Marcar que inicialização terminou após render
+      setTimeout(() => setIsInitializing(false), 0);
     } else {
       // Reset para nova regra
+      setIsInitializing(false);
       setEquipmentId('');
       setParameterKey('');
       setVariableKey('');
@@ -186,6 +183,21 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
       });
     }
   }, [editingRule, open]);
+
+  // Reset campos dependentes quando equipamento muda (EXCETO durante inicialização)
+  useEffect(() => {
+    if (!isInitializing) {
+      setParameterKey('');
+      setVariableKey('');
+    }
+  }, [equipmentId, isInitializing]);
+
+  // Reset variável quando parâmetro muda (EXCETO durante inicialização)
+  useEffect(() => {
+    if (!isInitializing) {
+      setVariableKey('');
+    }
+  }, [parameterKey, isInitializing]);
 
   const handleSaveRule = async () => {
     // Validações
