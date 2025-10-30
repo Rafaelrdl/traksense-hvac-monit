@@ -22,8 +22,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Plus, Trash2, AlertCircle, Info } from 'lucide-react';
+import { Loader2, Plus, Trash2, AlertCircle, Info, Mail, Bell, Volume2, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
 
 import { useAppStore } from '@/store/app';
 import { useRulesStore } from '@/store/rulesStore';
@@ -303,12 +304,12 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[900px] h-[90vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            {editingRule ? 'Editar Regra' : 'Criar Nova Regra'}
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0 border-b">
+          <DialogTitle className="text-lg font-semibold">
+            {editingRule ? 'Editar Regra de Alerta' : 'Criar Nova Regra de Alerta'}
           </DialogTitle>
-          <DialogDescription>
-            Configure múltiplos parâmetros para monitoramento de um equipamento IoT
+          <DialogDescription className="text-sm">
+            Configure múltiplos parâmetros para monitoramento em tempo real
           </DialogDescription>
         </DialogHeader>
 
@@ -316,62 +317,69 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
           <div className="space-y-6 pb-4">
             
             {/* Informações Básicas */}
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="rule-name" className="text-xs">
-                    Nome da Regra <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="rule-name"
-                    placeholder="Ex: Alta Pressão Chiller"
-                    className="h-9"
-                    value={ruleName}
-                    onChange={(e) => setRuleName(e.target.value)}
-                  />
-                </div>
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Informações Básicas</h3>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="rule-name" className="text-xs font-medium">
+                        Nome da Regra <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="rule-name"
+                        placeholder="Ex: Monitoramento Chiller Principal"
+                        className="h-9"
+                        value={ruleName}
+                        onChange={(e) => setRuleName(e.target.value)}
+                      />
+                    </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="equipment" className="text-xs">
-                    Equipamentos cadastrados <span className="text-destructive">*</span>
-                  </Label>
-                  <Select value={equipmentId} onValueChange={setEquipmentId}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Selecione um equipamento" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {assets.map((asset) => (
-                        <SelectItem key={asset.id} value={String(asset.id)}>
-                          {asset.tag} ({asset.type})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="equipment" className="text-xs font-medium">
+                        Equipamento <span className="text-destructive">*</span>
+                      </Label>
+                      <Select value={equipmentId} onValueChange={setEquipmentId}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Selecione um equipamento" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {assets.map((asset) => (
+                            <SelectItem key={asset.id} value={String(asset.id)}>
+                              {asset.tag} ({asset.type})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="description" className="text-xs">Descrição</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Descreva o propósito desta regra"
-                  value={ruleDescription}
-                  onChange={(e) => setRuleDescription(e.target.value)}
-                  rows={2}
-                  className="text-sm resize-none"
-                />
+                  <div className="space-y-1.5">
+                    <Label htmlFor="description" className="text-xs font-medium">
+                      Descrição <span className="text-muted-foreground font-normal">(opcional)</span>
+                    </Label>
+                    <Textarea
+                      id="description"
+                      placeholder="Adicione uma descrição para identificar facilmente esta regra"
+                      value={ruleDescription}
+                      onChange={(e) => setRuleDescription(e.target.value)}
+                      rows={2}
+                      className="text-sm resize-none"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
-            <Separator />
+            <Separator className="my-6" />
 
             {/* Parâmetros (Múltiplos) */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold">Parâmetros a Monitorar</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Adicione um ou mais parâmetros para monitoramento
+            <div className="space-y-4">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-gray-900">Parâmetros de Monitoramento</h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Configure as condições que dispararão alertas para cada sensor
                   </p>
                 </div>
                 <Button
@@ -379,83 +387,95 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
                   onClick={addParameter}
                   disabled={!equipmentId || loadingParams}
                   size="sm"
-                  className="h-8 text-xs"
+                  className="h-9 px-3 ml-4 shrink-0"
                 >
-                  <Plus className="w-3.5 h-3.5 mr-1.5" />
-                  Adicionar
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar Parâmetro
                 </Button>
               </div>
 
               {!equipmentId && (
-                <Card className="border-blue-200 bg-blue-50">
-                  <CardContent className="pt-3 pb-3 px-3">
-                    <div className="flex items-start gap-2">
-                      <Info className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
-                      <p className="text-xs text-blue-800">
-                        Selecione um equipamento acima para adicionar parâmetros de monitoramento
+                <div className="border-2 border-dashed border-blue-300 bg-blue-50/50 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Info className="w-4 h-4 text-blue-600 shrink-0" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-blue-900 mb-1">Selecione um equipamento</p>
+                      <p className="text-xs text-blue-700">
+                        Escolha um equipamento acima para visualizar seus sensores disponíveis
                       </p>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               )}
 
               {parameters.length === 0 && equipmentId && (
-                <Card className="border-orange-200 bg-orange-50">
-                  <CardContent className="pt-3 pb-3 px-3">
-                    <div className="flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 text-orange-600 mt-0.5 shrink-0" />
-                      <p className="text-xs text-orange-800">
-                        Nenhum parâmetro adicionado. Clique em "Adicionar" para começar.
+                <div className="border-2 border-dashed border-gray-300 bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-gray-100 rounded-lg">
+                      <AlertCircle className="w-4 h-4 text-gray-600 shrink-0" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 mb-1">Nenhum parâmetro configurado</p>
+                      <p className="text-xs text-gray-600">
+                        Clique em "Adicionar Parâmetro" para começar a configurar os alertas
                       </p>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               )}
 
               {/* Lista de Parâmetros */}
               <div className="space-y-3">
                 {parameters.map((param, index) => (
-                  <Card key={index} className="border-2 shadow-sm">
-                    <CardHeader className="pb-3 pt-4 px-4">
+                  <Card key={index} className="border-2 hover:border-gray-300 transition-colors">
+                    <CardHeader className="pb-3 pt-3 px-4 bg-gray-50/50">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-sm font-semibold">
-                          Parâmetro {index + 1}
-                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                            <span className="text-xs font-semibold text-primary">{index + 1}</span>
+                          </div>
+                          <CardTitle className="text-sm font-semibold text-gray-900">
+                            Parâmetro {index + 1}
+                          </CardTitle>
+                        </div>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => removeParameter(index)}
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          className="h-8 w-8 p-0 text-gray-500 hover:text-destructive hover:bg-destructive/10"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-3 px-4 pb-4">
+                    <CardContent className="space-y-3 px-4 pb-4 pt-4">
                       
                       {/* Seletor de Sensor */}
                       <div className="space-y-1.5">
-                        <Label className="text-xs">
-                          Sensor <span className="text-destructive">*</span>
+                        <Label className="text-xs font-medium flex items-center gap-1">
+                          <span>Sensor a Monitorar</span>
+                          <span className="text-destructive">*</span>
                         </Label>
                         <Select
                           value={param.parameter_key}
                           onValueChange={(value) => updateParameter(index, 'parameter_key', value)}
                           disabled={loadingParams}
                         >
-                          <SelectTrigger className="h-9">
-                            <SelectValue placeholder="Selecione um sensor" />
+                          <SelectTrigger className="h-9 bg-white">
+                            <SelectValue placeholder="Selecione um sensor para monitorar" />
                           </SelectTrigger>
                           <SelectContent>
                             {loadingParams ? (
-                              <div className="p-2 text-center text-sm text-muted-foreground">
-                                <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                                Carregando sensores...
+                              <div className="p-3 text-center">
+                                <Loader2 className="w-4 h-4 animate-spin mx-auto mb-2" />
+                                <p className="text-xs text-muted-foreground">Carregando sensores...</p>
                               </div>
                             ) : availableParameters.length === 0 ? (
-                              <div className="p-2 text-center text-sm text-muted-foreground">
-                                Nenhum sensor disponível
+                              <div className="p-3 text-center">
+                                <p className="text-xs text-muted-foreground">Nenhum sensor disponível</p>
                               </div>
                             ) : (
                               availableParameters.map((p) => (
@@ -469,61 +489,68 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
                       </div>
 
                       {/* Condição e Valor */}
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">
-                            Operador <span className="text-destructive">*</span>
-                          </Label>
-                          <Select
-                            value={param.operator}
-                            onValueChange={(value) => updateParameter(index, 'operator', value as Operator)}
-                          >
-                            <SelectTrigger className="h-9">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {OPERATORS.map((op) => (
-                                <SelectItem key={op.value} value={op.value}>
-                                  {op.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                      <div className="bg-gray-50/50 rounded-lg p-3 space-y-3">
+                        <p className="text-xs font-medium text-gray-700">Condição de Disparo</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium">
+                              Operador <span className="text-destructive">*</span>
+                            </Label>
+                            <Select
+                              value={param.operator}
+                              onValueChange={(value) => updateParameter(index, 'operator', value as Operator)}
+                            >
+                              <SelectTrigger className="h-9 bg-white">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {OPERATORS.map((op) => (
+                                  <SelectItem key={op.value} value={op.value}>
+                                    {op.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">
-                            Valor Limite <span className="text-destructive">*</span>
-                          </Label>
-                          <Input
-                            type="number"
-                            step="0.1"
-                            placeholder="Ex: 250"
-                            className="h-9"
-                            value={param.threshold}
-                            onChange={(e) => updateParameter(index, 'threshold', parseFloat(e.target.value) || 0)}
-                          />
-                        </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium">
+                              Valor Limite <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                              type="number"
+                              step="0.1"
+                              placeholder="Ex: 250"
+                              className="h-9 bg-white"
+                              value={param.threshold}
+                              onChange={(e) => updateParameter(index, 'threshold', parseFloat(e.target.value) || 0)}
+                            />
+                          </div>
 
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">
-                            Duração (min) <span className="text-destructive">*</span>
-                          </Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            placeholder="5"
-                            className="h-9"
-                            value={param.duration}
-                            onChange={(e) => updateParameter(index, 'duration', parseInt(e.target.value) || 5)}
-                          />
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium">
+                              Cooldown (min) <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              placeholder="5"
+                              className="h-9 bg-white"
+                              value={param.duration}
+                              onChange={(e) => updateParameter(index, 'duration', parseInt(e.target.value) || 5)}
+                            />
+                          </div>
                         </div>
+                        <p className="text-[10px] text-muted-foreground">
+                          O alerta será disparado quando o valor do sensor atender à condição configurada
+                        </p>
                       </div>
 
                       {/* Severidade */}
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">
-                          Severidade do Alerta <span className="text-destructive">*</span>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium flex items-center gap-2">
+                          Nível de Severidade <span className="text-destructive">*</span>
+                          <span className="text-[10px] font-normal text-muted-foreground">(Define a prioridade do alerta)</span>
                         </Label>
                         <div className="grid grid-cols-4 gap-1.5">
                           {SEVERITIES.map((sev) => (
@@ -532,10 +559,11 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
                               type="button"
                               onClick={() => updateParameter(index, 'severity', sev.value)}
                               className={`
-                                px-2 py-1.5 rounded-md border-2 text-xs font-medium transition-all
+                                px-2 py-2 rounded-md border-2 text-xs font-semibold transition-all
+                                hover:scale-[1.02] active:scale-[0.98]
                                 ${param.severity === sev.value
-                                  ? `${sev.color} ring-2 ring-offset-1`
-                                  : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
+                                  ? `${sev.color} ring-2 ring-offset-1 shadow-sm`
+                                  : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                                 }
                               `}
                             >
@@ -546,21 +574,29 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
                       </div>
 
                       {/* Mensagem Personalizada */}
-                      <div className="space-y-1.5">
-                        <Label htmlFor={`message-${index}`} className="text-xs">
-                          Mensagem do Alerta <span className="text-destructive">*</span>
+                      <div className="space-y-2">
+                        <Label htmlFor={`message-${index}`} className="text-xs font-medium">
+                          Mensagem Personalizada do Alerta <span className="text-destructive">*</span>
                         </Label>
                         <Textarea
                           id={`message-${index}`}
-                          placeholder="Ex: Temperatura de {value}°C acima do limite de {threshold}°C"
+                          placeholder="Ex: Temperatura de {value}°C ultrapassou o limite de {threshold}°C no sensor {sensor}"
                           value={param.message_template}
                           onChange={(e) => updateParameter(index, 'message_template', e.target.value)}
-                          rows={2}
+                          rows={3}
                           className="text-sm resize-none"
                         />
-                        <p className="text-[10px] text-muted-foreground leading-tight">
-                          Variáveis: <code className="text-[10px]">{"{sensor}"}</code>, <code className="text-[10px]">{"{value}"}</code>, <code className="text-[10px]">{"{threshold}"}</code>, <code className="text-[10px]">{"{operator}"}</code>, <code className="text-[10px]">{"{unit}"}</code>
-                        </p>
+                        <div className="bg-blue-50/50 border border-blue-200 rounded-md p-2 space-y-1">
+                          <p className="text-[10px] font-medium text-blue-900">Variáveis disponíveis:</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            <code className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">{"{sensor}"}</code>
+                            <code className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">{"{value}"}</code>
+                            <code className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">{"{threshold}"}</code>
+                            <code className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">{"{operator}"}</code>
+                            <code className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">{"{unit}"}</code>
+                          </div>
+                          <p className="text-[10px] text-blue-700 mt-1">Use as variáveis entre chaves para personalizar a mensagem</p>
+                        </div>
                       </div>
 
                     </CardContent>
@@ -573,32 +609,66 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
 
             {/* Ações ao disparar */}
             <div className="space-y-2">
-              <Label className="text-xs">
-                Ações ao disparar <span className="text-destructive">*</span>
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Selecione os canais de notificação
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {AVAILABLE_ACTIONS.map((action) => (
-                  <button
-                    key={action}
-                    type="button"
-                    onClick={() => toggleAction(action)}
-                    className={`
-                      px-3 py-2 rounded-md border-2 text-xs font-medium transition-all flex items-center gap-2
-                      ${actions.includes(action)
-                        ? 'bg-primary/10 border-primary text-primary ring-2 ring-primary/20'
-                        : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
-                      }
-                    `}
-                  >
-                    {actions.includes(action) && (
-                      <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-                    )}
-                    {action}
-                  </button>
-                ))}
+              <div className="space-y-1">
+                <Label className="text-sm font-semibold text-gray-900">
+                  Ações ao Disparar <span className="text-destructive">*</span>
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Selecione como deseja ser notificado quando o alerta for acionado
+                </p>
+              </div>
+              <div className="space-y-2">
+                {AVAILABLE_ACTIONS.map((action) => {
+                  // Mapear labels e ícones
+                  const actionConfig: Record<NotificationAction, { label: string; icon: React.ReactNode }> = {
+                    'EMAIL': { 
+                      label: 'Email', 
+                      icon: <Mail className="w-4 h-4" />
+                    },
+                    'IN_APP': { 
+                      label: 'Push', 
+                      icon: <Bell className="w-4 h-4" />
+                    },
+                    'SMS': { 
+                      label: 'Som', 
+                      icon: <Volume2 className="w-4 h-4" />
+                    },
+                    'WHATSAPP': { 
+                      label: 'WhatsApp', 
+                      icon: <MessageSquare className="w-4 h-4" />
+                    }
+                  };
+
+                  const config = actionConfig[action];
+                  
+                  return (
+                    <div 
+                      key={action} 
+                      className="bg-white/50 backdrop-blur-sm border border-gray-200 rounded-lg p-3 hover:border-gray-300 transition-all"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-1.5 bg-gray-100 rounded-md">
+                            {config.icon}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">{config.label}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {action === 'EMAIL' && 'Receber notificações por email'}
+                              {action === 'IN_APP' && 'Notificações no navegador e aplicativo'}
+                              {action === 'SMS' && 'Reproduzir som ao receber alertas'}
+                              {action === 'WHATSAPP' && 'Receber mensagens no WhatsApp'}
+                            </p>
+                          </div>
+                        </div>
+                        <Switch
+                          checked={actions.includes(action)}
+                          onCheckedChange={() => toggleAction(action)}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
