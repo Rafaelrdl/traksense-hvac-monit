@@ -4,7 +4,7 @@
  * This service provides methods to interact with the alerts and rules system.
  */
 
-import { apiClient } from './client';
+import { api } from '@/lib/api';
 
 // ============================================================================
 // Types
@@ -170,7 +170,7 @@ export const rulesApi = {
    * List all rules with optional filters
    */
   list: async (params?: RuleListParams) => {
-    const response = await apiClient.get<{ results: Rule[]; count: number }>('/alerts/rules/', {
+    const response = await api.get<{ results: Rule[]; count: number }>('/alerts/rules/', {
       params,
     });
     return response.data;
@@ -180,7 +180,7 @@ export const rulesApi = {
    * Get a single rule by ID
    */
   get: async (id: number) => {
-    const response = await apiClient.get<Rule>(`/alerts/rules/${id}/`);
+    const response = await api.get<Rule>(`/alerts/rules/${id}/`);
     return response.data;
   },
 
@@ -188,7 +188,7 @@ export const rulesApi = {
    * Create a new rule
    */
   create: async (data: CreateRuleRequest) => {
-    const response = await apiClient.post<Rule>('/alerts/rules/', data);
+    const response = await api.post<Rule>('/alerts/rules/', data);
     return response.data;
   },
 
@@ -196,7 +196,7 @@ export const rulesApi = {
    * Update an existing rule
    */
   update: async (id: number, data: UpdateRuleRequest) => {
-    const response = await apiClient.put<Rule>(`/alerts/rules/${id}/`, data);
+    const response = await api.put<Rule>(`/alerts/rules/${id}/`, data);
     return response.data;
   },
 
@@ -204,7 +204,7 @@ export const rulesApi = {
    * Partially update a rule
    */
   patch: async (id: number, data: UpdateRuleRequest) => {
-    const response = await apiClient.patch<Rule>(`/alerts/rules/${id}/`, data);
+    const response = await api.patch<Rule>(`/alerts/rules/${id}/`, data);
     return response.data;
   },
 
@@ -212,14 +212,14 @@ export const rulesApi = {
    * Delete a rule
    */
   delete: async (id: number) => {
-    await apiClient.delete(`/alerts/rules/${id}/`);
+    await api.delete(`/alerts/rules/${id}/`);
   },
 
   /**
    * Toggle rule enabled status
    */
   toggleStatus: async (id: number) => {
-    const response = await apiClient.post<Rule>(`/alerts/rules/${id}/toggle_status/`);
+    const response = await api.post<Rule>(`/alerts/rules/${id}/toggle_status/`);
     return response.data;
   },
 
@@ -227,7 +227,7 @@ export const rulesApi = {
    * Get rule statistics
    */
   statistics: async () => {
-    const response = await apiClient.get<RuleStatistics>('/alerts/rules/statistics/');
+    const response = await api.get<RuleStatistics>('/alerts/rules/statistics/');
     return response.data;
   },
 };
@@ -240,7 +240,7 @@ export const alertsApi = {
    * List all alerts with optional filters
    */
   list: async (params?: AlertListParams) => {
-    const response = await apiClient.get<{ results: Alert[]; count: number }>('/alerts/alerts/', {
+    const response = await api.get<{ results: Alert[]; count: number }>('/alerts/alerts/', {
       params,
     });
     return response.data;
@@ -250,7 +250,7 @@ export const alertsApi = {
    * Get a single alert by ID
    */
   get: async (id: number) => {
-    const response = await apiClient.get<Alert>(`/alerts/alerts/${id}/`);
+    const response = await api.get<Alert>(`/alerts/alerts/${id}/`);
     return response.data;
   },
 
@@ -258,7 +258,7 @@ export const alertsApi = {
    * Acknowledge an alert
    */
   acknowledge: async (id: number, data?: AcknowledgeAlertRequest) => {
-    const response = await apiClient.post<Alert>(`/alerts/alerts/${id}/acknowledge/`, data || {});
+    const response = await api.post<Alert>(`/alerts/alerts/${id}/acknowledge/`, data || {});
     return response.data;
   },
 
@@ -266,7 +266,7 @@ export const alertsApi = {
    * Resolve an alert
    */
   resolve: async (id: number, data?: ResolveAlertRequest) => {
-    const response = await apiClient.post<Alert>(`/alerts/alerts/${id}/resolve/`, data || {});
+    const response = await api.post<Alert>(`/alerts/alerts/${id}/resolve/`, data || {});
     return response.data;
   },
 
@@ -274,7 +274,7 @@ export const alertsApi = {
    * Get alert statistics
    */
   statistics: async () => {
-    const response = await apiClient.get<AlertStatistics>('/alerts/alerts/statistics/');
+    const response = await api.get<AlertStatistics>('/alerts/alerts/statistics/');
     return response.data;
   },
 };
@@ -287,7 +287,7 @@ export const preferencesApi = {
    * Get current user's notification preferences
    */
   getMe: async () => {
-    const response = await apiClient.get<NotificationPreference>('/alerts/notification-preferences/me/');
+    const response = await api.get<NotificationPreference>('/alerts/notification-preferences/me/');
     return response.data;
   },
 
@@ -295,7 +295,7 @@ export const preferencesApi = {
    * Update current user's notification preferences (full update)
    */
   updateMe: async (data: UpdatePreferencesRequest) => {
-    const response = await apiClient.put<NotificationPreference>('/alerts/notification-preferences/me/', data);
+    const response = await api.put<NotificationPreference>('/alerts/notification-preferences/me/', data);
     return response.data;
   },
 
@@ -303,7 +303,7 @@ export const preferencesApi = {
    * Partially update current user's notification preferences
    */
   patchMe: async (data: UpdatePreferencesRequest) => {
-    const response = await apiClient.patch<NotificationPreference>('/alerts/notification-preferences/me/', data);
+    const response = await api.patch<NotificationPreference>('/alerts/notification-preferences/me/', data);
     return response.data;
   },
 };

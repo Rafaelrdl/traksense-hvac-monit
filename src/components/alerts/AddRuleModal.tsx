@@ -24,11 +24,11 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { useEquipmentStore } from '@/store/equipment';
-import { useRuleStore } from '@/store/rule';
+import { useAppStore } from '@/store/app';
+import { useRulesStore } from '@/store/rulesStore';
 import { useIoTParams, getParameterLabel } from '@/hooks/useIoTParams';
 import { ASSET_TYPES } from '@/types/equipment';
-import { OPERATORS, SEVERITIES, AVAILABLE_ACTIONS, type Rule } from '@/types/rule';
+import { Rule, type NotificationAction, type Operator, type Severity } from '@/services/api/alerts';
 
 interface AddRuleModalProps {
   open: boolean;
@@ -36,9 +36,28 @@ interface AddRuleModalProps {
   editingRule?: Rule | null;
 }
 
+// Constantes para o modal
+const SEVERITIES = [
+  { value: 'CRITICAL', label: 'Crítico', color: 'bg-red-100 text-red-800 border-red-300' },
+  { value: 'HIGH', label: 'Alto', color: 'bg-orange-100 text-orange-800 border-orange-300' },
+  { value: 'MEDIUM', label: 'Médio', color: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
+  { value: 'LOW', label: 'Baixo', color: 'bg-blue-100 text-blue-800 border-blue-300' },
+] as const;
+
+const OPERATORS = [
+  { value: '>', label: 'Maior que' },
+  { value: '>=', label: 'Maior ou igual' },
+  { value: '<', label: 'Menor que' },
+  { value: '<=', label: 'Menor ou igual' },
+  { value: '==', label: 'Igual' },
+  { value: '!=', label: 'Diferente' },
+] as const;
+
+const AVAILABLE_ACTIONS: NotificationAction[] = ['EMAIL', 'IN_APP', 'SMS', 'WHATSAPP'];
+
 export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalProps) {
-  const equipments = useEquipmentStore(s => s.equipments);
-  const { addRule, updateRule } = useRuleStore();
+  const assets = useAppStore(s => s.assets);
+  const { createRule, updateRule, fetchRules } = useRulesStore();
 
   // Estados dos campos do formulário
   const [equipmentId, setEquipmentId] = useState<string>('');
@@ -47,20 +66,21 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    operator: '>' as (">" | ">=" | "<" | "<=" | "==" | "!="),
+    operator: '>' as Operator,
     threshold: '',
-    duration: '5',
-    severity: 'Medium' as ('Critical' | 'High' | 'Medium' | 'Low'),
-    actions: ['IN_APP'] as ('EMAIL' | 'IN_APP' | 'SMS' | 'WHATSAPP')[],
+    cooldown_minutes: '5',
+    severity: 'MEDIUM' as Severity,
+    actions: ['IN_APP'] as NotificationAction[],
   });
 
   // Dados derivados do equipamento selecionado
   const equipment = useMemo(() => 
-    equipments.find(e => e.id === equipmentId), [equipments, equipmentId]
+    assets.find(e => String(e.id) === equipmentId), [assets, equipmentId]
   );
 
   // Hook para carregar parâmetros IoT
-  const { params, loading: paramsLoading } = useIoTParams(equipment?.iotDeviceId);
+  // Por enquanto, não temos deviceId nos HVACAssets, então passamos undefined
+  const { params, loading: paramsLoading } = useIoTParams(undefined);
 
   // Parâmetro selecionado e suas variáveis
   const selectedParam = useMemo(() => 
@@ -87,15 +107,15 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
   // Preencher formulário quando editando
   useEffect(() => {
     if (editingRule && open) {
-      setEquipmentId(editingRule.equipmentId);
-      setParameterKey(editingRule.parameterKey);
-      setVariableKey(editingRule.variableKey || '');
+      setEquipmentId(String(editingRule.equipment));
+      setParameterKey(editingRule.parameter_key);
+      setVariableKey(editingRule.variable_key || '');
       setFormData({
         name: editingRule.name,
         description: editingRule.description,
         operator: editingRule.operator,
         threshold: editingRule.threshold.toString(),
-        duration: editingRule.duration.toString(),
+        cooldown_minutes: editingRule.cooldown_minutes.toString(),
         severity: editingRule.severity,
         actions: editingRule.actions,
       });
@@ -109,14 +129,14 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
         description: '',
         operator: '>',
         threshold: '',
-        duration: '5',
-        severity: 'Medium',
+        cooldown_minutes: '5',
+        severity: 'MEDIUM',
         actions: ['IN_APP'],
       });
     }
   }, [editingRule, open]);
 
-  const handleSaveRule = () => {
+  const handleSaveRule = async () => {
     // Validações
     if (!formData.name.trim()) {
       toast.error('Nome da regra é obrigatório');
@@ -146,35 +166,39 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
     const ruleData = {
       name: formData.name.trim(),
       description: formData.description.trim(),
-      equipmentId,
-      assetTypeId: equipment!.assetTypeId,
-      parameterKey,
-      variableKey: variableKey || undefined,
+      equipment: parseInt(equipmentId),
+      parameter_key: parameterKey,
+      variable_key: variableKey || '',
       operator: formData.operator,
       threshold: parseFloat(formData.threshold),
-      unit: selectedParam?.unit,
-      duration: parseInt(formData.duration),
+      cooldown_minutes: parseInt(formData.cooldown_minutes),
       severity: formData.severity,
       actions: formData.actions,
       enabled: true,
     };
 
     if (editingRule) {
-      updateRule(editingRule.id, ruleData);
-      toast.success('Regra atualizada!', {
-        description: `A regra "${formData.name}" foi atualizada com sucesso.`,
-      });
+      const result = await updateRule(editingRule.id, ruleData);
+      if (result) {
+        toast.success('Regra atualizada!', {
+          description: `A regra "${formData.name}" foi atualizada com sucesso.`,
+        });
+        await fetchRules();
+        onOpenChange(false);
+      }
     } else {
-      addRule(ruleData);
-      toast.success('Regra criada!', {
-        description: `A regra "${formData.name}" foi criada com sucesso.`,
-      });
+      const result = await createRule(ruleData);
+      if (result) {
+        toast.success('Regra criada!', {
+          description: `A regra "${formData.name}" foi criada com sucesso.`,
+        });
+        await fetchRules();
+        onOpenChange(false);
+      }
     }
-
-    onOpenChange(false);
   };
 
-  const toggleAction = (action: 'EMAIL' | 'IN_APP' | 'SMS' | 'WHATSAPP') => {
+  const toggleAction = (action: NotificationAction) => {
     setFormData(prev => ({
       ...prev,
       actions: prev.actions.includes(action)
@@ -238,13 +262,13 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
                   <SelectValue placeholder="Selecione um equipamento" />
                 </SelectTrigger>
                 <SelectContent>
-                  {equipments
-                    .filter(e => e.status === 'active')
+                  {assets
+                    .filter(e => e.status === 'OK' || e.status === 'Alert')
                     .map(e => (
-                      <SelectItem key={e.id} value={e.id}>
+                      <SelectItem key={e.id} value={String(e.id)}>
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">{e.name}</span>
-                          <span className="text-muted-foreground">({e.tag})</span>
+                          <span className="font-medium">{e.tag}</span>
+                          <span className="text-muted-foreground">({e.type})</span>
                         </div>
                       </SelectItem>
                     ))
@@ -257,7 +281,7 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
             {equipment && (
               <div className="bg-muted/50 rounded-lg p-3 border">
                 <div className="text-sm text-muted-foreground">
-                  <strong>Tipo de ativo:</strong> {resolveAssetTypeName(equipment.assetTypeId)}
+                  <strong>Tipo de ativo:</strong> {equipment.type}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
                   Derivado automaticamente do equipamento selecionado
@@ -370,8 +394,8 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
                   type="number"
                   min="1"
                   placeholder="Ex: 5"
-                  value={formData.duration}
-                  onChange={(e) => setFormData(prev => ({ ...prev, duration: e.target.value }))}
+                  value={formData.cooldown_minutes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, cooldown_minutes: e.target.value }))}
                 />
               </div>
             </div>
@@ -407,18 +431,26 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
                 As preferências individuais de cada usuário serão respeitadas.
               </p>
               <div className="space-y-2">
-                {AVAILABLE_ACTIONS.map(action => (
-                  <div
-                    key={action.value}
-                    className="flex items-center justify-between p-3 rounded-lg border"
-                  >
-                    <span className="text-sm">{action.label}</span>
-                    <Switch
-                      checked={formData.actions.includes(action.value)}
-                      onCheckedChange={() => toggleAction(action.value)}
-                    />
-                  </div>
-                ))}
+                {AVAILABLE_ACTIONS.map(action => {
+                  const labels: Record<NotificationAction, string> = {
+                    EMAIL: 'E-mail',
+                    IN_APP: 'Notificação no App',
+                    SMS: 'SMS',
+                    WHATSAPP: 'WhatsApp',
+                  };
+                  return (
+                    <div
+                      key={action}
+                      className="flex items-center justify-between p-3 rounded-lg border"
+                    >
+                      <span className="text-sm">{labels[action]}</span>
+                      <Switch
+                        checked={formData.actions.includes(action)}
+                        onCheckedChange={() => toggleAction(action)}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -428,15 +460,14 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
                 <p className="text-xs font-medium text-muted-foreground mb-2">Preview da Regra:</p>
                 <div className="space-y-1 text-sm">
                   <div>
-                    <strong>SE</strong> {equipment?.name} →{' '}
-                    {getParameterLabel(parameterKey, equipment?.iotDeviceId)}
-                    {variableKey && ` (${selectedParam?.variables?.find(v => v.key === variableKey)?.label})`}{' '}
+                    <strong>SE</strong> {equipment?.tag} →{' '}
+                    {parameterKey}
+                    {variableKey && ` (${variableKey})`}{' '}
                     <strong>{getOperatorLabel(formData.operator)}</strong>{' '}
-                    <strong>{formData.threshold}</strong>{' '}
-                    {selectedParam?.unit}
+                    <strong>{formData.threshold}</strong>
                   </div>
                   <div>
-                    <strong>POR</strong> {formData.duration} minutos
+                    <strong>POR</strong> {formData.cooldown_minutes} minutos
                   </div>
                   <div>
                     <strong>ENTÃO</strong> gerar alerta{' '}

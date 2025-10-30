@@ -30,33 +30,40 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { useRuleStore } from '@/store/rule';
-import { useEquipmentStore } from '@/store/equipment';
+import { useRulesStore } from '@/store/rulesStore';
+import { useAppStore } from '@/store/app';
 import { getParameterLabel, getVariableLabel } from '@/hooks/useIoTParams';
 import { ASSET_TYPES } from '@/types/equipment';
-import { SEVERITIES, OPERATORS, type Rule } from '@/types/rule';
+import { Rule } from '@/services/api/alerts';
 
 export const RuleBuilder: React.FC = () => {
   // Estados dos stores
-  const { rules, removeRule, toggleRule, migrateRules, markRuleAsReviewed } = useRuleStore();
-  const { equipments } = useEquipmentStore();
+  const { 
+    rules, 
+    isLoading, 
+    fetchRules, 
+    deleteRule, 
+    toggleRuleStatus 
+  } = useRulesStore();
+  const { assets, loadAssetsFromApi } = useAppStore();
   
   // Estados locais
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<Rule | null>(null);
   const [selectedEquipmentId, setSelectedEquipmentId] = useState<string>('all');
 
-  // Executar migração na inicialização
+  // Carregar regras e assets do backend ao montar o componente
   useEffect(() => {
-    migrateRules(equipments);
-  }, [migrateRules, equipments]);
+    fetchRules();
+    loadAssetsFromApi();
+  }, [fetchRules, loadAssetsFromApi]);
 
   // Filtrar regras por equipamento selecionado
   const filteredRules = useMemo(() => {
     if (selectedEquipmentId === 'all') {
       return rules;
     }
-    return rules.filter(rule => rule.equipmentId === selectedEquipmentId);
+    return rules.filter(rule => String(rule.equipment) === selectedEquipmentId);
   }, [rules, selectedEquipmentId]);
 
   // Handlers
@@ -70,47 +77,52 @@ export const RuleBuilder: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDeleteRule = (ruleId: string) => {
+  const handleDeleteRule = async (ruleId: number) => {
     const rule = rules.find(r => r.id === ruleId);
-    removeRule(ruleId);
-    toast.success('Regra removida', {
-      description: `A regra "${rule?.name}" foi removida.`,
-    });
+    const success = await deleteRule(ruleId);
+    if (!success) {
+      toast.error('Erro ao remover regra');
+    }
   };
 
-  const handleToggleRule = (ruleId: string) => {
-    toggleRule(ruleId);
-    const rule = rules.find(r => r.id === ruleId);
-    toast.success(rule?.enabled ? 'Regra desativada' : 'Regra ativada', {
-      description: `A regra "${rule?.name}" foi ${rule?.enabled ? 'desativada' : 'ativada'}.`,
-    });
-  };
-
-  const handleReviewRule = (ruleId: string) => {
-    markRuleAsReviewed(ruleId);
-    toast.success('Regra revisada', {
-      description: 'A regra foi marcada como revisada.',
-    });
+  const handleToggleRule = async (ruleId: number) => {
+    const success = await toggleRuleStatus(ruleId);
+    if (!success) {
+      toast.error('Erro ao alterar status da regra');
+    }
   };
 
   // Helper functions
   const getSeverityColor = (severity: string) => {
-    const sev = SEVERITIES.find(s => s.value === severity);
-    return sev?.color || '';
+    const colors: Record<string, string> = {
+      'CRITICAL': 'bg-red-100 text-red-800 border-red-300',
+      'HIGH': 'bg-orange-100 text-orange-800 border-orange-300',
+      'MEDIUM': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      'LOW': 'bg-blue-100 text-blue-800 border-blue-300',
+    };
+    return colors[severity] || '';
   };
 
   const getOperatorLabel = (op: string) => {
-    return OPERATORS.find(o => o.value === op)?.label || op;
+    const labels: Record<string, string> = {
+      '>': 'Maior que',
+      '>=': 'Maior ou igual',
+      '<': 'Menor que',
+      '<=': 'Menor ou igual',
+      '==': 'Igual',
+      '!=': 'Diferente',
+    };
+    return labels[op] || op;
   };
 
-  const getEquipmentName = (equipmentId: string) => {
-    const equipment = equipments.find(e => e.id === equipmentId);
-    return equipment?.name || 'Equipamento não encontrado';
+  const getEquipmentName = (equipmentId: number, equipmentName?: string) => {
+    const asset = assets.find(a => String(a.id) === String(equipmentId));
+    return asset?.tag || equipmentName || 'Equipamento não encontrado';
   };
 
-  const getEquipmentTag = (equipmentId: string) => {
-    const equipment = equipments.find(e => e.id === equipmentId);
-    return equipment?.tag || '';
+  const getEquipmentTag = (equipmentId: number) => {
+    const asset = assets.find(a => String(a.id) === String(equipmentId));
+    return asset?.tag || '';
   };
 
   const resolveAssetTypeName = (assetTypeId: string) => {
@@ -119,11 +131,12 @@ export const RuleBuilder: React.FC = () => {
   };
 
   const formatRuleSummary = (rule: Rule) => {
-    const equipment = equipments.find(e => e.id === rule.equipmentId);
-    const paramLabel = getParameterLabel(rule.parameterKey, equipment?.iotDeviceId);
-    const variableLabel = rule.variableKey ? getVariableLabel(rule.parameterKey, rule.variableKey, equipment?.iotDeviceId) : '';
+    const asset = assets.find(a => String(a.id) === String(rule.equipment));
+    // Por enquanto, usamos apenas as chaves dos parâmetros sem resolver os labels
+    const paramLabel = rule.parameter_key;
+    const variableLabel = rule.variable_key ? ` (${rule.variable_key})` : '';
     
-    return `${paramLabel}${variableLabel ? ` (${variableLabel})` : ''} ${rule.operator} ${rule.threshold} ${rule.unit || ''} por ${rule.duration} min`;
+    return `${paramLabel}${variableLabel} ${rule.operator} ${rule.threshold} por ${rule.cooldown_minutes} min`;
   };
 
   return (
@@ -157,11 +170,11 @@ export const RuleBuilder: React.FC = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os equipamentos</SelectItem>
-            {equipments.map(equipment => (
-              <SelectItem key={equipment.id} value={equipment.id}>
+            {assets.map(asset => (
+              <SelectItem key={asset.id} value={String(asset.id)}>
                 <div className="flex items-center gap-2">
-                  <span>{equipment.name}</span>
-                  <span className="text-muted-foreground">({equipment.tag})</span>
+                  <span>{asset.tag}</span>
+                  <span className="text-muted-foreground">({asset.type})</span>
                 </div>
               </SelectItem>
             ))}
@@ -205,12 +218,6 @@ export const RuleBuilder: React.FC = () => {
                     <Badge className={`text-xs border ${getSeverityColor(rule.severity)}`}>
                       {rule.severity}
                     </Badge>
-                    {rule.needsReview && (
-                      <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
-                        <AlertCircle className="w-3 h-3 mr-1" />
-                        Requer revisão
-                      </Badge>
-                    )}
                   </div>
 
                   <p className="text-sm text-muted-foreground mb-3">{rule.description}</p>
@@ -218,8 +225,8 @@ export const RuleBuilder: React.FC = () => {
                   <div className="flex items-center gap-2 flex-wrap text-sm">
                     <div className="flex items-center gap-1 px-2 py-1 bg-muted rounded">
                       <Activity className="w-3 h-3" />
-                      <span className="font-medium">{getEquipmentName(rule.equipmentId)}</span>
-                      <span className="text-muted-foreground">({getEquipmentTag(rule.equipmentId)})</span>
+                      <span className="font-medium">{getEquipmentName(rule.equipment, rule.equipment_name)}</span>
+                      <span className="text-muted-foreground">({getEquipmentTag(rule.equipment)})</span>
                     </div>
                     <span className="text-muted-foreground">→</span>
                     <div className="flex items-center gap-1 px-2 py-1 bg-primary/10 rounded">
@@ -230,7 +237,7 @@ export const RuleBuilder: React.FC = () => {
                   <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      Criada: {new Date(rule.createdAt).toLocaleDateString('pt-BR')}
+                      Criada: {new Date(rule.created_at).toLocaleDateString('pt-BR')}
                     </div>
                     <div className="flex items-center gap-1">
                       Ações: {rule.actions.join(', ')}
@@ -254,12 +261,6 @@ export const RuleBuilder: React.FC = () => {
                         <Edit className="w-4 h-4" />
                         Editar
                       </DropdownMenuItem>
-                      {rule.needsReview && (
-                        <DropdownMenuItem onClick={() => handleReviewRule(rule.id)} className="gap-2">
-                          <AlertCircle className="w-4 h-4" />
-                          Marcar como revisado
-                        </DropdownMenuItem>
-                      )}
                       <DropdownMenuItem
                         onClick={() => handleDeleteRule(rule.id)}
                         className="gap-2 text-destructive focus:text-destructive"
