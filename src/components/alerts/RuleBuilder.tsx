@@ -94,13 +94,15 @@ export const RuleBuilder: React.FC = () => {
 
   // Helper functions
   const getSeverityColor = (severity: string) => {
+    // Suporta ambos os formatos: UPPERCASE (frontend) e PascalCase (backend)
+    const severityKey = severity.toUpperCase();
     const colors: Record<string, string> = {
       'CRITICAL': 'bg-red-100 text-red-800 border-red-300',
       'HIGH': 'bg-orange-100 text-orange-800 border-orange-300',
       'MEDIUM': 'bg-yellow-100 text-yellow-800 border-yellow-300',
       'LOW': 'bg-blue-100 text-blue-800 border-blue-300',
     };
-    return colors[severity] || '';
+    return colors[severityKey] || '';
   };
 
   const getOperatorLabel = (op: string) => {

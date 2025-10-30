@@ -73,19 +73,60 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
     actions: ['IN_APP'] as NotificationAction[],
   });
 
+  // Estados para parâmetros IoT
+  const [availableParameters, setAvailableParameters] = useState<Array<{
+    key: string; 
+    label: string; 
+    type: string;
+    sensorId: number;
+    sensorTag: string;
+  }>>([]);
+  const [loadingParams, setLoadingParams] = useState(false);
+
   // Dados derivados do equipamento selecionado
   const equipment = useMemo(() => 
     assets.find(e => String(e.id) === equipmentId), [assets, equipmentId]
   );
 
-  // Hook para carregar parâmetros IoT
-  // Por enquanto, não temos deviceId nos HVACAssets, então passamos undefined
-  const { params, loading: paramsLoading } = useIoTParams(undefined);
-
-  // Parâmetro selecionado e suas variáveis
+  // Parâmetro selecionado
   const selectedParam = useMemo(() => 
-    params.find(p => p.key === parameterKey), [params, parameterKey]
+    availableParameters.find(p => p.key === parameterKey), [availableParameters, parameterKey]
   );
+
+  // Buscar sensores quando equipamento for selecionado
+  useEffect(() => {
+    const loadSensors = async () => {
+      if (!equipmentId) {
+        setAvailableParameters([]);
+        return;
+      }
+
+      setLoadingParams(true);
+      try {
+        const { assetsService } = await import('@/services/assetsService');
+        const sensors = await assetsService.getSensors(parseInt(equipmentId));
+        
+        // Extrair parâmetros dos sensores (usar sensor.id como key para garantir unicidade)
+        const params = sensors.map(sensor => ({
+          key: `sensor_${sensor.id}`, // Chave única usando o ID do sensor
+          label: `${sensor.tag} - ${sensor.metric_type}`,
+          type: sensor.metric_type,
+          sensorId: sensor.id,
+          sensorTag: sensor.tag,
+        }));
+        
+        setAvailableParameters(params);
+      } catch (error) {
+        console.error('Erro ao carregar sensores:', error);
+        toast.error('Erro ao carregar parâmetros do equipamento');
+        setAvailableParameters([]);
+      } finally {
+        setLoadingParams(false);
+      }
+    };
+
+    loadSensors();
+  }, [equipmentId]);
 
   // Função para resolver nome do tipo de ativo
   const resolveAssetTypeName = (assetTypeId: string) => {
@@ -163,6 +204,14 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
       return;
     }
 
+    // Converte severity de UPPERCASE para PascalCase (backend Django)
+    const severityMap: Record<string, Severity> = {
+      'CRITICAL': 'Critical' as Severity,
+      'HIGH': 'High' as Severity,
+      'MEDIUM': 'Medium' as Severity,
+      'LOW': 'Low' as Severity,
+    };
+
     const ruleData = {
       name: formData.name.trim(),
       description: formData.description.trim(),
@@ -171,8 +220,8 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
       variable_key: variableKey || '',
       operator: formData.operator,
       threshold: parseFloat(formData.threshold),
-      cooldown_minutes: parseInt(formData.cooldown_minutes),
-      severity: formData.severity,
+      duration: parseInt(formData.cooldown_minutes),
+      severity: severityMap[formData.severity] || formData.severity,
       actions: formData.actions,
       enabled: true,
     };
@@ -291,16 +340,16 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
 
             {/* Parâmetro */}
             <div className="space-y-2">
-              <Label>Parâmetros a monitor *</Label>
+              <Label>Parâmetros a monitorar *</Label>
               <Select 
                 value={parameterKey} 
                 onValueChange={setParameterKey} 
-                disabled={!equipment || paramsLoading}
+                disabled={!equipment || loadingParams}
               >
                 <SelectTrigger>
                   <SelectValue 
                     placeholder={
-                      paramsLoading 
+                      loadingParams 
                         ? "Carregando parâmetros..." 
                         : !equipment 
                           ? "Selecione um equipamento primeiro"
@@ -309,53 +358,30 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {params.map(p => (
+                  {availableParameters.map(p => (
                     <SelectItem key={p.key} value={p.key}>
                       <div className="flex items-center gap-2">
                         <span>{p.label}</span>
-                        {p.unit && <span className="text-muted-foreground">({p.unit})</span>}
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               
-              {paramsLoading && (
+              {loadingParams && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   Carregando parâmetros IoT...
                 </div>
               )}
 
-              {equipment && !paramsLoading && params.length === 0 && (
+              {equipment && !loadingParams && availableParameters.length === 0 && (
                 <div className="flex items-center gap-2 text-sm text-amber-600">
                   <AlertCircle className="w-4 h-4" />
-                  Nenhum parâmetro IoT encontrado para este equipamento
+                  Nenhum sensor encontrado para este equipamento
                 </div>
               )}
             </div>
-
-            {/* Variável (campo condicional) */}
-            {selectedParam?.variables && selectedParam.variables.length > 0 && (
-              <div className="space-y-2">
-                <Label>Variável *</Label>
-                <Select value={variableKey} onValueChange={setVariableKey}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a variável" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {selectedParam.variables.map(v => (
-                      <SelectItem key={v.key} value={v.key}>
-                        {v.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="text-xs text-muted-foreground">
-                  Especifica como o parâmetro deve ser avaliado (ex: valor atual, média, máximo)
-                </div>
-              </div>
-            )}
 
             <Separator />
 
@@ -486,7 +512,7 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={handleSaveRule} disabled={paramsLoading}>
+          <Button onClick={handleSaveRule} disabled={loadingParams}>
             <CheckCircle2 className="w-4 h-4 mr-2" />
             {editingRule ? 'Salvar Alterações' : 'Criar Regra'}
           </Button>

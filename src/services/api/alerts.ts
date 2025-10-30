@@ -10,7 +10,9 @@ import { api } from '@/lib/api';
 // Types
 // ============================================================================
 
-export type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+// Backend usa PascalCase (Critical, High, Medium, Low)
+// Frontend usa UPPERCASE (CRITICAL, HIGH, MEDIUM, LOW) para UI
+export type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'Critical' | 'High' | 'Medium' | 'Low';
 export type AlertStatus = 'active' | 'acknowledged' | 'resolved';
 export type NotificationAction = 'EMAIL' | 'IN_APP' | 'SMS' | 'WHATSAPP';
 export type Operator = '>' | '<' | '>=' | '<=' | '==' | '!=';
