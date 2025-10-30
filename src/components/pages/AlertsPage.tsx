@@ -1,11 +1,25 @@
-import React, { useState } from 'react';
-import { useAppStore } from '../../store/app';
-import { AlertTriangle, Bell, CheckCircle, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useAlertsStore } from '../../store/alertsStore';
+import { AlertTriangle, Bell, CheckCircle, Clock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const AlertsPage: React.FC = () => {
-  const { alerts, acknowledgeAlert, resolveAlert } = useAppStore();
+  const {
+    alerts,
+    statistics,
+    isLoading,
+    fetchAlerts,
+    fetchStatistics,
+    acknowledgeAlert: acknowledgeAlertApi,
+    resolveAlert: resolveAlertApi,
+  } = useAlertsStore();
   const [filterStatus, setFilterStatus] = useState<string>('active');
+
+  // Carregar dados ao montar
+  useEffect(() => {
+    fetchAlerts();
+    fetchStatistics();
+  }, [fetchAlerts, fetchStatistics]);
 
   // Traduções
   const translateSeverity = (severity: string): string => {
@@ -18,18 +32,24 @@ export const AlertsPage: React.FC = () => {
     return translations[severity] || severity;
   };
 
-  const handleAcknowledge = (alertId: string) => {
-    acknowledgeAlert(alertId);
-    toast.success('Alerta reconhecido', {
-      description: 'Marcado para monitoramento',
-    });
+  const handleAcknowledge = async (alertId: number) => {
+    const success = await acknowledgeAlertApi(alertId);
+    if (success) {
+      toast.success('Alerta reconhecido', {
+        description: 'Marcado para monitoramento',
+      });
+      fetchAlerts(); // Recarregar lista
+    }
   };
 
-  const handleResolve = (alertId: string) => {
-    resolveAlert(alertId);
-    toast.success('Alerta resolvido', {
-      description: 'Problema solucionado',
-    });
+  const handleResolve = async (alertId: number) => {
+    const success = await resolveAlertApi(alertId);
+    if (success) {
+      toast.success('Alerta resolvido', {
+        description: 'Problema solucionado',
+      });
+      fetchAlerts(); // Recarregar lista
+    }
   };
 
   const filteredAlerts = alerts.filter(alert => {
@@ -89,7 +109,7 @@ export const AlertsPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-bold text-red-600">
-                {alerts.filter(a => !a.resolved && !a.acknowledged).length}
+                {statistics?.active || 0}
               </h3>
               <p className="text-sm text-muted-foreground">Alertas Ativos</p>
             </div>
@@ -101,7 +121,7 @@ export const AlertsPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-bold text-yellow-600">
-                {alerts.filter(a => a.acknowledged && !a.resolved).length}
+                {statistics?.acknowledged || 0}
               </h3>
               <p className="text-sm text-muted-foreground">Reconhecidos</p>
             </div>
@@ -113,7 +133,7 @@ export const AlertsPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-bold text-green-600">
-                {alerts.filter(a => a.resolved).length}
+                {statistics?.resolved || 0}
               </h3>
               <p className="text-sm text-muted-foreground">Resolvidos</p>
             </div>
@@ -124,7 +144,7 @@ export const AlertsPage: React.FC = () => {
         <div className="bg-card rounded-xl p-4 border shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-bold text-primary">{alerts.length}</h3>
+              <h3 className="text-xl font-bold text-primary">{statistics?.total || 0}</h3>
               <p className="text-sm text-muted-foreground">Total</p>
             </div>
             <Clock className="w-5 h-5 text-primary" />
@@ -167,10 +187,20 @@ export const AlertsPage: React.FC = () => {
           </h3>
         </div>
 
-        {filteredAlerts.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : filteredAlerts.length === 0 ? (
           <div className="text-center py-12">
             <AlertTriangle className="w-12 h-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
-            <p className="text-muted-foreground">Nenhum alerta encontrado</p>
+            <p className="text-muted-foreground font-medium mb-2">Nenhum alerta encontrado</p>
+            <p className="text-sm text-muted-foreground">
+              {filterStatus !== 'all' 
+                ? 'Tente mudar o filtro para ver outros alertas' 
+                : 'Não há alertas no momento. Alertas são gerados automaticamente quando as regras são disparadas.'
+              }
+            </p>
           </div>
         ) : (
           <div className="divide-y">
@@ -182,19 +212,19 @@ export const AlertsPage: React.FC = () => {
                       <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getSeverityColor(alert.severity)}`}>
                         {translateSeverity(alert.severity)}
                       </span>
-                      <span className="font-medium">{alert.assetTag}</span>
+                      <span className="font-medium">{alert.asset_tag}</span>
                       <span className="text-sm text-muted-foreground">
-                        {getTimeAgo(alert.timestamp)}
+                        {getTimeAgo(alert.triggered_at)}
                       </span>
                     </div>
                     
                     <p className="text-sm text-foreground mb-2">{alert.message}</p>
                     
                     <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                      <span>Regra: {alert.ruleName}</span>
-                      <span>Tipo: {alert.type}</span>
-                      {alert.acknowledgedBy && (
-                        <span>Reconhecido por: {alert.acknowledgedBy}</span>
+                      <span>Regra: {alert.rule_name}</span>
+                      <span>Equipamento: {alert.equipment_name}</span>
+                      {alert.acknowledged_by && (
+                        <span>Reconhecido por: ID {alert.acknowledged_by}</span>
                       )}
                     </div>
                   </div>

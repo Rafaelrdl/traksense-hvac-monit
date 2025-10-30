@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import { alertsApi, Alert, AlertListParams, AcknowledgeAlertRequest, ResolveAlertRequest, AlertStatistics } from '@/services/api/alerts';
 import { toast } from 'sonner';
+import { useNotifications } from './notifications';
 
 interface AlertsState {
   // State
@@ -65,12 +66,37 @@ export const useAlertsStore = create<AlertsState>((set, get) => ({
     set({ isLoading: true, error: null });
     
     try {
-      const { filters, currentPage, pageSize } = get();
+      const { filters, currentPage, pageSize, alerts: previousAlerts } = get();
       const data = await alertsApi.list({
         ...filters,
         page: currentPage,
         page_size: pageSize,
       });
+      
+      // Detectar novos alertas e criar notificações
+      const newAlerts = data.results.filter(alert => 
+        alert.is_active && !previousAlerts.some(prev => prev.id === alert.id)
+      );
+      
+      if (newAlerts.length > 0) {
+        const notificationsStore = useNotifications.getState();
+        newAlerts.forEach(alert => {
+          // Mapear severity da API para notificação
+          let severity: 'info' | 'warning' | 'critical' = 'info';
+          const alertSeverity = alert.severity.toLowerCase();
+          if (alertSeverity.includes('critical') || alertSeverity === 'critical') {
+            severity = 'critical';
+          } else if (alertSeverity.includes('high') || alertSeverity === 'high') {
+            severity = 'warning';
+          }
+          
+          notificationsStore.add({
+            title: alert.rule_name,
+            message: alert.message,
+            severity,
+          });
+        });
+      }
       
       set({
         alerts: data.results,
@@ -113,11 +139,14 @@ export const useAlertsStore = create<AlertsState>((set, get) => ({
         isAcknowledging: false,
       }));
       
-      toast.success('Alert acknowledged');
+      // Atualizar estatísticas
+      get().fetchStatistics();
+      
+      toast.success('Alerta reconhecido');
       
       return true;
     } catch (error: any) {
-      const message = error.response?.data?.detail || 'Failed to acknowledge alert';
+      const message = error.response?.data?.detail || 'Falha ao reconhecer alerta';
       set({ error: message, isAcknowledging: false });
       toast.error(message);
       return false;
@@ -139,11 +168,14 @@ export const useAlertsStore = create<AlertsState>((set, get) => ({
         isResolving: false,
       }));
       
-      toast.success('Alert resolved');
+      // Atualizar estatísticas
+      get().fetchStatistics();
+      
+      toast.success('Alerta resolvido');
       
       return true;
     } catch (error: any) {
-      const message = error.response?.data?.detail || 'Failed to resolve alert';
+      const message = error.response?.data?.detail || 'Falha ao resolver alerta';
       set({ error: message, isResolving: false });
       toast.error(message);
       return false;
