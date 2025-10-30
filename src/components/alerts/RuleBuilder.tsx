@@ -138,7 +138,7 @@ export const RuleBuilder: React.FC = () => {
     const paramLabel = rule.parameter_key;
     const variableLabel = rule.variable_key ? ` (${rule.variable_key})` : '';
     
-    return `${paramLabel}${variableLabel} ${rule.operator} ${rule.threshold} por ${rule.cooldown_minutes} min`;
+    return `${paramLabel}${variableLabel} ${rule.operator} ${rule.threshold} por ${rule.duration} min`;
   };
 
   return (

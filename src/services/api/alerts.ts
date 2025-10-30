@@ -23,18 +23,21 @@ export interface Rule {
   description: string;
   equipment: number;
   equipment_name?: string;
+  equipment_tag?: string;
   parameter_key: string;
   variable_key: string;
   operator: Operator;
   threshold: number;
+  unit?: string;
+  duration: number;  // Backend usa 'duration' (não cooldown_minutes)
   severity: Severity;
   actions: NotificationAction[];
   enabled: boolean;
-  cooldown_minutes: number;
   created_by?: number;
   created_by_email?: string;
   created_at: string;
   updated_at: string;
+  condition_display?: string;
 }
 
 export interface Alert {
@@ -112,10 +115,11 @@ export interface CreateRuleRequest {
   variable_key: string;
   operator: Operator;
   threshold: number;
+  unit?: string;
+  duration?: number;  // Backend usa 'duration' (minutos de cooldown)
   severity: Severity;
   actions: NotificationAction[];
   enabled?: boolean;
-  cooldown_minutes?: number;
 }
 
 export interface UpdateRuleRequest extends Partial<CreateRuleRequest> {}

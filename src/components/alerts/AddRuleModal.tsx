@@ -68,7 +68,7 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
     description: '',
     operator: '>' as Operator,
     threshold: '',
-    cooldown_minutes: '5',
+    duration: '5',  // Minutos de cooldown
     severity: 'MEDIUM' as Severity,
     actions: ['IN_APP'] as NotificationAction[],
   });
@@ -151,13 +151,23 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
       setEquipmentId(String(editingRule.equipment));
       setParameterKey(editingRule.parameter_key);
       setVariableKey(editingRule.variable_key || '');
+      
+      // Converte severity de PascalCase (backend) para UPPERCASE (frontend)
+      const severityMap: Record<string, Severity> = {
+        'Critical': 'CRITICAL',
+        'High': 'HIGH',
+        'Medium': 'MEDIUM',
+        'Low': 'LOW',
+      };
+      const frontendSeverity = severityMap[editingRule.severity] || editingRule.severity.toUpperCase() as Severity;
+      
       setFormData({
         name: editingRule.name,
         description: editingRule.description,
         operator: editingRule.operator,
         threshold: editingRule.threshold.toString(),
-        cooldown_minutes: editingRule.cooldown_minutes.toString(),
-        severity: editingRule.severity,
+        duration: editingRule.duration.toString(),
+        severity: frontendSeverity,
         actions: editingRule.actions,
       });
     } else {
@@ -170,7 +180,7 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
         description: '',
         operator: '>',
         threshold: '',
-        cooldown_minutes: '5',
+        duration: '5',
         severity: 'MEDIUM',
         actions: ['IN_APP'],
       });
@@ -220,7 +230,7 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
       variable_key: variableKey || '',
       operator: formData.operator,
       threshold: parseFloat(formData.threshold),
-      duration: parseInt(formData.cooldown_minutes),
+      duration: parseInt(formData.duration),
       severity: severityMap[formData.severity] || formData.severity,
       actions: formData.actions,
       enabled: true,
@@ -420,8 +430,8 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
                   type="number"
                   min="1"
                   placeholder="Ex: 5"
-                  value={formData.cooldown_minutes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, cooldown_minutes: e.target.value }))}
+                  value={formData.duration}
+                  onChange={(e) => setFormData(prev => ({ ...prev, duration: e.target.value }))}
                 />
               </div>
             </div>
@@ -493,7 +503,7 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
                     <strong>{formData.threshold}</strong>
                   </div>
                   <div>
-                    <strong>POR</strong> {formData.cooldown_minutes} minutos
+                    <strong>POR</strong> {formData.duration} minutos
                   </div>
                   <div>
                     <strong>ENTÃO</strong> gerar alerta{' '}
