@@ -1,5 +1,72 @@
 # TrakSense HVAC — Multi-Tenant IoT Monitoring Platform (Frontend)
 
+---
+
+## 🚨 CRITICAL: FILE ORGANIZATION RULES (READ FIRST!)
+
+> **⚠️ MANDATORY:** Before creating ANY file, read `.github/ai-instructions/.copilot-rules`
+
+### 🔴 NEVER Create Documentation in Root
+
+**❌ WRONG:**
+```
+traksense-hvac-monit/
+├── FASE_7.md ❌
+├── IMPLEMENTACAO_NOVA.md ❌
+├── GUIA_TESTE.md ❌
+└── BUGFIX_ALGO.md ❌
+```
+
+**✅ CORRECT:**
+```
+traksense-hvac-monit/
+└── docs/
+    ├── fases/FASE_7.md ✅
+    ├── implementacao/IMPLEMENTACAO_NOVA.md ✅
+    ├── guias/GUIA_TESTE.md ✅
+    └── bugfixes/BUGFIX_ALGO.md ✅
+```
+
+### 📋 Quick Reference: File Prefix → Location
+
+| Prefix | Location | Example |
+|--------|----------|---------|
+| `FASE_*.md` | `docs/fases/` | `FASE_7_NOTIFICATIONS.md` |
+| `IMPLEMENTACAO_*.md` | `docs/implementacao/` | `IMPLEMENTACAO_WEBSOCKET.md` |
+| `GUIA_*.md` | `docs/guias/` | `GUIA_TESTE_ALERTAS.md` |
+| `BUGFIX_*.md` | `docs/bugfixes/` | `BUGFIX_CHART_DISPLAY.md` |
+| `INTEGRACAO_*.md` | `docs/integracao/` | `INTEGRACAO_API.md` |
+| `MULTI_TENANT_*.md` | `docs/integracao/` | `MULTI_TENANT_FLOW.md` |
+
+### 🛡️ Protection System
+
+This project has **4 layers of protection** against file disorganization:
+
+1. **`.copilot-rules`** - Quick rules summary (in `.github/ai-instructions/`)
+2. **`AI_FILE_ORGANIZATION_WARNING.md`** - Visual guide
+3. **`QUICK_REFERENCE.md`** - Lookup table
+4. **`README.md`** - Comprehensive guide
+
+**📖 Full details:** See `.github/ai-instructions/README.md`
+
+### ✅ Before Creating Files - Checklist
+
+- [ ] Is this a documentation file? → Use `docs/` with subfolder
+- [ ] Does it have a prefix (FASE_, GUIA_, etc)? → Check table above
+- [ ] Not in whitelist? → Use appropriate `docs/` subfolder
+- [ ] When in doubt? → Read `.github/ai-instructions/.copilot-rules`
+
+### 🎯 Root Whitelist (Only These Allowed)
+
+**Configuration:** `package.json`, `tsconfig.json`, `vite.config.ts`, `tailwind.config.js`, `components.json`, `theme.json`  
+**Environment:** `.env`, `.env.example`, `.gitignore`  
+**Documentation:** `README.md`, `INDEX.md`, `SECURITY.md`, `LICENSE`  
+**Entry:** `index.html`
+
+**Everything else** → `docs/` with appropriate subfolder!
+
+---
+
 ## Project Overview
 
 TrakSense is an **IoT HVAC monitoring platform** that provides real-time visibility, predictive alerts, and asset lifecycle insights for critical HVAC systems in hospitals, industry, data centers, and commercial buildings.
