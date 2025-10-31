@@ -195,6 +195,17 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
   const updateParameter = (index: number, field: keyof RuleParameter, value: any) => {
     const updated = [...parameters];
     updated[index] = { ...updated[index], [field]: value };
+    
+    // Se estamos atualizando o parameter_key, também atualizar o variable_key com o tipo do sensor
+    if (field === 'parameter_key') {
+      const selectedParam = availableParameters.find(p => p.key === value);
+      if (selectedParam) {
+        updated[index].variable_key = selectedParam.type; // Ex: "temperature", "humidity"
+        updated[index].unit = selectedParam.type === 'temperature' ? '°C' : 
+                              selectedParam.type === 'humidity' ? '%' : '';
+      }
+    }
+    
     setParameters(updated);
   };
 
@@ -244,9 +255,16 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
       'LOW': 'Low' as Severity,
     };
 
+    // Converter parâmetros para formato backend
     const convertedParams = parameters.map(param => ({
-      ...param,
+      parameter_key: param.parameter_key,
+      variable_key: param.variable_key || '',
+      operator: param.operator,
+      threshold: param.threshold,
+      unit: param.unit || '',
+      duration: param.duration,
       severity: severityMap[param.severity] || param.severity,
+      message_template: param.message_template,
     }));
 
     const ruleData = {
@@ -257,6 +275,8 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
       actions: actions,
       enabled: true,
     };
+
+    console.log('📤 Enviando regra para backend:', ruleData);
 
     if (editingRule) {
       const result = await updateRule(editingRule.id, ruleData);
@@ -429,8 +449,8 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
               {/* Lista de Parâmetros */}
               <div className="space-y-3">
                 {parameters.map((param, index) => (
-                  <Card key={index} className="border-2 hover:border-gray-300 transition-colors">
-                    <CardHeader className="pb-3 pt-3 px-4 bg-gray-50/50">
+                  <Card key={index} className="border border-gray-200 bg-white/40 backdrop-blur-sm hover:border-gray-300 hover:bg-white/60 transition-all shadow-sm">
+                    <CardHeader className="pb-3 pt-3 px-4 border-b border-gray-100">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
@@ -451,7 +471,7 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
                         </Button>
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-3 px-4 pb-4 pt-4">
+                    <CardContent className="space-y-4 px-4 pb-4 pt-4">
                       
                       {/* Seletor de Sensor */}
                       <div className="space-y-1.5">
@@ -464,7 +484,7 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
                           onValueChange={(value) => updateParameter(index, 'parameter_key', value)}
                           disabled={loadingParams}
                         >
-                          <SelectTrigger className="h-9 bg-white">
+                          <SelectTrigger className="h-9 bg-white/80">
                             <SelectValue placeholder="Selecione um sensor para monitorar" />
                           </SelectTrigger>
                           <SelectContent>
@@ -489,8 +509,8 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
                       </div>
 
                       {/* Condição e Valor */}
-                      <div className="bg-gray-50/50 rounded-lg p-3 space-y-3">
-                        <p className="text-xs font-medium text-gray-700">Condição de Disparo</p>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium text-gray-700">Condição de Disparo</Label>
                         <div className="grid grid-cols-3 gap-2">
                           <div className="space-y-1.5">
                             <Label className="text-xs font-medium">
@@ -500,7 +520,7 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
                               value={param.operator}
                               onValueChange={(value) => updateParameter(index, 'operator', value as Operator)}
                             >
-                              <SelectTrigger className="h-9 bg-white">
+                              <SelectTrigger className="h-9 bg-white/80">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -521,7 +541,7 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
                               type="number"
                               step="0.1"
                               placeholder="Ex: 250"
-                              className="h-9 bg-white"
+                              className="h-9 bg-white/80"
                               value={param.threshold}
                               onChange={(e) => updateParameter(index, 'threshold', parseFloat(e.target.value) || 0)}
                             />
@@ -535,13 +555,13 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
                               type="number"
                               min="1"
                               placeholder="5"
-                              className="h-9 bg-white"
+                              className="h-9 bg-white/80"
                               value={param.duration}
                               onChange={(e) => updateParameter(index, 'duration', parseInt(e.target.value) || 5)}
                             />
                           </div>
                         </div>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-[10px] text-muted-foreground pl-0.5">
                           O alerta será disparado quando o valor do sensor atender à condição configurada
                         </p>
                       </div>
@@ -563,7 +583,7 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
                                 hover:scale-[1.02] active:scale-[0.98]
                                 ${param.severity === sev.value
                                   ? `${sev.color} ring-2 ring-offset-1 shadow-sm`
-                                  : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                                  : 'bg-white/80 border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-white'
                                 }
                               `}
                             >
@@ -584,18 +604,18 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
                           value={param.message_template}
                           onChange={(e) => updateParameter(index, 'message_template', e.target.value)}
                           rows={3}
-                          className="text-sm resize-none"
+                          className="text-sm resize-none bg-white/80"
                         />
-                        <div className="bg-blue-50/50 border border-blue-200 rounded-md p-2 space-y-1">
+                        <div className="bg-blue-50/30 border border-blue-200/50 rounded-md p-2 space-y-1">
                           <p className="text-[10px] font-medium text-blue-900">Variáveis disponíveis:</p>
                           <div className="flex flex-wrap gap-1.5">
-                            <code className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">{"{sensor}"}</code>
-                            <code className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">{"{value}"}</code>
-                            <code className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">{"{threshold}"}</code>
-                            <code className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">{"{operator}"}</code>
-                            <code className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">{"{unit}"}</code>
+                            <code className="text-[10px] px-1.5 py-0.5 bg-blue-100/80 text-blue-800 rounded">{"{sensor}"}</code>
+                            <code className="text-[10px] px-1.5 py-0.5 bg-blue-100/80 text-blue-800 rounded">{"{value}"}</code>
+                            <code className="text-[10px] px-1.5 py-0.5 bg-blue-100/80 text-blue-800 rounded">{"{threshold}"}</code>
+                            <code className="text-[10px] px-1.5 py-0.5 bg-blue-100/80 text-blue-800 rounded">{"{operator}"}</code>
+                            <code className="text-[10px] px-1.5 py-0.5 bg-blue-100/80 text-blue-800 rounded">{"{unit}"}</code>
                           </div>
-                          <p className="text-[10px] text-blue-700 mt-1">Use as variáveis entre chaves para personalizar a mensagem</p>
+                          <p className="text-[10px] text-blue-700/90 mt-1">Use as variáveis entre chaves para personalizar a mensagem</p>
                         </div>
                       </div>
 
