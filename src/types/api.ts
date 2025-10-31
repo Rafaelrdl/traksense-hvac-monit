@@ -107,7 +107,11 @@ export interface ApiSensor {
   tag: string;
   device: number;
   device_name: string;
+  device_serial: string;
+  device_mqtt_client_id: string;
   asset_tag: string;
+  asset_name: string;
+  site_name: string;
   metric_type: string;
   unit: string;
   thresholds: Record<string, any>;

@@ -77,6 +77,7 @@ interface AppState {
   
   // Asset actions
   addAsset: (asset: Omit<HVACAsset, 'id' | 'healthScore' | 'powerConsumption' | 'status' | 'operatingHours' | 'lastMaintenance'>) => Promise<void>;
+  deleteAsset: (assetId: string) => Promise<void>;
   
   // Maintenance actions
   addMaintenanceTask: (task: Omit<MaintenanceTask, 'id' | 'createdDate' | 'createdBy'>) => void;
@@ -311,6 +312,27 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ assets: [...currentAssets, newAsset] });
       
       // Re-throw para exibir erro ao usuário
+      throw error;
+    }
+  },
+
+  deleteAsset: async (assetId: string) => {
+    try {
+      // 1. Extrair o ID numérico do formato "asset-{id}" ou usar diretamente se já for número
+      const numericId = assetId.startsWith('asset-') 
+        ? parseInt(assetId.split('-')[1]) 
+        : parseInt(assetId);
+      
+      // 2. Deletar na API
+      await assetsService.delete(numericId);
+      
+      // 3. Remover do estado local
+      const currentAssets = get().assets;
+      set({ assets: currentAssets.filter(asset => asset.id !== assetId) });
+      
+      console.log('✅ Asset deletado com sucesso:', assetId);
+    } catch (error) {
+      console.error('❌ Erro ao deletar asset na API:', error);
       throw error;
     }
   },

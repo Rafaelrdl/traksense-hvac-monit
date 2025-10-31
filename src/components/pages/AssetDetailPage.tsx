@@ -204,17 +204,11 @@ export const AssetDetailPage: React.FC = () => {
     }
 
     // Função auxiliar para extrair o device_id correto
-    const getDeviceId = (sensor: typeof apiSensors[0]): string => {
-      // 1. Tenta device_name (campo usado pelo serializer)
-      let deviceId = sensor.device_name || '';
+    const getDeviceId = (sensor: any): string => {
+      // Usar device_mqtt_client_id que é o campo correto para telemetria
+      const deviceId = sensor.device_mqtt_client_id || '';
       
-      // 2. Se começar com "Device ", remove o prefixo (formato incorreto)
-      if (deviceId.startsWith('Device ')) {
-        deviceId = deviceId.replace('Device ', '');
-      }
-      
-      // 3. Log para debug
-      console.log(`  🔍 Sensor ${sensor.tag}: device_name="${sensor.device_name}" -> usando deviceId="${deviceId}"`);
+      console.log(`  🔍 Sensor ${sensor.tag}: device_mqtt_client_id="${deviceId}"`);
       
       return deviceId;
     };

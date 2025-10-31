@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/app';
 import { HVACAsset } from '../../types/hvac';
 import { Search, ExternalLink, Heart, Zap, AlertCircle } from 'lucide-react';
 import { AddAssetDialog } from '../assets/AddAssetDialog';
+import { DeleteAssetButton } from '../assets/DeleteAssetButton';
 import { UnifiedAssetsToolbar } from '../../modules/assets/components/UnifiedAssetsToolbar';
 
 export const AssetsPage: React.FC = () => {
@@ -219,6 +220,12 @@ export const AssetsPage: React.FC = () => {
                         <ExternalLink className="w-3 h-3" />
                         <span>TrakNor</span>
                       </a>
+                      <span className="text-muted-foreground">•</span>
+                      <DeleteAssetButton 
+                        assetId={asset.id} 
+                        assetName={asset.tag}
+                        onDeleteSuccess={() => loadAssetsFromApi()}
+                      />
                     </div>
                   </td>
                 </tr>
