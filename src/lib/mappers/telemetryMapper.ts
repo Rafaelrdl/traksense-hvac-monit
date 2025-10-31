@@ -80,14 +80,18 @@ export function mapApiLabelsToFrontend(apiLabels: any): SensorLabels {
 /**
  * Mapeia TimeSeriesPoint do backend para frontend.
  * Backend já usa formato adequado, apenas valida tipos.
+ * Suporta tanto dados agregados (avg/min/max) quanto dados brutos (value).
  */
 export function mapApiTimeSeriesPointToFrontend(apiPoint: any): TimeSeriesPoint {
+  // Se tiver 'value', é dado bruto - copiar para 'avg' para compatibilidade
+  const value = apiPoint.value ?? apiPoint.avg ?? null;
+  
   return {
     timestamp: apiPoint.timestamp,
-    avg: apiPoint.avg ?? null,
-    min: apiPoint.min ?? null,
-    max: apiPoint.max ?? null,
-    count: apiPoint.count || 0,
+    avg: value,
+    min: apiPoint.min ?? value,
+    max: apiPoint.max ?? value,
+    count: apiPoint.count || (value !== null ? 1 : 0),
     stddev: apiPoint.stddev ?? null,
   };
 }
@@ -121,14 +125,50 @@ export function mapApiLatestReadingsToFrontend(apiResponse: any): LatestReadings
  * Mapeia DeviceHistoryResponse do backend para frontend.
  */
 export function mapApiDeviceHistoryToFrontend(apiResponse: any): DeviceHistoryResponse {
+  // A API retorna 'data', não 'series'
+  const rawData = apiResponse.data || apiResponse.series || [];
+  
+  // Se a API retornou dados brutos (array de readings), precisamos agrupar por sensor
+  let seriesData: any[] = [];
+  
+  if (rawData.length > 0 && !rawData[0].sensor_id) {
+    // Já está no formato correto (array de series)
+    seriesData = rawData;
+  } else {
+    // Dados brutos: agrupar por sensor_id
+    const bySensor = rawData.reduce((acc: any, reading: any) => {
+      const sensorId = reading.sensor_id;
+      if (!sensorId) return acc;
+      
+      if (!acc[sensorId]) {
+        acc[sensorId] = {
+          sensor_id: sensorId,
+          sensor_name: sensorId,
+          sensor_type: 'unknown',
+          unit: '',
+          data: []
+        };
+      }
+      
+      acc[sensorId].data.push({
+        timestamp: reading.ts || reading.bucket,
+        value: reading.value || reading.avg_value || reading.min_value || reading.max_value
+      });
+      
+      return acc;
+    }, {});
+    
+    seriesData = Object.values(bySensor);
+  }
+  
   return {
     deviceId: apiResponse.device_id,
     period: {
-      start: apiResponse.period?.start || '',
-      end: apiResponse.period?.end || '',
+      start: apiResponse.from || apiResponse.period?.start || '',
+      end: apiResponse.to || apiResponse.period?.end || '',
     },
-    aggregation: (apiResponse.aggregation || 'raw') as AggregationLevel,
-    series: (apiResponse.series || []).map(mapApiSensorTimeSeriesToFrontend),
+    aggregation: (apiResponse.interval || apiResponse.aggregation || 'raw') as AggregationLevel,
+    series: seriesData.map(mapApiSensorTimeSeriesToFrontend),
   };
 }
 

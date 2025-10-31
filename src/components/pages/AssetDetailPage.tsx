@@ -12,6 +12,7 @@ import { TrakNorCTA } from '../assets/TrakNorCTA';
 import { ContactSalesDialog } from '../common/ContactSalesDialog';
 import { assetsService } from '../../services/assetsService';
 import { telemetryService } from '../../services/telemetryService';
+import { mapApiDeviceHistoryToFrontend } from '../../lib/mappers/telemetryMapper';
 import type { ApiSensor } from '../../types/api';
 import { 
   ArrowLeft, 
@@ -40,6 +41,7 @@ export const AssetDetailPage: React.FC = () => {
   const [isLoadingSensors, setIsLoadingSensors] = useState(false);
   const [telemetryChartData, setTelemetryChartData] = useState<any>(null);
   const [isLoadingTelemetry, setIsLoadingTelemetry] = useState(false);
+  const [telemetryPeriod, setTelemetryPeriod] = useState<'24h' | '7d' | '30d'>('24h');
 
   if (!selectedAsset) {
     return (
@@ -205,28 +207,48 @@ export const AssetDetailPage: React.FC = () => {
 
     // Função auxiliar para extrair o device_id correto
     const getDeviceId = (sensor: any): string => {
-      // Usar device_mqtt_client_id que é o campo correto para telemetria
-      const deviceId = sensor.device_mqtt_client_id || '';
+      // Tentar mqtt_client_id primeiro, depois serial, depois tag do sensor
+      let deviceId = sensor.device_mqtt_client_id || sensor.device_serial || sensor.tag.split('_')[0];
       
-      console.log(`  🔍 Sensor ${sensor.tag}: device_mqtt_client_id="${deviceId}"`);
+      console.log(`  🔍 Sensor ${sensor.tag}:`);
+      console.log(`     mqtt_client_id="${sensor.device_mqtt_client_id}"`);
+      console.log(`     device_serial="${sensor.device_serial}"`);
+      console.log(`     device_id usado="${deviceId}"`);
       
       return deviceId;
+    };
+
+    // Calcular horas baseado no período
+    const getHoursForPeriod = (period: '24h' | '7d' | '30d'): number => {
+      switch (period) {
+        case '24h': return 24;
+        case '7d': return 24 * 7;
+        case '30d': return 24 * 30;
+      }
     };
 
     const fetchTelemetryData = async () => {
       setIsLoadingTelemetry(true);
       try {
-        console.log(`📊 Buscando telemetria para métricas: ${selectedMetrics.join(', ')}`);
+        const hours = getHoursForPeriod(telemetryPeriod);
+        console.log(`📊 Buscando telemetria para métricas: ${selectedMetrics.join(', ')} (período: ${telemetryPeriod} = ${hours}h)`);
         
         // Filtrar sensores que correspondem às métricas selecionadas
         const relevantSensors = apiSensors.filter(s => selectedMetrics.includes(s.metric_type));
         
+        console.log(`📋 Sensores relevantes encontrados:`, relevantSensors.map(s => ({
+          tag: s.tag,
+          metric_type: s.metric_type,
+          device_mqtt_client_id: s.device_mqtt_client_id
+        })));
+        
         if (relevantSensors.length === 0) {
+          console.warn('⚠️ Nenhum sensor relevante encontrado para as métricas selecionadas');
           setTelemetryChartData(null);
           return;
         }
 
-        // Buscar dados para cada sensor (últimas 24h)
+        // Buscar dados para cada sensor
         // CORREÇÃO: Usar função auxiliar para extrair device_id corretamente
         const deviceIds = [...new Set(relevantSensors.map(getDeviceId))].filter(Boolean);
         
@@ -235,23 +257,44 @@ export const AssetDetailPage: React.FC = () => {
         
         // Verificar se os IDs estão corretos
         if (deviceIds.length > 0) {
-          console.log(`🔎 Exemplo de ID correto: "${deviceIds[0]}" (sem prefixo "Device ")`);
+          console.log(`🔎 Device ID para telemetria: "${deviceIds[0]}"`);
         }
         
         const telemetryPromises = deviceIds.map(async (deviceId) => {
           try {
-            console.log(`  📡 Chamando API para device: ${deviceId}`);
-            const data = await telemetryService.getHistoryLastHours(deviceId, 24);
-            console.log(`  ✅ Device ${deviceId} retornou:`, data);
+            console.log(`  📡 Chamando telemetryService.getHistoryLastHours("${deviceId}", ${hours})`);
+            const data = await telemetryService.getHistoryLastHours(deviceId, hours);
+            console.log(`  ✅ Device ${deviceId} retornou:`, {
+              deviceId: data.deviceId,
+              seriesCount: data.series?.length || 0,
+              series: data.series
+            });
             return data;
-          } catch (error) {
-            console.error(`  ❌ Erro ao buscar dados do device ${deviceId}:`, error);
+          } catch (error: any) {
+            console.error(`  ❌ Erro ao buscar dados do device ${deviceId}:`, {
+              message: error.message,
+              response: error.response?.data,
+              status: error.response?.status
+            });
             return { series: [] };
           }
         });
 
         const results = await Promise.all(telemetryPromises);
-        const allData = results.flatMap(r => r.series || []);
+        console.log('📦 Raw API responses:', results);
+        
+        // Mapear respostas da API para o formato frontend
+        const mappedResults = results.map(r => {
+          try {
+            return mapApiDeviceHistoryToFrontend(r);
+          } catch (error) {
+            console.error('❌ Erro ao mapear resposta:', error, r);
+            return { deviceId: '', period: { start: '', end: '' }, aggregation: 'raw' as const, series: [] };
+          }
+        });
+        console.log('✨ Mapped responses:', mappedResults);
+        
+        const allData = mappedResults.flatMap(r => r.series || []);
         
         console.log(`📊 Total de séries agregadas: ${allData.length}`);
         console.log('📊 Estrutura dos dados:', allData);
@@ -321,9 +364,11 @@ export const AssetDetailPage: React.FC = () => {
         // (fallback para quando o mapeamento falhar)
         if (filteredData.length === 0 && enrichedData.length > 0) {
           console.warn('⚠️ Nenhuma série correspondeu aos filtros. Mostrando todas as séries disponíveis como fallback.');
+          console.log('📈 DADOS PARA O GRÁFICO (fallback):', JSON.stringify(enrichedData, null, 2));
           setTelemetryChartData(enrichedData);
           console.log(`✅ ${enrichedData.length} série(s) de telemetria carregadas (fallback - todas)`);
         } else {
+          console.log('📈 DADOS PARA O GRÁFICO (filtradas):', JSON.stringify(filteredData, null, 2));
           setTelemetryChartData(filteredData);
           console.log(`✅ ${filteredData.length} série(s) de telemetria carregadas (filtradas)`);
         }
@@ -337,7 +382,7 @@ export const AssetDetailPage: React.FC = () => {
     };
 
     fetchTelemetryData();
-  }, [selectedAsset?.id, selectedMetrics, apiSensors]);
+  }, [selectedAsset?.id, selectedMetrics, apiSensors, telemetryPeriod]);
 
   return (
     <div className="p-6 space-y-6">
@@ -448,6 +493,43 @@ export const AssetDetailPage: React.FC = () => {
       {/* Tab Content */}
       {activeTab === 'telemetry' && (
         <div className="space-y-6">
+          {/* Period Selector */}
+          <div className="bg-card rounded-xl p-4 border shadow-sm">
+            <h3 className="text-lg font-semibold mb-3">Período de Visualização</h3>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setTelemetryPeriod('24h')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  telemetryPeriod === '24h'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                24 Horas
+              </button>
+              <button
+                onClick={() => setTelemetryPeriod('7d')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  telemetryPeriod === '7d'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                7 Dias
+              </button>
+              <button
+                onClick={() => setTelemetryPeriod('30d')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  telemetryPeriod === '30d'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                30 Dias
+              </button>
+            </div>
+          </div>
+
           {/* Metric Selector */}
           <div className="bg-card rounded-xl p-4 border shadow-sm">
             <h3 className="text-lg font-semibold mb-3">Selecionar Métricas</h3>
@@ -579,7 +661,7 @@ export const AssetDetailPage: React.FC = () => {
                 />
                 <div className="mt-4 p-4 bg-muted/50 rounded-lg">
                   <p className="text-sm text-muted-foreground">
-                    📊 <strong>{telemetryChartData.length}</strong> série(s) de dados carregadas (últimas 24h)
+                    📊 <strong>{telemetryChartData.length}</strong> série(s) de dados carregadas ({telemetryPeriod === '24h' ? 'últimas 24h' : telemetryPeriod === '7d' ? 'últimos 7 dias' : 'últimos 30 dias'})
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Sensores: {telemetryChartData.map((s: any) => s.sensorId || s.sensorName).join(', ')}
@@ -592,7 +674,7 @@ export const AssetDetailPage: React.FC = () => {
                   <AlertTriangle className="h-12 w-12 text-amber-500 mb-3" />
                   <h4 className="text-lg font-medium mb-2">Sem dados disponíveis</h4>
                   <p className="text-sm text-muted-foreground">
-                    Não foram encontrados dados de telemetria para as métricas selecionadas nas últimas 24 horas.
+                    Não foram encontrados dados de telemetria para as métricas selecionadas {telemetryPeriod === '24h' ? 'nas últimas 24 horas' : telemetryPeriod === '7d' ? 'nos últimos 7 dias' : 'nos últimos 30 dias'}.
                   </p>
                   <p className="text-xs text-muted-foreground mt-2">
                     Verifique se os sensores estão enviando dados corretamente.
