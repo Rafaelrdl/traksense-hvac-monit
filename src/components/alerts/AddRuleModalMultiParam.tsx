@@ -135,26 +135,32 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
       setRuleDescription(editingRule.description);
       setActions(editingRule.actions);
 
+      // Mapa para converter severity do backend (Capital Case) para frontend (UPPERCASE)
+      const severityBackendToFrontend: Record<string, Severity> = {
+        'Critical': 'CRITICAL',
+        'High': 'HIGH',
+        'Medium': 'MEDIUM',
+        'Low': 'LOW',
+      };
+
       // Se a regra tem o novo formato (array de parameters)
       if (editingRule.parameters && editingRule.parameters.length > 0) {
-        setParameters(editingRule.parameters);
+        // Converter severidades do backend para o formato esperado pelo frontend
+        const convertedParameters = editingRule.parameters.map(param => ({
+          ...param,
+          severity: severityBackendToFrontend[param.severity] || param.severity.toUpperCase() as Severity,
+        }));
+        setParameters(convertedParameters);
       } 
       // Se é regra antiga (campo único), converter para array
       else if (editingRule.parameter_key) {
-        const severityMap: Record<string, Severity> = {
-          'Critical': 'CRITICAL',
-          'High': 'HIGH',
-          'Medium': 'MEDIUM',
-          'Low': 'LOW',
-        };
-        
         setParameters([{
           parameter_key: editingRule.parameter_key,
           variable_key: editingRule.variable_key || '',
           operator: editingRule.operator!,
           threshold: editingRule.threshold!,
           duration: editingRule.duration!,
-          severity: severityMap[editingRule.severity!] || editingRule.severity!.toUpperCase() as Severity,
+          severity: severityBackendToFrontend[editingRule.severity!] || editingRule.severity!.toUpperCase() as Severity,
           message_template: DEFAULT_MESSAGE_TEMPLATE,
           unit: editingRule.unit,
         }]);

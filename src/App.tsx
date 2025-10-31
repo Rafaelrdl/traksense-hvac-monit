@@ -15,7 +15,10 @@ import { useAppStore } from './store/app';
 import { useNotifications } from './store/notifications';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('overview');
+  // Recuperar página salva no localStorage ou usar 'overview' como padrão
+  const [currentPage, setCurrentPage] = useState(() => {
+    return localStorage.getItem('currentPage') || 'overview';
+  });
   const selectedAssetId = useAppStore(state => state.selectedAssetId);
 
   // NOTA: Simulação desabilitada - agora usamos dados reais da API
@@ -62,6 +65,8 @@ function App() {
 
   const handleNavigation = (page: string) => {
     setCurrentPage(page);
+    // Salvar página atual no localStorage para persistir após F5
+    localStorage.setItem('currentPage', page);
     // Clear selected asset when navigating away from asset details
     if (page !== 'assets' && selectedAssetId) {
       useAppStore.getState().setSelectedAsset(null);
@@ -73,12 +78,14 @@ function App() {
     const handleNavigateToAsset = (event: CustomEvent) => {
       const { assetId } = event.detail;
       setCurrentPage('assets');
+      localStorage.setItem('currentPage', 'assets');
       // The asset will be selected by the sensors page handler
     };
 
     const handleNavigateToPage = (event: CustomEvent) => {
       const { page } = event.detail;
       setCurrentPage(page);
+      localStorage.setItem('currentPage', page);
     };
 
     window.addEventListener('navigate-to-asset', handleNavigateToAsset as EventListener);

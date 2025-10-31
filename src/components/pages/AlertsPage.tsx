@@ -33,22 +33,40 @@ export const AlertsPage: React.FC = () => {
   };
 
   const handleAcknowledge = async (alertId: number) => {
-    const success = await acknowledgeAlertApi(alertId);
-    if (success) {
-      toast.success('Alerta reconhecido', {
-        description: 'Marcado para monitoramento',
-      });
-      fetchAlerts(); // Recarregar lista
+    try {
+      const success = await acknowledgeAlertApi(alertId);
+      if (success) {
+        toast.success('Alerta reconhecido', {
+          description: 'Marcado para monitoramento',
+        });
+        // Recarregar dados após pequeno delay para garantir que o backend atualizou
+        await Promise.all([
+          fetchAlerts(),
+          fetchStatistics()
+        ]);
+      }
+    } catch (error) {
+      console.error('Erro ao reconhecer alerta:', error);
+      toast.error('Erro ao reconhecer alerta');
     }
   };
 
   const handleResolve = async (alertId: number) => {
-    const success = await resolveAlertApi(alertId);
-    if (success) {
-      toast.success('Alerta resolvido', {
-        description: 'Problema solucionado',
-      });
-      fetchAlerts(); // Recarregar lista
+    try {
+      const success = await resolveAlertApi(alertId);
+      if (success) {
+        toast.success('Alerta resolvido', {
+          description: 'Problema solucionado',
+        });
+        // Recarregar dados após pequeno delay para garantir que o backend atualizou
+        await Promise.all([
+          fetchAlerts(),
+          fetchStatistics()
+        ]);
+      }
+    } catch (error) {
+      console.error('Erro ao resolver alerta:', error);
+      toast.error('Erro ao resolver alerta');
     }
   };
 
@@ -62,7 +80,10 @@ export const AlertsPage: React.FC = () => {
     }
   });
 
-  const getSeverityColor = (severity: string) => {
+  const getSeverityColor = (severity?: string) => {
+    if (!severity) {
+      return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
     const normalizedSeverity = severity.toLowerCase();
     if (normalizedSeverity.includes('critical') || normalizedSeverity.includes('crítico')) {
       return 'bg-red-100 text-red-800 border-red-200';
@@ -204,30 +225,34 @@ export const AlertsPage: React.FC = () => {
           </div>
         ) : (
           <div className="divide-y">
-            {filteredAlerts.map(alert => (
-              <div key={alert.id} className="p-6 hover:bg-muted/30 transition-colors">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getSeverityColor(alert.severity)}`}>
-                        {translateSeverity(alert.severity)}
-                      </span>
-                      <span className="font-medium">{alert.asset_tag}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {getTimeAgo(alert.triggered_at)}
-                      </span>
+            {filteredAlerts.map(alert => {
+              // Garantir que o alerta tem todas as propriedades necessárias
+              if (!alert || !alert.id) return null;
+              
+              return (
+                <div key={alert.id} className="p-6 hover:bg-muted/30 transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getSeverityColor(alert.severity)}`}>
+                          {translateSeverity(alert.severity || 'Medium')}
+                        </span>
+                        <span className="font-medium">{alert.asset_tag || 'N/A'}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {alert.triggered_at ? getTimeAgo(alert.triggered_at) : 'N/A'}
+                        </span>
+                      </div>
+                      
+                      <p className="text-sm text-foreground mb-2">{alert.message || 'Sem mensagem'}</p>
+                      
+                      <div className="flex items-center space-x-4 text-xs text-muted-foreground">
+                        <span>Regra: {alert.rule_name || 'N/A'}</span>
+                        <span>Equipamento: {alert.equipment_name || 'N/A'}</span>
+                        {alert.acknowledged_by && (
+                          <span>Reconhecido por: ID {alert.acknowledged_by}</span>
+                        )}
+                      </div>
                     </div>
-                    
-                    <p className="text-sm text-foreground mb-2">{alert.message}</p>
-                    
-                    <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                      <span>Regra: {alert.rule_name}</span>
-                      <span>Equipamento: {alert.equipment_name}</span>
-                      {alert.acknowledged_by && (
-                        <span>Reconhecido por: ID {alert.acknowledged_by}</span>
-                      )}
-                    </div>
-                  </div>
 
                   <div className="flex flex-col space-y-2 ml-4">
                     {/* Botão Reconhecer - apenas para alertas ativos */}
@@ -266,7 +291,8 @@ export const AlertsPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
