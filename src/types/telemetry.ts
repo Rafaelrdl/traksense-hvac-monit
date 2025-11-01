@@ -137,10 +137,12 @@ export type AggregationLevel = 'raw' | '1m' | '5m' | '15m' | '1h' | '1d';
  */
 export interface HistoryQueryParams {
   deviceId: string;
-  start?: string; // ISO 8601 ou relative (ex: "24h")
-  end?: string; // ISO 8601
+  // Parâmetros exatos esperados pelo backend: 'from' e 'to' em ISO-8601
+  from?: string; // ISO 8601
+  to?: string; // ISO 8601
   sensorId?: string; // Filtrar sensor específico
-  aggregation?: AggregationLevel; // Forçar agregação (opcional)
+  // O backend espera 'interval' para forçar agregação (ex: '1m','5m','1h').
+  interval?: AggregationLevel; // Forçar agregação (opcional)
 }
 
 /**

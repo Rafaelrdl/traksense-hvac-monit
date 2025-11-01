@@ -58,13 +58,14 @@ class TelemetryService {
    * @returns Séries temporais agregadas
    */
   async getHistory(params: HistoryQueryParams): Promise<DeviceHistoryResponse> {
-    const { deviceId, start, end, sensorId, aggregation } = params;
+    // O backend espera 'from' e 'to' (ISO-8601) e 'interval' (opcional)
+    const { deviceId, from, to, sensorId, interval } = params as any;
     
     const queryParams = new URLSearchParams();
-    if (start) queryParams.append('start', start);
-    if (end) queryParams.append('end', end);
+    if (from) queryParams.append('from', from);
+    if (to) queryParams.append('to', to);
     if (sensorId) queryParams.append('sensor_id', sensorId);
-    if (aggregation) queryParams.append('aggregation', aggregation);
+    if (interval) queryParams.append('interval', interval);
 
     const url = `${this.baseUrl}/history/${deviceId}/${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
     const response = await api.get<DeviceHistoryResponse>(url);
@@ -97,15 +98,15 @@ class TelemetryService {
   async getReadings(filters?: {
     deviceId?: string;
     sensorId?: string;
-    start?: string;
-    end?: string;
+    from?: string;
+    to?: string;
     limit?: number;
   }): Promise<{ results: TelemetryReading[]; count: number }> {
     const params = new URLSearchParams();
     if (filters?.deviceId) params.append('device_id', filters.deviceId);
     if (filters?.sensorId) params.append('sensor_id', filters.sensorId);
-    if (filters?.start) params.append('start', filters.start);
-    if (filters?.end) params.append('end', filters.end);
+    if (filters?.from) params.append('from', filters.from);
+    if (filters?.to) params.append('to', filters.to);
     if (filters?.limit) params.append('limit', filters.limit.toString());
 
     const url = `${this.baseUrl}/readings/${params.toString() ? '?' + params.toString() : ''}`;
@@ -124,15 +125,15 @@ class TelemetryService {
     deviceId?: string;
     sensorId?: string;
     bucket?: string; // '1m', '5m', '15m', '1h', '1d'
-    start?: string;
-    end?: string;
+    from?: string;
+    to?: string;
   }): Promise<{ results: SensorTimeSeries[] }> {
     const params = new URLSearchParams();
     if (filters?.deviceId) params.append('device_id', filters.deviceId);
     if (filters?.sensorId) params.append('sensor_id', filters.sensorId);
     if (filters?.bucket) params.append('bucket', filters.bucket);
-    if (filters?.start) params.append('start', filters.start);
-    if (filters?.end) params.append('end', filters.end);
+    if (filters?.from) params.append('from', filters.from);
+    if (filters?.to) params.append('to', filters.to);
 
     const url = `${this.baseUrl}/series/${params.toString() ? '?' + params.toString() : ''}`;
     const response = await api.get<{ results: SensorTimeSeries[] }>(url);
@@ -158,8 +159,8 @@ class TelemetryService {
 
     return this.getHistory({
       deviceId,
-      start: start.toISOString(),
-      end: end.toISOString(),
+      from: start.toISOString(),
+      to: end.toISOString(),
       sensorId,
     });
   }
