@@ -3,7 +3,7 @@ import { useAppStore, useSelectedAsset, useTimeRangeMs } from '../../store/app';
 import { useFeaturesStore } from '../../store/features';
 import { simEngine } from '../../lib/simulation';
 import { hasPerformanceTelemetry, reasonMissingTelemetry } from '../../lib/hasPerformanceTelemetry';
-import { LineChartTemp } from '../charts/LineChartTemp';
+import { MultiSeriesTelemetryChart } from '../charts/TelemetryChart';
 import { ScatterPerformance } from '../charts/ScatterPerformance';
 import { KPICard } from '../ui/KPICard';
 import { JE02SensorDetail } from './JE02SensorDetail';
@@ -37,7 +37,7 @@ export const AssetDetailPage: React.FC = () => {
   
   // Estados para busca dinâmica de sensores
   const [apiSensors, setApiSensors] = useState<ApiSensor[]>([]);
-  const [availableMetrics, setAvailableMetrics] = useState<Array<{id: string, label: string, unit: string}>>([]);
+  const [availableMetrics, setAvailableMetrics] = useState<Array<{id: string, sensorTag?: string, metricType?: string, label: string, unit: string}>>([]);
   const [isLoadingSensors, setIsLoadingSensors] = useState(false);
   const [telemetryChartData, setTelemetryChartData] = useState<any>(null);
   const [isLoadingTelemetry, setIsLoadingTelemetry] = useState(false);
@@ -169,22 +169,24 @@ export const AssetDetailPage: React.FC = () => {
         
         setApiSensors(sensorsData);
         
-        // Extrair tipos de métricas únicos e criar opções para checkboxes
-        const uniqueMetricTypes = [...new Set(sensorsData.map(s => s.metric_type))];
-        const metrics = uniqueMetricTypes.map(metricType => {
-          const meta = metricLabels[metricType] || { 
-            label: metricType, 
-            unit: sensorsData.find(s => s.metric_type === metricType)?.unit || '' 
+        // Criar opções para checkboxes: um item por SENSOR (não por metric_type)
+        // Assim todos os 4 sensores aparecem, mesmo que tenham metric_type duplicado
+        const metrics = sensorsData.map(sensor => {
+          const meta = metricLabels[sensor.metric_type] || { 
+            label: sensor.metric_type, 
+            unit: sensor.unit || '' 
           };
           return {
-            id: metricType,
-            label: meta.label,
+            id: sensor.tag, // Usar tag do sensor como ID único
+            sensorTag: sensor.tag,
+            metricType: sensor.metric_type,
+            label: `${sensor.tag} (${meta.label})`, // Mostrar nome do sensor + tipo
             unit: meta.unit
           };
         });
         
         setAvailableMetrics(metrics);
-        console.log(`✅ ${sensorsData.length} sensores carregados, ${metrics.length} tipos de métricas disponíveis`);
+        console.log(`✅ ${sensorsData.length} sensores carregados como métricas selecionáveis`);
         
       } catch (error) {
         console.error('❌ Erro ao carregar sensores do ativo:', error);
@@ -231,10 +233,11 @@ export const AssetDetailPage: React.FC = () => {
       setIsLoadingTelemetry(true);
       try {
         const hours = getHoursForPeriod(telemetryPeriod);
-        console.log(`📊 Buscando telemetria para métricas: ${selectedMetrics.join(', ')} (período: ${telemetryPeriod} = ${hours}h)`);
+        console.log(`📊 Buscando telemetria para sensores: ${selectedMetrics.join(', ')} (período: ${telemetryPeriod} = ${hours}h)`);
         
-        // Filtrar sensores que correspondem às métricas selecionadas
-        const relevantSensors = apiSensors.filter(s => selectedMetrics.includes(s.metric_type));
+        // Filtrar sensores que correspondem aos sensor.tag selecionados
+        // (selectedMetrics agora contém sensor.tag em vez de metric_type)
+        const relevantSensors = apiSensors.filter(s => selectedMetrics.includes(s.tag));
         
         console.log(`📋 Sensores relevantes encontrados:`, relevantSensors.map(s => ({
           tag: s.tag,
@@ -591,72 +594,28 @@ export const AssetDetailPage: React.FC = () => {
               </div>
             ) : telemetryChartData && telemetryChartData.length > 0 ? (
               <div className="h-96">
-                <LineChartTemp 
-                  data={{
-                    supply: (() => {
-                      // Encontrar séries do tipo temp_supply
-                      const supplySeries = telemetryChartData.filter((s: any) => 
-                        s.sensorType === 'temp_supply' || s.metricType === 'temp_supply'
-                      );
-                      
-                      // Combinar todos os pontos de todas as séries temp_supply
-                      const allPoints: any[] = [];
-                      supplySeries.forEach((series: any) => {
-                        const points = series.data || series.points || [];
-                        points.forEach((point: any) => {
-                          allPoints.push({
-                            timestamp: new Date(point.timestamp),
-                            value: point.avg !== undefined ? point.avg : (point.value !== undefined ? point.value : 0)
-                          });
-                        });
-                      });
-                      
-                      // Ordenar por timestamp
-                      return allPoints.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-                    })(),
+                <MultiSeriesTelemetryChart
+                  series={telemetryChartData.map((seriesData: any, idx: number) => {
+                    // Cores diferentes para cada série
+                    const colors = ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+                    const color = colors[idx % colors.length];
                     
-                    return: (() => {
-                      // Encontrar séries do tipo temp_return
-                      const returnSeries = telemetryChartData.filter((s: any) => 
-                        s.sensorType === 'temp_return' || s.metricType === 'temp_return'
-                      );
-                      
-                      const allPoints: any[] = [];
-                      returnSeries.forEach((series: any) => {
-                        const points = series.data || series.points || [];
-                        points.forEach((point: any) => {
-                          allPoints.push({
-                            timestamp: new Date(point.timestamp),
-                            value: point.avg !== undefined ? point.avg : (point.value !== undefined ? point.value : 0)
-                          });
-                        });
-                      });
-                      
-                      return allPoints.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-                    })(),
+                    // Converter pontos de dados
+                    const points = (seriesData.data || []).map((point: any) => ({
+                      timestamp: new Date(point.timestamp),
+                      value: point.avg !== undefined ? point.avg : (point.value !== undefined ? point.value : 0)
+                    }));
                     
-                    setpoint: (() => {
-                      // Encontrar séries do tipo temp_setpoint ou humidity (outras métricas)
-                      const setpointSeries = telemetryChartData.filter((s: any) => 
-                        s.sensorType === 'temp_setpoint' || s.metricType === 'temp_setpoint' ||
-                        s.sensorType === 'humidity' || s.metricType === 'humidity' ||
-                        s.sensorType === 'maintenance' || s.metricType === 'maintenance'
-                      );
-                      
-                      const allPoints: any[] = [];
-                      setpointSeries.forEach((series: any) => {
-                        const points = series.data || series.points || [];
-                        points.forEach((point: any) => {
-                          allPoints.push({
-                            timestamp: new Date(point.timestamp),
-                            value: point.avg !== undefined ? point.avg : (point.value !== undefined ? point.value : 0)
-                          });
-                        });
-                      });
-                      
-                      return allPoints.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-                    })()
-                  }}
+                    return {
+                      id: seriesData.sensorId,
+                      name: seriesData.sensorName || seriesData.sensorId,
+                      data: points,
+                      color: color,
+                      unit: seriesData.unit || '',
+                      sensorType: seriesData.sensorType as any
+                    };
+                  })}
+                  chartType="line"
                   height={400}
                 />
                 <div className="mt-4 p-4 bg-muted/50 rounded-lg">
