@@ -212,6 +212,17 @@ export const SensorsPage: React.FC = () => {
     return true;
   });
 
+  // Debug logs
+  console.log('📊 [SensorsPage Debug]', {
+    useGroupedView,
+    devicesCount: devices.length,
+    filteredDevicesCount: filteredDevices.length,
+    pageItemsCount: pageItems.length,
+    isLoadingAssets,
+    currentSite: currentSite?.name,
+    deviceStatusFilter,
+  });
+
   // Handle navigation to equipment details
   const handleNavigateToEquipment = (equipmentId: string) => {
     setSelectedAsset(equipmentId);
@@ -381,44 +392,48 @@ export const SensorsPage: React.FC = () => {
       )}
 
       {/* Loading State */}
-      {isLoadingAssets && pageItems.length === 0 && (
+      {isLoadingAssets && (useGroupedView ? devices.length === 0 : pageItems.length === 0) && (
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
             <p className="text-muted-foreground">
-              Carregando sensores...
+              {useGroupedView ? 'Carregando dispositivos...' : 'Carregando sensores...'}
             </p>
           </div>
         </div>
       )}
 
       {/* Empty State */}
-      {!isLoadingAssets && pageItems.length === 0 && (
+      {!isLoadingAssets && (useGroupedView ? filteredDevices.length === 0 : pageItems.length === 0) && (
         <div className="flex items-center justify-center h-64">
           <div className="text-center max-w-md">
             {noAssetsAvailable ? (
               <>
                 <p className="text-lg font-medium text-muted-foreground mb-2">
-                  📍 {currentSite ? 'Nenhum asset encontrado neste site' : 'Nenhum site selecionado'}
+                  📍 {currentSite ? 'Nenhum dispositivo encontrado neste site' : 'Nenhum site selecionado'}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {currentSite 
-                    ? `O site "${currentSite.name}" ainda não possui assets ou sensores cadastrados.` 
-                    : 'Selecione um site no header para visualizar os sensores.'}
+                    ? `O site "${currentSite.name}" ainda não possui dispositivos cadastrados.` 
+                    : 'Selecione um site no header para visualizar os dispositivos.'}
                 </p>
                 {currentSite && (
                   <p className="text-xs text-muted-foreground mt-4">
-                    💡 Os sensores são cadastrados automaticamente via tópico MQTT: tenants/{currentSite.id}/sites/{currentSite.name}/assets/ASSET_TAG/telemetry
+                    💡 Os dispositivos são cadastrados automaticamente via tópico MQTT
                   </p>
                 )}
               </>
             ) : (
               <>
                 <p className="text-lg font-medium text-muted-foreground mb-2">
-                  Nenhum sensor encontrado
+                  {useGroupedView 
+                    ? 'Nenhum dispositivo encontrado com os filtros aplicados' 
+                    : 'Nenhum sensor encontrado'}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Verifique os filtros ou aguarde a sincronização com o backend
+                  {useGroupedView 
+                    ? 'Tente ajustar o filtro de status ou aguarde a sincronização'
+                    : 'Verifique os filtros ou aguarde a sincronização com o backend'}
                 </p>
               </>
             )}
