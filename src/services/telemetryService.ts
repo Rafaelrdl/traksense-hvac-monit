@@ -71,7 +71,18 @@ class TelemetryService {
     const queryParams = new URLSearchParams();
     if (from) queryParams.append('from', from);
     if (to) queryParams.append('to', to);
-    if (sensorId) queryParams.append('sensor_id', sensorId);
+    
+    // 🆕 Suportar múltiplos sensor_id (array ou string)
+    if (sensorId) {
+      if (Array.isArray(sensorId)) {
+        // Múltiplos sensores: ?sensor_id=1&sensor_id=2
+        sensorId.forEach((id: string) => queryParams.append('sensor_id', id));
+      } else {
+        // Sensor único
+        queryParams.append('sensor_id', sensorId);
+      }
+    }
+    
     if (interval) queryParams.append('interval', interval);
 
     const url = `${this.baseUrl}/history/${deviceId}/${queryParams.toString() ? '?' + queryParams.toString() : ''}`;

@@ -140,7 +140,7 @@ export interface HistoryQueryParams {
   // Parâmetros exatos esperados pelo backend: 'from' e 'to' em ISO-8601
   from?: string; // ISO 8601
   to?: string; // ISO 8601
-  sensorId?: string; // Filtrar sensor específico
+  sensorId?: string | string[]; // 🆕 Suportar múltiplos sensores (array ou string única)
   // O backend espera 'interval' para forçar agregação (ex: '1m','5m','1h').
   interval?: AggregationLevel; // Forçar agregação (opcional)
 }

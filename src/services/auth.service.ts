@@ -52,6 +52,11 @@ export interface AuthResponse {
   access: string;
   refresh: string;
   message: string;
+  tenant?: {
+    slug: string;
+    domain: string;
+    api_base_url: string;
+  };
 }
 
 export interface BackendUser {
@@ -130,6 +135,30 @@ class AuthService {
       // Salva tokens no localStorage
       localStorage.setItem('access_token', data.access);
       localStorage.setItem('refresh_token', data.refresh);
+
+      // 🆕 Configurar tenant se retornado pelo backend
+      if (data.tenant) {
+        const { slug, api_base_url } = data.tenant;
+        console.log(`✅ Login com tenant: ${slug} (API: ${api_base_url})`);
+        
+        // Importar dinamicamente para evitar circular dependency
+        const { reconfigureApiForTenant } = await import('@/lib/api');
+        const { tenantStorage } = await import('@/lib/tenantStorage');
+        
+        // Reconfigurar API client com base URL do tenant
+        reconfigureApiForTenant(slug);
+        
+        // Salvar tenant info no storage isolado
+        tenantStorage.set('tenant_info', {
+          slug,
+          domain: data.tenant.domain,
+          api_base_url,
+        });
+        
+        // Salvar tokens também no tenant storage
+        tenantStorage.set('access_token', data.access);
+        tenantStorage.set('refresh_token', data.refresh);
+      }
 
       // Retorna usuário no formato do frontend
       return mapBackendUserToUser(data.user);
