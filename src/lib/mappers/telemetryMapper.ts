@@ -83,16 +83,55 @@ export function mapApiLabelsToFrontend(apiLabels: any): SensorLabels {
  * Suporta tanto dados agregados (avg/min/max) quanto dados brutos (value).
  */
 export function mapApiTimeSeriesPointToFrontend(apiPoint: any): TimeSeriesPoint {
-  // Se tiver 'value', é dado bruto - copiar para 'avg' para compatibilidade
-  const value = apiPoint.value ?? apiPoint.avg ?? null;
-  
+  const timestampSource =
+    apiPoint.timestamp ??
+    apiPoint.time ??
+    apiPoint.bucket ??
+    apiPoint.ts ??
+    null;
+
+  let timestamp = '';
+  if (timestampSource instanceof Date) {
+    timestamp = timestampSource.toISOString();
+  } else if (typeof timestampSource === 'string') {
+    timestamp = timestampSource;
+  } else if (timestampSource !== null && timestampSource !== undefined) {
+    try {
+      timestamp = new Date(timestampSource).toISOString();
+    } catch (error) {
+      timestamp = String(timestampSource);
+    }
+  }
+
+  const avg =
+    apiPoint.avg ??
+    apiPoint.avg_value ??
+    apiPoint.value ??
+    null;
+  const min =
+    apiPoint.min ??
+    apiPoint.min_value ??
+    avg;
+  const max =
+    apiPoint.max ??
+    apiPoint.max_value ??
+    avg;
+  const count =
+    apiPoint.count ??
+    apiPoint.samples ??
+    (avg !== null ? 1 : 0);
+  const stddev =
+    apiPoint.stddev ??
+    apiPoint.stddev_value ??
+    null;
+
   return {
-    timestamp: apiPoint.timestamp,
-    avg: value,
-    min: apiPoint.min ?? value,
-    max: apiPoint.max ?? value,
-    count: apiPoint.count || (value !== null ? 1 : 0),
-    stddev: apiPoint.stddev ?? null,
+    timestamp,
+    avg,
+    min,
+    max,
+    count,
+    stddev,
   };
 }
 
@@ -113,9 +152,24 @@ export function mapApiSensorTimeSeriesToFrontend(apiSeries: any): SensorTimeSeri
  * Mapeia LatestReadingsResponse do backend para frontend.
  */
 export function mapApiLatestReadingsToFrontend(apiResponse: any): LatestReadingsResponse {
+  const timestampSource = apiResponse.timestamp ?? apiResponse.last_update ?? null;
+  let timestamp = '';
+
+  if (timestampSource instanceof Date) {
+    timestamp = timestampSource.toISOString();
+  } else if (typeof timestampSource === 'string') {
+    timestamp = timestampSource;
+  } else if (timestampSource) {
+    try {
+      timestamp = new Date(timestampSource).toISOString();
+    } catch {
+      timestamp = String(timestampSource);
+    }
+  }
+
   return {
     deviceId: apiResponse.device_id,
-    timestamp: apiResponse.timestamp,
+    timestamp,
     count: apiResponse.count || 0,
     readings: (apiResponse.readings || []).map(mapApiReadingToFrontend),
   };
@@ -198,6 +252,21 @@ export function mapApiSensorSummaryToFrontend(apiSensor: any): SensorSummary {
  * Mapeia DeviceSummaryResponse do backend para frontend.
  */
 export function mapApiDeviceSummaryToFrontend(apiResponse: any): DeviceSummaryResponse {
+  const statistics = apiResponse.statistics || {};
+  const totalReadings24h = statistics.total_readings_24h ?? 0;
+  const sensorsTotal =
+    statistics.sensors_total ??
+    statistics.sensor_count ??
+    (Array.isArray(apiResponse.sensors) ? apiResponse.sensors.length : 0);
+  const sensorsOnline =
+    statistics.sensors_online ??
+    (Array.isArray(apiResponse.sensors)
+      ? apiResponse.sensors.filter((sensor: any) => sensor?.is_online).length
+      : 0);
+  const avgReadingsPerHour =
+    statistics.avg_readings_per_hour ??
+    (totalReadings24h ? Number((totalReadings24h / 24).toFixed(2)) : 0);
+
   return {
     deviceId: apiResponse.device_id,
     deviceName: apiResponse.device_name || apiResponse.device_id,
@@ -205,10 +274,10 @@ export function mapApiDeviceSummaryToFrontend(apiResponse: any): DeviceSummaryRe
     lastSeen: apiResponse.last_seen ?? null,
     sensors: (apiResponse.sensors || []).map(mapApiSensorSummaryToFrontend),
     statistics: {
-      totalReadings24h: apiResponse.statistics?.total_readings_24h || 0,
-      avgReadingsPerHour: apiResponse.statistics?.avg_readings_per_hour || 0,
-      sensorsOnline: apiResponse.statistics?.sensors_online || 0,
-      sensorsTotal: apiResponse.statistics?.sensors_total || 0,
+      totalReadings24h,
+      avgReadingsPerHour,
+      sensorsOnline,
+      sensorsTotal,
     },
   };
 }

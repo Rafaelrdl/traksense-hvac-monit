@@ -13,11 +13,6 @@ import {
   TelemetryReading,
   SensorSummary 
 } from '@/types/telemetry';
-import {
-  mapApiLatestReadingsToFrontend,
-  mapApiDeviceHistoryToFrontend,
-  mapApiDeviceSummaryToFrontend
-} from '@/lib/mappers/telemetryMapper';
 
 interface AppState {
   // Current data
@@ -546,20 +541,15 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     try {
       // Buscar latest readings e summary em paralelo
-      const [latestResponse, summaryResponse] = await Promise.all([
+      const [latestReadings, summary] = await Promise.all([
         telemetryService.getLatest(deviceId),
         telemetryService.getDeviceSummary(deviceId),
       ]);
 
-      // Mapear respostas para formato frontend
-      const latestReadings = mapApiLatestReadingsToFrontend(latestResponse);
-      const summary = mapApiDeviceSummaryToFrontend(summaryResponse);
-
       // Buscar histórico se não skipado
       let history: DeviceHistoryResponse | null = null;
       if (!skipHistory) {
-        const historyResponse = await telemetryService.getHistoryLastHours(deviceId, 24);
-        history = mapApiDeviceHistoryToFrontend(historyResponse);
+        history = await telemetryService.getHistoryLastHours(deviceId, 24);
       }
 
       set({
@@ -600,8 +590,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
 
     try {
-      const latestResponse = await telemetryService.getLatest(currentDevice);
-      const latestReadings = mapApiLatestReadingsToFrontend(latestResponse);
+      const latestReadings = await telemetryService.getLatest(currentDevice);
 
       set({
         telemetry: {
@@ -642,8 +631,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     // Configurar polling
     const cleanup = telemetryService.startPolling(
       deviceId,
-      (data) => {
-        const latestReadings = mapApiLatestReadingsToFrontend(data);
+      (latestReadings) => {
         set({
           telemetry: {
             ...get().telemetry,

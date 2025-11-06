@@ -57,6 +57,8 @@ export interface TeamStats {
   total_members: number;
   members_by_role: Record<string, number>;
   members_by_status: Record<string, number>;
+  active_members?: number;
+  pending_invites?: number;
 }
 
 export interface CreateInviteData {
@@ -131,8 +133,23 @@ class TeamService {
    * GET /api/team/members/stats/
    */
   async getStats(): Promise<TeamStats> {
-    const response = await api.get<TeamStats>(`${this.baseUrl}/members/stats/`);
-    return response.data;
+    const response = await api.get<any>(`${this.baseUrl}/members/stats/`);
+    const data = response.data || {};
+
+    const membersByStatus =
+      data.members_by_status ?? {
+        active: data.active_members ?? 0,
+        inactive: (data.total_members ?? 0) - (data.active_members ?? 0),
+        pending: data.pending_invites ?? 0,
+      };
+
+    return {
+      total_members: data.total_members ?? 0,
+      members_by_role: data.members_by_role ?? {},
+      members_by_status: membersByStatus,
+      active_members: data.active_members,
+      pending_invites: data.pending_invites,
+    };
   }
 
   // --------------------------------------------------------------------------
@@ -184,8 +201,8 @@ class TeamService {
    * Aceita um convite via token
    * POST /api/team/invites/accept/
    */
-  async acceptInvite(data: AcceptInviteData): Promise<{ message: string }> {
-    const response = await api.post<{ message: string }>(`${this.baseUrl}/invites/accept/`, data);
+  async acceptInvite(data: AcceptInviteData): Promise<{ message: string; membership: TeamMember }> {
+    const response = await api.post<{ message: string; membership: TeamMember }>(`${this.baseUrl}/invites/accept/`, data);
     return response.data;
   }
 }

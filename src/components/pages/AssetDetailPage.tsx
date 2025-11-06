@@ -12,7 +12,6 @@ import { TrakNorCTA } from '../assets/TrakNorCTA';
 import { ContactSalesDialog } from '../common/ContactSalesDialog';
 import { assetsService } from '../../services/assetsService';
 import { telemetryService } from '../../services/telemetryService';
-import { mapApiDeviceHistoryToFrontend } from '../../lib/mappers/telemetryMapper';
 import type { ApiSensor } from '../../types/api';
 import { 
   ArrowLeft, 
@@ -207,19 +206,6 @@ export const AssetDetailPage: React.FC = () => {
       return;
     }
 
-    // Função auxiliar para extrair o device_id correto
-    const getDeviceId = (sensor: any): string => {
-      // Tentar mqtt_client_id primeiro, depois serial, depois tag do sensor
-      let deviceId = sensor.device_mqtt_client_id || sensor.device_serial || sensor.tag.split('_')[0];
-      
-      console.log(`  🔍 Sensor ${sensor.tag}:`);
-      console.log(`     mqtt_client_id="${sensor.device_mqtt_client_id}"`);
-      console.log(`     device_serial="${sensor.device_serial}"`);
-      console.log(`     device_id usado="${deviceId}"`);
-      
-      return deviceId;
-    };
-
     // Calcular horas baseado no período
     const getHoursForPeriod = (period: '24h' | '7d' | '30d'): number => {
       switch (period) {
@@ -233,17 +219,13 @@ export const AssetDetailPage: React.FC = () => {
       setIsLoadingTelemetry(true);
       try {
         const hours = getHoursForPeriod(telemetryPeriod);
-        console.log(`📊 Buscando telemetria para sensores: ${selectedMetrics.join(', ')} (período: ${telemetryPeriod} = ${hours}h)`);
+        const assetTag = selectedAsset.tag;
+        
+        console.log(`📊 Buscando telemetria para asset ${assetTag} (período: ${telemetryPeriod} = ${hours}h)`);
+        console.log(`   Sensores selecionados: ${selectedMetrics.join(', ')}`);
         
         // Filtrar sensores que correspondem aos sensor.tag selecionados
-        // (selectedMetrics agora contém sensor.tag em vez de metric_type)
         const relevantSensors = apiSensors.filter(s => selectedMetrics.includes(s.tag));
-        
-        console.log(`📋 Sensores relevantes encontrados:`, relevantSensors.map(s => ({
-          tag: s.tag,
-          metric_type: s.metric_type,
-          device_mqtt_client_id: s.device_mqtt_client_id
-        })));
         
         if (relevantSensors.length === 0) {
           console.warn('⚠️ Nenhum sensor relevante encontrado para as métricas selecionadas');
@@ -251,129 +233,53 @@ export const AssetDetailPage: React.FC = () => {
           return;
         }
 
-        // Buscar dados para cada sensor
-        // CORREÇÃO: Usar função auxiliar para extrair device_id corretamente
-        const deviceIds = [...new Set(relevantSensors.map(getDeviceId))].filter(Boolean);
-        
-        // Buscar dados de telemetria para cada device
-        console.log(`🔍 Buscando dados de ${deviceIds.length} device(s):`, deviceIds);
-        
-        // Verificar se os IDs estão corretos
-        if (deviceIds.length > 0) {
-          console.log(`🔎 Device ID para telemetria: "${deviceIds[0]}"`);
-        }
-        
-        const telemetryPromises = deviceIds.map(async (deviceId) => {
-          try {
-            console.log(`  📡 Chamando telemetryService.getHistoryLastHours("${deviceId}", ${hours})`);
-            const data = await telemetryService.getHistoryLastHours(deviceId, hours);
-            console.log(`  ✅ Device ${deviceId} retornou:`, {
-              deviceId: data.deviceId,
-              seriesCount: data.series?.length || 0,
-              series: data.series
-            });
-            return data;
-          } catch (error: any) {
-            console.error(`  ❌ Erro ao buscar dados do device ${deviceId}:`, {
-              message: error.message,
-              response: error.response?.data,
-              status: error.response?.status
-            });
-            return { series: [] };
-          }
-        });
+        console.log(`📋 Sensores relevantes:`, relevantSensors.map(s => ({
+          tag: s.tag,
+          metric_type: s.metric_type
+        })));
 
-        const results = await Promise.all(telemetryPromises);
-        console.log('📦 Raw API responses:', results);
-        
-        // Mapear respostas da API para o formato frontend
-        const mappedResults = results.map(r => {
-          try {
-            return mapApiDeviceHistoryToFrontend(r);
-          } catch (error) {
-            console.error('❌ Erro ao mapear resposta:', error, r);
-            return { deviceId: '', period: { start: '', end: '' }, aggregation: 'raw' as const, series: [] };
-          }
-        });
-        console.log('✨ Mapped responses:', mappedResults);
-        
-        const allData = mappedResults.flatMap(r => r.series || []);
-        
-        console.log(`📊 Total de séries agregadas: ${allData.length}`);
-        console.log('📊 Estrutura dos dados:', allData);
-        
-        // Criar um mapa de sensor_id -> metric_type dos sensores da API
-        const sensorMetricMap = new Map<string, string>();
-        relevantSensors.forEach(sensor => {
-          // Adicionar múltiplas variações do sensor ID para cobrir todos os casos
-          sensorMetricMap.set(sensor.tag, sensor.metric_type);
-          sensorMetricMap.set(sensor.id?.toString() || '', sensor.metric_type);
+        // MIGRAÇÃO: Usar novo endpoint baseado em asset_tag (fonte de verdade do MQTT)
+        // Elimina dependência do device_mqtt_client_id que pode estar vazio
+        try {
+          console.log(`  📡 Chamando telemetryService.getHistoryByAsset("${assetTag}", ${hours}, [${selectedMetrics.join(', ')}])`);
+          const data = await telemetryService.getHistoryByAsset(assetTag, hours, selectedMetrics);
           
-          // Se o tag contém o device_name como prefixo, adicionar também sem prefixo
-          if (sensor.tag.includes('_')) {
-            const parts = sensor.tag.split('_');
-            if (parts.length > 1) {
-              // Ex: "4b686f6d70107115_A_temp" -> também mapear "A_temp"
-              const suffix = parts.slice(1).join('_');
-              sensorMetricMap.set(suffix, sensor.metric_type);
-            }
-          }
-        });
-        
-        console.log('📋 Mapa de sensores (sample):', {
-          totalEntries: sensorMetricMap.size,
-          entries: Array.from(sensorMetricMap.entries()).slice(0, 5)
-        });
-        
-        // Enriquecer as séries com metricType baseado no sensor_id
-        const enrichedData = allData.map((series: any) => {
-          // Tentar múltiplos campos possíveis para sensorId
-          const sensorId = series.sensorId || series.sensor_id || series.sensorName || '';
-          
-          // Tentar encontrar no mapa
-          let metricType = sensorMetricMap.get(sensorId) || '';
-          
-          // Se não encontrou, tentar variações
-          if (!metricType && sensorId.includes('_')) {
-            const suffix = sensorId.split('_').slice(1).join('_');
-            metricType = sensorMetricMap.get(suffix) || '';
-          }
-          
-          console.log(`  🔍 Série "${sensorId}": metricType="${metricType}", série completa:`, {
-            sensorId: series.sensorId,
-            sensor_id: series.sensor_id,
-            sensorName: series.sensorName,
-            sensorType: series.sensorType,
-            dataPoints: series.data?.length || 0
+          console.log(`  ✅ Asset ${assetTag} retornou:`, {
+            assetTag: data.deviceId || assetTag,
+            seriesCount: data.series?.length || 0,
+            series: data.series?.map(s => ({ sensorId: s.sensorId, dataPoints: s.data.length }))
           });
-          
-          return {
-            ...series,
-            metricType,
-            sensorType: metricType // Adicionar também como sensorType para compatibilidade
-          };
-        });
-        
-        // Filtrar apenas as séries das métricas selecionadas
-        const filteredData = enrichedData.filter((series: any) => {
-          const isSelected = selectedMetrics.includes(series.metricType);
-          console.log(`  ✅ Série ${series.sensorId || series.sensorName}: tipo="${series.metricType}", selecionado=${isSelected}`);
-          return isSelected;
-        });
-        
-        console.log(`📊 Séries filtradas: ${filteredData.length} de ${enrichedData.length}`);
-        
-        // Se nenhuma série foi filtrada mas temos séries disponíveis, mostrar todas
-        // (fallback para quando o mapeamento falhar)
-        if (filteredData.length === 0 && enrichedData.length > 0) {
-          console.warn('⚠️ Nenhuma série correspondeu aos filtros. Mostrando todas as séries disponíveis como fallback.');
-          console.log('📈 DADOS PARA O GRÁFICO (fallback):', JSON.stringify(enrichedData, null, 2));
-          setTelemetryChartData(enrichedData);
-          console.log(`✅ ${enrichedData.length} série(s) de telemetria carregadas (fallback - todas)`);
-        } else {
-          console.log('📈 DADOS PARA O GRÁFICO (filtradas):', JSON.stringify(filteredData, null, 2));
-          setTelemetryChartData(filteredData);
-          console.log(`✅ ${filteredData.length} série(s) de telemetria carregadas (filtradas)`);
+
+          // Processar dados retornados
+          if (data && data.series && data.series.length > 0) {
+            // Mapear series para incluir nomes dos sensores
+            const enrichedSeries = data.series.map((series: any) => {
+              const sensor = relevantSensors.find(s => 
+                s.tag === series.sensorId || 
+                s.id?.toString() === series.sensorId
+              );
+              
+              return {
+                ...series,
+                sensorName: sensor?.tag || series.sensorId,
+                metricType: sensor?.metric_type || series.sensorType,
+                unit: sensor?.unit || series.unit || ''
+              };
+            });
+            
+            console.log(`  � ${enrichedSeries.length} série(s) enriquecidas com dados dos sensores`);
+            setTelemetryChartData(enrichedSeries);
+          } else {
+            console.warn('  ⚠️ Resposta sem séries de dados');
+            setTelemetryChartData(null);
+          }
+        } catch (error: any) {
+          console.error(`  ❌ Erro ao buscar dados do asset ${assetTag}:`, {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status
+          });
+          setTelemetryChartData(null);
         }
         
       } catch (error) {

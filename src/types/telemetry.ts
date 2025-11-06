@@ -129,7 +129,7 @@ export type DeviceStatus = 'ONLINE' | 'OFFLINE' | 'UNKNOWN';
  * Níveis de agregação disponíveis.
  * Backend escolhe automaticamente baseado no range temporal.
  */
-export type AggregationLevel = 'raw' | '1m' | '5m' | '15m' | '1h' | '1d';
+export type AggregationLevel = 'raw' | '1m' | '5m' | '1h';
 
 /**
  * Parâmetros para consulta de histórico.

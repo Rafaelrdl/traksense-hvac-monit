@@ -245,6 +245,225 @@ ACME (Example):
 
 ---
 
+## 🎯 CRITICAL: MQTT Topic-Based Data Loading
+
+### ⚠️ ALWAYS Load Sensors by Asset/Site, NOT by Device
+
+**RULE:** When loading sensors or telemetry, **ALWAYS use the Asset/Site hierarchy** that mirrors the MQTT topic structure. **NEVER load by individual device ID** unless absolutely necessary.
+
+#### MQTT Topic Structure (Backend)
+```
+tenants/{tenant_slug}/sites/{site_name}/assets/{asset_tag}/telemetry
+```
+
+**Example:**
+```
+tenants/umc/sites/Uberlândia Medical Center/assets/CHILLER-001/telemetry
+```
+
+#### Why This Matters (Frontend Perspective)
+
+❌ **WRONG APPROACH (Device-centric loading):**
+```typescript
+// Loading sensors from ONE device only
+useEffect(() => {
+  devicesService.listBySite(siteId)
+    .then(devices => {
+      // Problem: Selects only FIRST device or ONE specific type
+      const selectedDevice = devices.find(d => d.device_type === 'GATEWAY') || devices[0];
+      
+      // Only loads sensors from THIS device
+      loadTelemetry(selectedDevice.mqtt_client_id);
+      // ❌ Missing sensors from other devices!
+    });
+}, [siteId]);
+
+// Result: If asset has 2 devices (old + new gateway),
+// frontend shows only 4 sensors instead of 9 total
+```
+
+✅ **CORRECT APPROACH (Asset-centric loading):**
+```typescript
+// Loading sensors from ALL assets (which include ALL devices)
+useEffect(() => {
+  if (!currentSite?.id) return;
+  
+  // 1. Get all assets from site
+  assetsService.getBySite(currentSite.id)
+    .then(async (response) => {
+      const assetsList = response.results;
+      
+      // 2. For each asset, get ALL its sensors (from ALL devices)
+      const allSensorsPromises = assetsList.map(asset => 
+        assetsService.getSensors(asset.id) // Returns sensors from ALL devices
+          .then(apiSensors => 
+            apiSensors.map(s => convertToEnhancedSensor(s, asset))
+          )
+          .catch(() => [])
+      );
+      
+      // 3. Flatten all sensors from all assets
+      const sensorsArrays = await Promise.all(allSensorsPromises);
+      const allSensors = sensorsArrays.flat();
+      
+      // 4. Update store with complete dataset
+      useSensorsStore.setState({ items: allSensors });
+    });
+}, [currentSite?.id]);
+
+// Result: Shows ALL 9 sensors (4 from old device + 5 from new gateway)
+```
+
+#### API Endpoints to Use
+
+✅ **CORRECT: Asset-based endpoints**
+```typescript
+// Get all assets from a site
+GET /api/assets/?site={site_id}
+assetsService.getBySite(siteId)
+
+// Get all sensors from an asset (includes ALL devices)
+GET /api/assets/{asset_id}/sensors/
+assetsService.getSensors(assetId)
+
+// Get devices from a site (for device management UI)
+GET /api/sites/{site_id}/devices/
+devicesService.listBySite(siteId)
+```
+
+❌ **AVOID: Device-specific endpoints for sensor lists**
+```typescript
+// Only use if you specifically need ONE device's sensors
+GET /api/devices/{device_id}/sensors/
+
+// Only use for device summary (not for full sensor list)
+GET /api/telemetry/device/{device_id}/summary/
+```
+
+#### Implementation Pattern: SensorsPage
+
+```typescript
+// src/components/pages/SensorsPage.tsx
+export const SensorsPage: React.FC = () => {
+  const { currentSite } = useAppStore();
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [isLoadingAssets, setIsLoadingAssets] = useState(false);
+
+  // Helper: Convert backend ApiSensor to frontend EnhancedSensor
+  const convertToEnhancedSensor = (sensor: any, asset: any) => {
+    const isOnline = sensor.last_reading_at 
+      ? (Date.now() - new Date(sensor.last_reading_at).getTime()) < 5 * 60 * 1000
+      : false;
+    
+    return {
+      id: sensor.id?.toString() || sensor.tag,
+      name: sensor.tag || `Sensor ${sensor.id}`,
+      tag: sensor.tag,
+      status: (isOnline ? 'online' : 'offline') as 'online' | 'offline',
+      equipmentId: asset?.id?.toString() || 'unknown',
+      equipmentName: asset?.name || asset?.tag || 'Unknown',
+      type: sensor.metric_type || 'UNKNOWN',
+      unit: sensor.unit || '',
+      lastReading: sensor.last_value !== null ? {
+        value: sensor.last_value,
+        timestamp: new Date(sensor.last_reading_at)
+      } : null,
+      availability: isOnline ? 95 : 0,
+      lastSeenAt: sensor.last_reading_at 
+        ? new Date(sensor.last_reading_at).getTime() 
+        : undefined,
+    };
+  };
+
+  // Load sensors from ALL assets of selected site
+  useEffect(() => {
+    if (!currentSite?.id) return;
+    
+    setIsLoadingAssets(true);
+    
+    assetsService.getBySite(currentSite.id)
+      .then(async (response) => {
+        const assetsList = response.results;
+        
+        // Get sensors from each asset (respects MQTT topic hierarchy)
+        const allSensorsPromises = assetsList.map(asset => 
+          assetsService.getSensors(asset.id)
+            .then(apiSensors => 
+              apiSensors.map(s => convertToEnhancedSensor(s, asset))
+            )
+            .catch(() => [])
+        );
+        
+        const sensorsArrays = await Promise.all(allSensorsPromises);
+        const allSensors = sensorsArrays.flat();
+        
+        useSensorsStore.setState({ items: allSensors });
+        setLastUpdate(new Date());
+      })
+      .finally(() => setIsLoadingAssets(false));
+  }, [currentSite?.id]);
+
+  // Auto-refresh every 30s (same pattern)
+  useEffect(() => {
+    if (!currentSite?.id) return;
+    
+    const intervalId = setInterval(() => {
+      // Same loading logic as above
+      assetsService.getBySite(currentSite.id)
+        .then(async (response) => {
+          // ... load sensors from all assets
+        });
+    }, 30000);
+    
+    return () => clearInterval(intervalId);
+  }, [currentSite?.id]);
+};
+```
+
+#### Benefits of Topic-Based Loading
+
+✅ **Complete data:** Shows ALL sensors from ALL devices of an asset  
+✅ **Multi-device support:** Asset can have multiple gateways/controllers  
+✅ **Hierarchical consistency:** UI mirrors MQTT topic structure (tenant → site → asset)  
+✅ **Automatic updates:** New devices added via MQTT appear automatically  
+✅ **No code changes:** Adding new gateway doesn't require frontend updates  
+✅ **Scalable:** Handles complex multi-device scenarios
+
+#### Common Mistakes to Avoid
+
+❌ Loading sensors via `devicesService.listBySite()` then selecting one device  
+❌ Using `devices[0]` or `devices.find(d => d.device_type === 'GATEWAY')`  
+❌ Calling `loadRealTelemetry(deviceId)` when you need all asset sensors  
+❌ Creating device selector dropdowns for sensor pages (load all instead)  
+❌ Filtering sensors by device before displaying (show all from asset)
+
+#### When Device-Specific Loading IS Appropriate
+
+✅ **Device Management UI:** Showing device details, firmware, status  
+✅ **Device Configuration:** Editing individual device settings  
+✅ **Troubleshooting:** Debugging specific device connectivity  
+✅ **Device Comparison:** Comparing readings from different devices
+
+#### Reference Implementations
+
+See these files for correct patterns:
+- **`src/components/pages/SensorsPage.tsx`** - Asset-based sensor loading with auto-refresh
+- **`src/components/pages/AssetDetailsPage.tsx`** - AssetTelemetry tab (loads by asset)
+- **`src/services/assetsService.ts`** - `getBySite()` and `getSensors()` methods
+- **`src/store/sensors.ts`** - SensorsStore structure
+
+#### Testing Checklist
+
+When implementing sensor/telemetry features:
+- [ ] Does it load sensors by Asset ID, not Device ID?
+- [ ] Does it show sensors from ALL devices of an asset?
+- [ ] Does it respect the Site → Asset → Device → Sensor hierarchy?
+- [ ] Does it handle assets with multiple devices correctly?
+- [ ] Does it auto-refresh to show new sensors from new devices?
+- [ ] Does the console log show "Total consolidado: X sensores de Y asset(s)"?
+
+---
+
 ## State Management Architecture
 
 ### Zustand Store Pattern
