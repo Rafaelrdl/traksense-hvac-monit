@@ -171,16 +171,23 @@ export const AssetDetailPage: React.FC = () => {
         // Criar opções para checkboxes: um item por SENSOR (não por metric_type)
         // Assim todos os 4 sensores aparecem, mesmo que tenham metric_type duplicado
         const metrics = sensorsData.map(sensor => {
-          const meta = metricLabels[sensor.metric_type] || { 
-            label: sensor.metric_type, 
-            unit: sensor.unit || '' 
-          };
+          // Extrair nome limpo do sensor, removendo prefixo do MAC address
+          const cleanName = sensor.tag.includes('_') 
+            ? sensor.tag.split('_').slice(1).join('_')  // Remove primeira parte (MAC)
+            : sensor.tag;
+          
+          // Formatar nome: primeira letra maiúscula, substituir underscore por espaço
+          const formattedName = cleanName
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+          
           return {
             id: sensor.tag, // Usar tag do sensor como ID único
             sensorTag: sensor.tag,
             metricType: sensor.metric_type,
-            label: `${sensor.tag} (${meta.label})`, // Mostrar nome do sensor + tipo
-            unit: meta.unit
+            label: formattedName || sensor.tag, // Nome limpo formatado
+            unit: sensor.unit || ''
           };
         });
         
@@ -467,7 +474,6 @@ export const AssetDetailPage: React.FC = () => {
                       className="rounded border-gray-300"
                     />
                     <span className="font-medium">{metric.label}</span>
-                    <span className="text-xs text-muted-foreground">({metric.unit})</span>
                   </label>
                 ))
               ) : (
