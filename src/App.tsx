@@ -5,7 +5,7 @@ import { AssetsPage } from './components/pages/AssetsPage';
 import { AssetDetailPage } from './components/pages/AssetDetailPage';
 import { SensorsPage } from './components/pages/SensorsPage';
 import { RulesPage } from './components/pages/RulesPage';
-import { AlertsPage } from './components/pages/AlertsPage';
+import { AlertsPage } from './components/alerts/AlertsPage';
 import { ReportsPage } from './components/pages/ReportsPage';
 import { MaintenancePage } from './components/pages/MaintenancePage';
 import { SettingsPage } from './components/pages/SettingsPage';

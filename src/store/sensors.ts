@@ -101,22 +101,28 @@ export const useSensorsStore = create<SensorsStore>()(
         set({ isLoadingTelemetry: true, telemetryError: null });
         
         try {
-          console.log(`🔄 Carregando telemetria para device: ${deviceId}`);
+          if (import.meta.env.DEV) {
+            console.log(`🔄 Carregando telemetria para device: ${deviceId}`);
+          }
           
           // Buscar summary do device (contém lista de sensores)
           const summary = await telemetryService.getDeviceSummary(deviceId);
-          console.log(`📦 Summary recebido:`, summary);
+          if (import.meta.env.DEV) {
+            console.log(`📦 Summary recebido:`, summary);
+          }
           
           // Buscar assets para enriquecer dados
           const appAssets = useAppStore.getState().assets;
           
           // Converter SensorSummary para EnhancedSensor
           const enhancedSensors: EnhancedSensor[] = summary.sensors.map((sensor, index) => {
-            console.log(`🔍 Processando sensor ${index + 1}/${summary.sensors.length}:`, {
-              sensorId: sensor.sensorId,
-              sensorType: sensor.sensorType,
-              lastReadingAt: sensor.lastReadingAt,
-            });
+            if (import.meta.env.DEV) {
+              console.log(`🔍 Processando sensor ${index + 1}/${summary.sensors.length}:`, {
+                sensorId: sensor.sensorId,
+                sensorType: sensor.sensorType,
+                lastReadingAt: sensor.lastReadingAt,
+              });
+            }
             
             // Tentar encontrar asset relacionado (simplificado por enquanto)
             const asset = appAssets[0]; // Usa primeiro asset como fallback
@@ -145,7 +151,9 @@ export const useSensorsStore = create<SensorsStore>()(
             };
           });
           
-          console.log(`✅ ${enhancedSensors.length} sensores convertidos para EnhancedSensor`);
+          if (import.meta.env.DEV) {
+            console.log(`✅ ${enhancedSensors.length} sensores convertidos para EnhancedSensor`);
+          }
           
           set({ 
             items: enhancedSensors, 
@@ -153,7 +161,9 @@ export const useSensorsStore = create<SensorsStore>()(
             telemetryError: null
           });
           
-          console.log(`✅ Telemetria carregada: ${enhancedSensors.length} sensores do device ${deviceId}`);
+          if (import.meta.env.DEV) {
+            console.log(`✅ Telemetria carregada: ${enhancedSensors.length} sensores do device ${deviceId}`);
+          }
         } catch (error: any) {
           console.error('❌ Erro ao carregar telemetria:', error);
           set({ 

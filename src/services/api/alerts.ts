@@ -249,8 +249,8 @@ export const rulesApi = {
    * Toggle rule enabled status
    */
   toggleStatus: async (id: number) => {
-    const response = await api.post<Rule>(`/alerts/rules/${id}/toggle_status/`);
-    return response.data;
+    const response = await api.post<{ status: string; rule: Rule }>(`/alerts/rules/${id}/toggle_status/`);
+    return response.data.rule; // Backend retorna {status, rule}, extraímos apenas o rule
   },
 
   /**

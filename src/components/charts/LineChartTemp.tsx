@@ -74,18 +74,24 @@ export const LineChartTemp: React.FC<LineChartTempProps> = ({ data, height = 300
       formatter: (params: any) => {
         if (!params || !params[0]) return '';
         const time = formatDate(new Date(params[0].axisValue));
+        const dataIndex = params[0].dataIndex; // Índice do ponto atual
         let content = `<strong>${time}</strong><br/>`;
+        
         params.forEach((param: any) => {
           const value = param.value?.[1];
           if (typeof value === 'number') {
-            const prevValue = params[param.seriesIndex - 1]?.value?.[1];
-            const change = param.seriesIndex > 0 && typeof prevValue === 'number'
-              ? (value - prevValue).toFixed(1) 
-              : '0.0';
-            const changeNum = typeof change === 'string' ? parseFloat(change) : change;
+            // 🔧 Buscar valor anterior da MESMA série (dataIndex - 1)
+            const prevValue = dataIndex > 0 && param.data?.[dataIndex - 1]?.[1];
+            const hasPrevValue = typeof prevValue === 'number';
+            const change = hasPrevValue ? (value - prevValue).toFixed(1) : '0.0';
+            const changeNum = parseFloat(change);
+            
             content += `${param.marker} ${param.seriesName}: ${value.toFixed(1)}°C `;
-            if (param.seriesIndex > 0) content += `(${changeNum > 0 ? '+' : ''}${change}°C)<br/>`;
-            else content += '<br/>';
+            if (hasPrevValue) {
+              content += `(${changeNum > 0 ? '+' : ''}${change}°C)<br/>`;
+            } else {
+              content += '<br/>';
+            }
           }
         });
         return content;
