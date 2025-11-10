@@ -145,8 +145,8 @@ class AuthService {
         const { reconfigureApiForTenant } = await import('@/lib/api');
         const { tenantStorage } = await import('@/lib/tenantStorage');
         
-        // Reconfigurar API client com base URL do tenant
-        reconfigureApiForTenant(slug);
+        // Reconfigurar API client com a URL fornecida pelo backend (não localhost fixo)
+        reconfigureApiForTenant(api_base_url);
         
         // Salvar tenant info no storage isolado
         tenantStorage.set('tenant_info', {

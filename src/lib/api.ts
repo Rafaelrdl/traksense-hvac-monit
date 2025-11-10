@@ -33,11 +33,21 @@ export const api = axios.create({
 /**
  * Reconfigura a API base URL dinamicamente
  * Chamado após login para ajustar ao tenant do usuário
+ * @param tenantSlugOrUrl - Slug do tenant (para localhost) ou URL completa da API
  */
-export const reconfigureApiForTenant = (tenantSlug: string): void => {
-  const newBaseUrl = `http://${tenantSlug}.localhost:8000/api`;
+export const reconfigureApiForTenant = (tenantSlugOrUrl: string): void => {
+  let newBaseUrl: string;
+  
+  // Se parece com URL completa (contém http/https), usa direto
+  if (tenantSlugOrUrl.startsWith('http://') || tenantSlugOrUrl.startsWith('https://')) {
+    newBaseUrl = tenantSlugOrUrl;
+  } else {
+    // Caso contrário, constrói URL para localhost (dev)
+    newBaseUrl = `http://${tenantSlugOrUrl}.localhost:8000/api`;
+  }
+  
   api.defaults.baseURL = newBaseUrl;
-  console.log(`🔄 API reconfigurada para tenant: ${tenantSlug} (${newBaseUrl})`);
+  console.log(`🔄 API reconfigurada para: ${newBaseUrl}`);
 };
 
 /**
@@ -210,8 +220,20 @@ export const hasValidToken = (): boolean => {
  * Helper para limpar tokens
  */
 export const clearTokens = (): void => {
+  // Limpar tokens globais do localStorage
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
+  
+  // Limpar tokens do tenantStorage (tenant-aware)
+  try {
+    // Importar dinamicamente para evitar dependência circular
+    const { tenantStorage } = require('./tenantStorage');
+    tenantStorage.remove('access_token');
+    tenantStorage.remove('refresh_token');
+    tenantStorage.remove('tenant_info');
+  } catch (error) {
+    console.warn('Failed to clear tenant storage:', error);
+  }
 };
 
 export default api;
