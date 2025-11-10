@@ -142,7 +142,7 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
     if (editingRule && open) {
       setIsInitializing(true);
       setEquipmentId(String(editingRule.equipment));
-      setParameterKey(editingRule.parameter_key);
+      setParameterKey(editingRule.parameter_key || '');
       setVariableKey(editingRule.variable_key || '');
       
       // Converte severity de PascalCase (backend) para UPPERCASE (frontend)
@@ -152,16 +152,18 @@ export function AddRuleModal({ open, onOpenChange, editingRule }: AddRuleModalPr
         'Medium': 'MEDIUM',
         'Low': 'LOW',
       };
-      const frontendSeverity = severityMap[editingRule.severity] || editingRule.severity.toUpperCase() as Severity;
+      const frontendSeverity = editingRule.severity 
+        ? (severityMap[editingRule.severity] || editingRule.severity.toUpperCase() as Severity)
+        : 'MEDIUM';
       
       setFormData({
         name: editingRule.name,
         description: editingRule.description,
-        operator: editingRule.operator,
-        threshold: editingRule.threshold.toString(),
-        duration: editingRule.duration.toString(),
+        operator: editingRule.operator || '>',
+        threshold: editingRule.threshold?.toString() || '0',
+        duration: editingRule.duration?.toString() || '0',
         severity: frontendSeverity,
-        actions: editingRule.actions,
+        actions: editingRule.actions || [],
       });
       
       // Marcar que inicialização terminou após render
