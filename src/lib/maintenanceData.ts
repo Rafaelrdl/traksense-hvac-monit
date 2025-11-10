@@ -78,9 +78,9 @@ export class MaintenanceDataService {
   private generateMaintenanceTasks() {
     const assetIds = ['AHU-01', 'AHU-02', 'AHU-03', 'CHILLER-01', 'CHILLER-02', 'VRF-01', 'VRF-02'];
     const assetTags = ['AHU-NORTE-01', 'AHU-SUL-02', 'AHU-CENTRAL-03', 'CHL-PRINCIPAL-01', 'CHL-BACKUP-02', 'VRF-ESCRITORIO-01', 'VRF-LABORATORIO-02'];
-    const categories = ['filter', 'cleaning', 'calibration', 'inspection', 'repair', 'lubrication'];
+    const categories: Array<'filter' | 'cleaning' | 'calibration' | 'inspection' | 'repair' | 'replacement' | 'lubrication' | 'electrical' | 'refrigerant'> = ['filter', 'cleaning', 'calibration', 'inspection', 'repair', 'lubrication'];
     const priorities = ['Low', 'Medium', 'High', 'Critical'] as const;
-    const statuses = ['scheduled', 'in-progress', 'completed', 'overdue'] as const;
+    const statuses: Array<'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'overdue'> = ['scheduled', 'in_progress', 'completed', 'overdue'];
     const assignees = ['João Silva', 'Maria Santos', 'Carlos Oliveira', 'Ana Costa'];
 
     // Generate 25 maintenance tasks
@@ -89,7 +89,7 @@ export class MaintenanceDataService {
       const assetId = assetIds[assetIndex];
       const assetTag = assetTags[assetIndex];
       const category = categories[Math.floor(Math.random() * categories.length)];
-      const type = category as any;
+      const type: 'preventive' | 'corrective' | 'predictive' | 'emergency' = 'preventive';
       const status = statuses[Math.floor(Math.random() * statuses.length)];
       const priority = priorities[Math.floor(Math.random() * priorities.length)];
 
@@ -157,8 +157,8 @@ export class MaintenanceDataService {
         taskId: `task-hist-${i + 1}`,
         assetId,
         assetTag,
-        type: category as any,
-        category,
+        type: 'preventive' as 'preventive' | 'corrective' | 'predictive' | 'emergency',
+        category: category as 'filter' | 'cleaning' | 'calibration' | 'inspection' | 'repair' | 'replacement' | 'lubrication' | 'electrical' | 'refrigerant',
         title: this.getTaskTitle(category),
         completedDate,
         completedBy: assignees[Math.floor(Math.random() * assignees.length)],

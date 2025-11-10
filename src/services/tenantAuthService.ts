@@ -9,7 +9,7 @@
  */
 
 import { api, reconfigureApiForTenant } from '@/lib/api';
-import { tenantStorage } from '@/lib/tenantStorage';
+import { tenantStorage, updateTenantSlugCache } from '@/lib/tenantStorage';
 import { setCurrentTenant, getTenantConfig } from '@/lib/tenant';
 
 interface LoginCredentials {
@@ -50,12 +50,15 @@ interface JWTPayload {
 }
 
 /**
- * Decodifica JWT payload
+ * Decodifica JWT payload (suporta base64url)
  */
 const decodeJWT = (token: string): JWTPayload | null => {
   try {
     const payload = token.split('.')[1];
-    return JSON.parse(atob(payload));
+    // 🆕 Normalizar base64url para base64 (RFC 4648 §5)
+    const normalizedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const paddedPayload = normalizedPayload + '='.repeat((4 - normalizedPayload.length % 4) % 4);
+    return JSON.parse(atob(paddedPayload));
   } catch (error) {
     console.error('❌ Erro ao decodificar JWT:', error);
     return null;
@@ -128,6 +131,9 @@ export const tenantAuthService = {
       if (tenantInfo) {
         console.log(`🏢 Tenant detectado: ${tenantInfo.tenantName} (${tenantInfo.tenantSlug})`);
         
+        // 🆕 Atualizar cache do tenantStorage ANTES de qualquer operação
+        updateTenantSlugCache(tenantInfo.tenantSlug);
+        
         // 3. Reconfigurar API para o tenant do usuário
         // 🆕 Usar api_base_url fornecida pelo backend (não localhost hard-coded)
         const apiBaseUrl = tenantInfo.api_base_url || 
@@ -180,11 +186,14 @@ export const tenantAuthService = {
         // Ignorar erro - endpoint pode não existir
       }
       
-      // 2. Limpar tenant storage
+      // 2. Limpar tenant storage (já limpa o cache internamente)
       tenantStorage.clear();
       
       // 3. Limpar localStorage global
       localStorage.clear();
+      
+      // 4. Resetar cache explicitamente
+      updateTenantSlugCache(null);
       
       console.log('✅ Logout realizado com sucesso');
     } catch (error) {
@@ -192,6 +201,7 @@ export const tenantAuthService = {
       // Limpar mesmo com erro
       tenantStorage.clear();
       localStorage.clear();
+      updateTenantSlugCache(null);
     }
   },
 

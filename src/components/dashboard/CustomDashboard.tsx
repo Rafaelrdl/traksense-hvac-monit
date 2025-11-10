@@ -124,7 +124,7 @@ export const CustomDashboard: React.FC = () => {
 
     // Generate heatmap data for alerts
     const alertHeatmapData = (() => {
-      const data = [];
+      const data: Array<{ day: number; hour: number; count: number; date: Date }> = [];
       const now = new Date();
       
       for (let day = 6; day >= 0; day--) {

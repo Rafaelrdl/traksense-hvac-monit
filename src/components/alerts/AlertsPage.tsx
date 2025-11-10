@@ -19,17 +19,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Alert, AlertCircle, Bell, CheckCircle2, Clock, Filter, Loader2, Plus, RefreshCw } from 'lucide-react';
+import { AlertCircle, Bell, CheckCircle2, Clock, Filter, Loader2, Plus, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AlertDetailsDialog } from './AlertDetailsDialog';
 import { AddRuleModalMultiParam } from './AddRuleModalMultiParam';
 
-const severityConfig: Record<Severity, { color: string; bg: string; label: string }> = {
+const severityConfig: Partial<Record<Severity, { color: string; bg: string; label: string }>> = {
   CRITICAL: { color: 'text-red-700', bg: 'bg-red-100 border-red-200', label: 'Crítico' },
   HIGH: { color: 'text-orange-700', bg: 'bg-orange-100 border-orange-200', label: 'Alto' },
   MEDIUM: { color: 'text-yellow-700', bg: 'bg-yellow-100 border-yellow-200', label: 'Médio' },
   LOW: { color: 'text-blue-700', bg: 'bg-blue-100 border-blue-200', label: 'Baixo' },
+  Critical: { color: 'text-red-700', bg: 'bg-red-100 border-red-200', label: 'Crítico' },
+  High: { color: 'text-orange-700', bg: 'bg-orange-100 border-orange-200', label: 'Alto' },
+  Medium: { color: 'text-yellow-700', bg: 'bg-yellow-100 border-yellow-200', label: 'Médio' },
+  Low: { color: 'text-blue-700', bg: 'bg-blue-100 border-blue-200', label: 'Baixo' },
 };
 
 export const AlertsPage: React.FC = () => {
@@ -248,11 +252,13 @@ export const AlertsPage: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {alerts.map((alert) => (
+              {alerts.map((alert) => {
+                const config = severityConfig[alert.severity] || severityConfig.MEDIUM;
+                return (
                 <div
                   key={alert.id}
                   className={`p-4 rounded-lg border-2 cursor-pointer transition-colors hover:bg-accent ${
-                    severityConfig[alert.severity].bg
+                    config?.bg || 'bg-gray-100'
                   }`}
                   onClick={() => setSelectedAlertId(alert.id)}
                 >
@@ -262,8 +268,8 @@ export const AlertsPage: React.FC = () => {
                         <Badge variant={alert.is_active ? 'destructive' : 'secondary'}>
                           {alert.is_active ? 'Ativo' : alert.acknowledged ? 'Reconhecido' : 'Resolvido'}
                         </Badge>
-                        <Badge className={severityConfig[alert.severity].color}>
-                          {severityConfig[alert.severity].label}
+                        <Badge className={config?.color || 'text-gray-700'}>
+                          {config?.label || alert.severity}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
                           {formatDistanceToNow(new Date(alert.triggered_at), {
@@ -281,7 +287,8 @@ export const AlertsPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
           )}
         </CardContent>

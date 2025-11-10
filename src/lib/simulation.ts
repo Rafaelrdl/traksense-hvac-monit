@@ -997,7 +997,7 @@ export class SimulationEngine {
       let totalPowerConsumption = 0;
       
       // Equipment-specific health calculation weights
-      const healthWeights = {
+      const healthWeights: Record<string, Record<string, number>> = {
         'Chiller': { vibration: 0.25, superheat: 0.20, subcooling: 0.15, pressure: 0.15, temp: 0.10, power: 0.10, others: 0.05 },
         'AHU': { filter: 0.30, vibration: 0.20, temp: 0.15, airflow: 0.15, power: 0.10, others: 0.10 },
         'VRF': { superheat: 0.25, vibration: 0.20, temp: 0.20, power: 0.15, efficiency: 0.15, others: 0.05 },

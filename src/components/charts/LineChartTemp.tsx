@@ -78,10 +78,13 @@ export const LineChartTemp: React.FC<LineChartTempProps> = ({ data, height = 300
         params.forEach((param: any) => {
           const value = param.value?.[1];
           if (typeof value === 'number') {
-            const change = param.seriesIndex > 0 ? 
-              ((value - params[param.seriesIndex - 1]?.value?.[1]) || 0).toFixed(1) : '0.0';
+            const prevValue = params[param.seriesIndex - 1]?.value?.[1];
+            const change = param.seriesIndex > 0 && typeof prevValue === 'number'
+              ? (value - prevValue).toFixed(1) 
+              : '0.0';
+            const changeNum = typeof change === 'string' ? parseFloat(change) : change;
             content += `${param.marker} ${param.seriesName}: ${value.toFixed(1)}°C `;
-            if (param.seriesIndex > 0) content += `(${change > 0 ? '+' : ''}${change}°C)<br/>`;
+            if (param.seriesIndex > 0) content += `(${changeNum > 0 ? '+' : ''}${change}°C)<br/>`;
             else content += '<br/>';
           }
         });
