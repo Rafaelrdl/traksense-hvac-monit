@@ -1,6 +1,9 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { authService } from '@/services/auth.service';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { tenantAuthService } from '@/services/tenantAuthService';
+import { authService } from '@/services/auth.service'; // TODO: Migrar register, getProfile, updateProfile, uploadAvatar, removeAvatar para tenantAuthService
+import { tenantStorage } from '@/lib/tenantStorage';
+import { getTenantConfig } from '@/lib/tenant';
 
 export interface User {
   id: string;
@@ -105,10 +108,33 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          const user = await authService.login({
+          const response = await tenantAuthService.login({
             username_or_email: email,
             password,
           });
+
+          // Mapear resposta do backend para formato do store
+          const backendUser = response.user as any;
+          const user: User = {
+            id: String(backendUser.id),
+            username: backendUser.username,
+            email: backendUser.email,
+            first_name: backendUser.first_name,
+            last_name: backendUser.last_name,
+            full_name: backendUser.full_name,
+            initials: backendUser.initials,
+            name: backendUser.full_name || backendUser.username, // Compatibility
+            role: backendUser.role || 'viewer',
+            avatar: backendUser.avatar,
+            phone: backendUser.phone,
+            bio: backendUser.bio,
+            timezone: backendUser.timezone,
+            time_format: backendUser.time_format,
+            email_verified: backendUser.email_verified,
+            is_active: backendUser.is_active,
+            is_staff: backendUser.is_staff,
+            date_joined: backendUser.date_joined,
+          };
 
           set({
             user,
@@ -131,7 +157,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
 
         try {
-          await authService.logout();
+          await tenantAuthService.logout();
         } catch (error) {
           console.error('Logout error:', error);
         } finally {
@@ -148,6 +174,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
+          // TODO: Migrar para tenantAuthService.register quando disponível
           const user = await authService.register(data);
 
           set({
@@ -171,6 +198,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
 
         try {
+          // TODO: Migrar para tenantAuthService.getProfile quando disponível
           const user = await authService.getProfile();
           
           set({
@@ -188,8 +216,6 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          console.log('🔄 Store: Atualizando perfil com:', updates); // Debug
-          
           // Converte campos do frontend para backend se necessário
           const backendUpdates: any = { ...updates };
           
@@ -210,33 +236,13 @@ export const useAuthStore = create<AuthState>()(
           delete backendUpdates.initials;
           delete backendUpdates.username;
           
-          console.log('📤 Store: Enviando para backend:', backendUpdates); // Debug
-          
           const updatedUser = await authService.updateProfile(backendUpdates);
-
-          console.log('✅ Store: Usuário atualizado:', updatedUser); // Debug
-          console.log('� Store: time_format na resposta =', updatedUser?.time_format); // Debug
-          console.log('�💾 Store: Salvando no state...'); // Debug
 
           set({
             user: updatedUser,
             isLoading: false,
           });
-
-          console.log('💾 Store: State atualizado!'); // Debug
-          console.log('🔍 Store: Verificando localStorage...'); // Debug
-          
-          // Verificar o que foi salvo no localStorage
-          const savedData = localStorage.getItem('ts:auth');
-          console.log('💾 localStorage ts:auth =', savedData); // Debug
-          
-          if (savedData) {
-            const parsed = JSON.parse(savedData);
-            console.log('⏰ localStorage user.timezone =', parsed?.state?.user?.timezone); // Debug
-            console.log('🕐 localStorage user.time_format =', parsed?.state?.user?.time_format); // Debug
-          }
         } catch (error: any) {
-          console.error('❌ Store: Erro ao atualizar:', error); // Debug
           set({
             isLoading: false,
             error: error.message || 'Erro ao atualizar perfil',
@@ -300,11 +306,28 @@ export const useAuthStore = create<AuthState>()(
       clearError: () => set({ error: null }),
     }),
     {
-      name: 'ts:auth', // Key para localStorage via persist middleware
+      name: (() => {
+        // Namespace por tenant para isolar autenticação
+        const tenant = getTenantConfig();
+        return `ts:auth:${tenant.tenantSlug || 'default'}`;
+      })(),
+      storage: createJSONStorage(() => ({
+        getItem: (name) => {
+          const value = tenantStorage.get(name);
+          return value !== null ? JSON.stringify(value) : null;
+        },
+        setItem: (name, value) => {
+          tenantStorage.set(name, JSON.parse(value));
+        },
+        removeItem: (name) => {
+          tenantStorage.remove(name);
+        },
+      })),
       partialize: (state) => ({ 
         user: state.user, 
         isAuthenticated: state.isAuthenticated 
-      })
+      }),
+      // Remover onRehydrateStorage que vazava PII via console.log
     }
   )
 );

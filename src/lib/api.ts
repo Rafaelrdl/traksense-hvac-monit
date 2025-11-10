@@ -225,15 +225,10 @@ export const clearTokens = (): void => {
   localStorage.removeItem('refresh_token');
   
   // Limpar tokens do tenantStorage (tenant-aware)
-  try {
-    // Importar dinamicamente para evitar dependência circular
-    const { tenantStorage } = require('./tenantStorage');
-    tenantStorage.remove('access_token');
-    tenantStorage.remove('refresh_token');
-    tenantStorage.remove('tenant_info');
-  } catch (error) {
-    console.warn('Failed to clear tenant storage:', error);
-  }
+  // Usa import estático no topo do arquivo, não require()
+  tenantStorage.remove('access_token');
+  tenantStorage.remove('refresh_token');
+  tenantStorage.remove('tenant_info');
 };
 
 export default api;

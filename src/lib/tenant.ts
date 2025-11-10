@@ -8,6 +8,8 @@
  * 3. Fallback para configuração padrão
  */
 
+import { tenantStorage } from './tenantStorage';
+
 export interface TenantConfig {
   tenantId: string;
   tenantSlug: string;
@@ -27,11 +29,16 @@ export interface TenantBranding {
 
 /**
  * Decodifica JWT sem validação (apenas leitura do payload)
+ * Suporta base64url (usado por muitos JWTs) convertendo para base64 padrão
  */
 const decodeJWT = (token: string): any => {
   try {
     const payload = token.split('.')[1];
-    return JSON.parse(atob(payload));
+    // Normalizar base64url para base64: substituir - por + e _ por /
+    const normalizedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
+    // Adicionar padding se necessário
+    const paddedPayload = normalizedPayload + '='.repeat((4 - normalizedPayload.length % 4) % 4);
+    return JSON.parse(atob(paddedPayload));
   } catch (error) {
     console.error('❌ Erro ao decodificar JWT:', error);
     return null;
@@ -102,8 +109,8 @@ const TENANT_BRANDINGS: Record<string, TenantBranding> = {
  * 4. Fallback para default
  */
 export const getTenantConfig = (): TenantConfig => {
-  // 1. Tentar ler do token JWT (mais confiável)
-  const token = localStorage.getItem('access_token');
+  // 1. Tentar ler do token JWT (mais confiável) via tenantStorage
+  const token = tenantStorage.get<string>('access_token') || localStorage.getItem('access_token');
   if (token) {
     const payload = decodeJWT(token);
     if (payload?.tenant_id) {
@@ -130,21 +137,18 @@ export const getTenantConfig = (): TenantConfig => {
     };
   }
   
-  // 3. Tentar ler tenant salvo anteriormente
-  const savedTenant = localStorage.getItem('current_tenant');
+  // 3. Tentar ler tenant salvo anteriormente via tenantStorage
+  const savedTenant = tenantStorage.get<any>('current_tenant') || 
+                      (localStorage.getItem('current_tenant') ? 
+                        JSON.parse(localStorage.getItem('current_tenant')!) : null);
   if (savedTenant) {
-    try {
-      const parsed = JSON.parse(savedTenant);
-      return {
-        tenantId: parsed.tenantId,
-        tenantSlug: parsed.tenantSlug,
-        tenantName: parsed.tenantName,
-        apiBaseUrl: parsed.apiBaseUrl,
-        branding: TENANT_BRANDINGS[parsed.tenantSlug] || TENANT_BRANDINGS.default,
-      };
-    } catch {
-      // Ignorar erro de parse
-    }
+    return {
+      tenantId: savedTenant.tenantId,
+      tenantSlug: savedTenant.tenantSlug,
+      tenantName: savedTenant.tenantName,
+      apiBaseUrl: savedTenant.apiBaseUrl,
+      branding: TENANT_BRANDINGS[savedTenant.tenantSlug] || TENANT_BRANDINGS.default,
+    };
   }
   
   // 4. Fallback para configuração padrão

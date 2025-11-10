@@ -29,6 +29,11 @@ interface LoginResponse {
     full_name: string;
     // ... outros campos
   };
+  tenant?: {
+    slug: string;
+    domain: string;
+    api_base_url: string;
+  };
   message: string;
 }
 
@@ -60,7 +65,12 @@ const decodeJWT = (token: string): JWTPayload | null => {
 /**
  * Extrai informações de tenant do JWT
  */
-const extractTenantFromToken = (token: string): { tenantId: string; tenantSlug: string; tenantName: string } | null => {
+const extractTenantFromToken = (token: string): { 
+  tenantId: string; 
+  tenantSlug: string; 
+  tenantName: string;
+  api_base_url?: string;  // 🆕 Campo opcional
+} | null => {
   const payload = decodeJWT(token);
   
   if (!payload) {
@@ -98,26 +108,43 @@ export const tenantAuthService = {
       
       // 1. Fazer login na API
       const response = await api.post<LoginResponse>('/auth/login/', credentials);
-      const { access, refresh, user, message } = response.data;
+      const { access, refresh, user, tenant, message } = response.data;
       
       console.log('✅ Login bem-sucedido:', user.username);
       
-      // 2. Extrair informações de tenant do JWT
-      const tenantInfo = extractTenantFromToken(access);
+      // 2. Extrair informações de tenant do JWT OU do response.tenant
+      let tenantInfo = extractTenantFromToken(access);
+      
+      // 🆕 Preferir tenant do response (mais completo e confiável)
+      if (tenant) {
+        tenantInfo = {
+          tenantId: tenantInfo?.tenantId || '',
+          tenantSlug: tenant.slug,
+          tenantName: tenantInfo?.tenantName || tenant.slug,
+          api_base_url: tenant.api_base_url
+        };
+      }
       
       if (tenantInfo) {
         console.log(`🏢 Tenant detectado: ${tenantInfo.tenantName} (${tenantInfo.tenantSlug})`);
         
         // 3. Reconfigurar API para o tenant do usuário
-        reconfigureApiForTenant(tenantInfo.tenantSlug);
+        // 🆕 Usar api_base_url fornecida pelo backend (não localhost hard-coded)
+        const apiBaseUrl = tenantInfo.api_base_url || 
+                          `http://${tenantInfo.tenantSlug}.localhost:8000/api`;
         
-        // 4. Salvar configuração de tenant
+        reconfigureApiForTenant(apiBaseUrl);
+        
+        // 4. Salvar configuração de tenant com URL real do backend
         setCurrentTenant({
           tenantId: tenantInfo.tenantId,
           tenantSlug: tenantInfo.tenantSlug,
           tenantName: tenantInfo.tenantName,
-          apiBaseUrl: `http://${tenantInfo.tenantSlug}.localhost:8000/api`,
+          apiBaseUrl: apiBaseUrl,  // 🆕 URL real, não localhost
         });
+        
+        // 🆕 Persistir api_base_url para uso futuro
+        tenantStorage.set('api_base_url', apiBaseUrl);
       }
       
       // 5. Salvar tokens no tenant storage (isolado)

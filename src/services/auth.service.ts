@@ -204,7 +204,10 @@ class AuthService {
    */
   async logout(): Promise<void> {
     try {
-      const refreshToken = localStorage.getItem('refresh_token');
+      // Importar tenant storage
+      const { tenantStorage } = await import('@/lib/tenantStorage');
+      const refreshToken = tenantStorage.get<string>('refresh_token') || 
+                          localStorage.getItem('refresh_token');
       
       await api.post('/auth/logout/', {
         refresh_token: refreshToken,
@@ -334,7 +337,10 @@ class AuthService {
    * Refresh manual do token (geralmente feito automaticamente pelo interceptor)
    */
   async refreshToken(): Promise<void> {
-    const refreshToken = localStorage.getItem('refresh_token');
+    // Importar tenant storage
+    const { tenantStorage } = await import('@/lib/tenantStorage');
+    const refreshToken = tenantStorage.get<string>('refresh_token') || 
+                        localStorage.getItem('refresh_token');
     
     if (!refreshToken) {
       throw new Error('Nenhum refresh token disponível.');
@@ -346,9 +352,12 @@ class AuthService {
         { refresh: refreshToken }
       );
 
+      // Salvar em tenantStorage primeiro
+      tenantStorage.set('access_token', data.access);
       localStorage.setItem('access_token', data.access);
       
       if (data.refresh) {
+        tenantStorage.set('refresh_token', data.refresh);
         localStorage.setItem('refresh_token', data.refresh);
       }
     } catch (error) {

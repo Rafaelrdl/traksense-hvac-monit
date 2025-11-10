@@ -18,11 +18,7 @@ const defaultTheme = {
     padding: "2rem",
   },
   extend: {
-    screens: {
-      coarse: { raw: "(pointer: coarse)" },
-      fine: { raw: "(pointer: fine)" },
-      pwa: { raw: "(display-mode: standalone)" },
-    },
+    // Removido screens com pointer/display-mode - agora são variants via plugin
     colors: {
       neutral: {
         1: "var(--color-neutral-1)",
@@ -151,4 +147,12 @@ const defaultTheme = {
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: { ...defaultTheme, ...theme },
+  plugins: [
+    // Adicionar variants para pointer e display-mode como media queries corretas
+    function({ addVariant }) {
+      addVariant('coarse', '@media (pointer: coarse)');
+      addVariant('fine', '@media (pointer: fine)');
+      addVariant('pwa', '@media (display-mode: standalone)');
+    }
+  ],
 };
