@@ -81,15 +81,15 @@ const DeviceCard: React.FC<DeviceCardProps> = ({ device }) => {
             <div className="space-y-1 text-sm text-gray-600">
               <p>
                 <span className="font-medium">Asset:</span>{' '}
-                {device.asset_info.tag} - {device.asset_info.name}
+                {device.asset_info.tag}
               </p>
               <p>
-                <span className="font-medium">MQTT Client ID:</span>{' '}
+                <span className="font-medium">MAC:</span>{' '}
                 {device.mqtt_client_id}
               </p>
               {device.firmware_version && (
                 <p>
-                  <span className="font-medium">Firmware:</span>{' '}
+                  <span className="font-medium">Equipamento de monitoramento:</span>{' '}
                   {device.firmware_version}
                 </p>
               )}
