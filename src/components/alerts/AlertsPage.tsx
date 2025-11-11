@@ -103,137 +103,135 @@ export const AlertsPage: React.FC = () => {
             Gerencie e monitore os alertas do sistema
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Atualizar
-          </Button>
-          <Button onClick={() => setIsAddRuleModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Regra
-          </Button>
-        </div>
+        <Button onClick={() => setIsAddRuleModalOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Nova Regra
+        </Button>
       </div>
 
-      {/* Statistics Cards */}
+      {/* Statistics Cards - Compact Layout */}
       {statistics && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Alertas</CardTitle>
-              <Bell className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{statistics.total}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Todos os alertas do sistema
-              </p>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => {
+            setStatusFilter('active');
+            handleApplyFilters();
+          }}>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-3xl font-bold text-red-600">{statistics.active}</div>
+                  <p className="text-sm text-muted-foreground mt-1">Alertas Ativos</p>
+                </div>
+                <AlertCircle className="h-8 w-8 text-red-500" />
+              </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ativos</CardTitle>
-              <AlertCircle className="h-4 w-4 text-red-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{statistics.active}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Requerem atenção
-              </p>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => {
+            setStatusFilter('acknowledged');
+            handleApplyFilters();
+          }}>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-3xl font-bold text-yellow-600">{statistics.acknowledged}</div>
+                  <p className="text-sm text-muted-foreground mt-1">Reconhecidos</p>
+                </div>
+                <Bell className="h-8 w-8 text-yellow-500" />
+              </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Reconhecidos</CardTitle>
-              <Clock className="h-4 w-4 text-yellow-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{statistics.acknowledged}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Em análise
-              </p>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => {
+            setStatusFilter('resolved');
+            handleApplyFilters();
+          }}>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-3xl font-bold text-green-600">{statistics.resolved}</div>
+                  <p className="text-sm text-muted-foreground mt-1">Resolvidos</p>
+                </div>
+                <CheckCircle2 className="h-8 w-8 text-green-500" />
+              </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Resolvidos</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{statistics.resolved}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Concluídos
-              </p>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => {
+            setStatusFilter('all');
+            handleResetFilters();
+          }}>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-3xl font-bold text-blue-600">{statistics.total}</div>
+                  <p className="text-sm text-muted-foreground mt-1">Total</p>
+                </div>
+                <Clock className="h-8 w-8 text-blue-500" />
+              </div>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Filters */}
+      {/* Inline Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Filter className="w-4 h-4" />
-            Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Status</label>
-              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as AlertStatus | 'all')}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="active">Ativos</SelectItem>
-                  <SelectItem value="acknowledged">Reconhecidos</SelectItem>
-                  <SelectItem value="resolved">Resolvidos</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Severidade</label>
-              <Select value={severityFilter} onValueChange={(value) => setSeverityFilter(value as Severity | 'all')}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="CRITICAL">Crítico</SelectItem>
-                  <SelectItem value="HIGH">Alto</SelectItem>
-                  <SelectItem value="MEDIUM">Médio</SelectItem>
-                  <SelectItem value="LOW">Baixo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2 flex items-end">
-              <div className="flex gap-2 w-full">
-                <Button onClick={handleApplyFilters} className="flex-1">
-                  Aplicar
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-muted-foreground">Filtrar por:</span>
+              <div className="flex gap-2">
+                <Button
+                  variant={statusFilter === 'active' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => {
+                    setStatusFilter('active');
+                    setFilters({ status: 'active', severity: severityFilter === 'all' ? undefined : severityFilter });
+                  }}
+                >
+                  Ativos
                 </Button>
-                <Button variant="outline" onClick={handleResetFilters} className="flex-1">
-                  Limpar
+                <Button
+                  variant={statusFilter === 'acknowledged' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => {
+                    setStatusFilter('acknowledged');
+                    setFilters({ status: 'acknowledged', severity: severityFilter === 'all' ? undefined : severityFilter });
+                  }}
+                >
+                  Reconhecidos
+                </Button>
+                <Button
+                  variant={statusFilter === 'resolved' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => {
+                    setStatusFilter('resolved');
+                    setFilters({ status: 'resolved', severity: severityFilter === 'all' ? undefined : severityFilter });
+                  }}
+                >
+                  Resolvidos
+                </Button>
+                <Button
+                  variant={statusFilter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={handleResetFilters}
+                >
+                  Todos
                 </Button>
               </div>
             </div>
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
+              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Alerts List */}
+      {/* Alerts List - Compact Layout */}
       <Card>
         <CardHeader>
-          <CardTitle>Alertas Recentes</CardTitle>
-          <CardDescription>
-            {filters.status ? `Exibindo alertas: ${filters.status}` : 'Exibindo todos os alertas'}
-          </CardDescription>
+          <CardTitle className="text-lg">Lista de Alertas ({alerts.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -255,39 +253,58 @@ export const AlertsPage: React.FC = () => {
               {alerts.map((alert) => {
                 const config = severityConfig[alert.severity] || severityConfig.MEDIUM;
                 return (
-                <div
-                  key={alert.id}
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-colors hover:bg-accent ${
-                    config?.bg || 'bg-gray-100'
-                  }`}
-                  onClick={() => setSelectedAlertId(alert.id)}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant={alert.is_active ? 'destructive' : 'secondary'}>
-                          {alert.is_active ? 'Ativo' : alert.acknowledged ? 'Reconhecido' : 'Resolvido'}
-                        </Badge>
-                        <Badge className={config?.color || 'text-gray-700'}>
-                          {config?.label || alert.severity}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(alert.triggered_at), {
-                            addSuffix: true,
-                            locale: ptBR,
-                          })}
-                        </span>
+                  <div
+                    key={alert.id}
+                    className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                      config?.bg || 'bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge
+                            variant="outline"
+                            className={`${
+                              alert.severity === 'CRITICAL' || alert.severity === 'Critical'
+                                ? 'bg-red-100 text-red-700 border-red-300'
+                                : alert.severity === 'HIGH' || alert.severity === 'High'
+                                ? 'bg-orange-100 text-orange-700 border-orange-300'
+                                : alert.severity === 'MEDIUM' || alert.severity === 'Medium'
+                                ? 'bg-yellow-100 text-yellow-700 border-yellow-300'
+                                : 'bg-blue-100 text-blue-700 border-blue-300'
+                            }`}
+                          >
+                            {config?.label || alert.severity}
+                          </Badge>
+                          <span className="font-semibold truncate">{alert.rule_name}</span>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {formatDistanceToNow(new Date(alert.triggered_at), {
+                              addSuffix: true,
+                              locale: ptBR,
+                            })}
+                          </span>
+                        </div>
+                        <p className="text-sm mb-1">{alert.message}</p>
+                        <div className="text-xs text-muted-foreground">
+                          <span className="font-medium">Regra: Alerta {alert.rule_name}</span>
+                          {' • '}
+                          <span>Equipamento: {alert.equipment_name} ({alert.asset_tag})</span>
+                        </div>
                       </div>
-                      <h4 className="font-semibold mb-1">{alert.rule_name}</h4>
-                      <p className="text-sm text-muted-foreground mb-2">{alert.message}</p>
-                      <div className="text-xs text-muted-foreground">
-                        Equipamento: <span className="font-medium">{alert.equipment_name}</span> (
-                        {alert.asset_tag})
-                      </div>
+                      <Button
+                        size="sm"
+                        variant={alert.acknowledged ? 'secondary' : 'default'}
+                        disabled={alert.acknowledged || !alert.is_active}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedAlertId(alert.id);
+                        }}
+                      >
+                        {alert.acknowledged ? 'Reconhecido' : 'Reconhecer'}
+                      </Button>
                     </div>
                   </div>
-                </div>
-              );
+                );
               })}
             </div>
           )}
