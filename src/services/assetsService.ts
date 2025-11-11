@@ -14,6 +14,7 @@
  */
 
 import { api } from '@/lib/api';
+import { fetchAllPages } from '@/lib/pagination';
 import type { 
   ApiAsset, 
   ApiDevice, 
@@ -21,39 +22,6 @@ import type {
   PaginatedResponse, 
   AssetFilters 
 } from '@/types/api';
-
-/**
- * Helper function to fetch all paginated results by following 'next' links
- * 🔧 PERFORMANCE: Follows DRF pagination 'next' links to get complete data
- */
-async function fetchAllPages<T>(
-  endpoint: string, 
-  params?: Record<string, any>
-): Promise<T[]> {
-  const allResults: T[] = [];
-  let nextUrl: string | null = endpoint;
-  
-  // Convert params to use page/page_size (DRF standard) instead of limit/offset
-  const drfParams = { ...params };
-  if ('limit' in drfParams) {
-    drfParams.page_size = drfParams.limit;
-    delete drfParams.limit;
-  }
-  if ('offset' in drfParams) {
-    delete drfParams.offset; // DRF uses 'page' parameter instead
-  }
-  
-  while (nextUrl) {
-    const response = await api.get<PaginatedResponse<T>>(nextUrl, {
-      params: nextUrl === endpoint ? drfParams : undefined // Only send params on first request
-    });
-    
-    allResults.push(...response.data.results);
-    nextUrl = response.data.next;
-  }
-  
-  return allResults;
-}
 
 export const assetsService = {
   /**

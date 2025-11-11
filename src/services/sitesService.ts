@@ -12,42 +12,12 @@
  */
 
 import { api } from '@/lib/api';
+import { fetchAllPages } from '@/lib/pagination';
 import type { 
   ApiSite, 
   PaginatedResponse, 
   SiteFilters 
 } from '@/types/api';
-
-/**
- * Helper function to fetch all paginated results by following 'next' links
- */
-async function fetchAllPages<T>(
-  endpoint: string, 
-  params?: Record<string, any>
-): Promise<T[]> {
-  const allResults: T[] = [];
-  let nextUrl: string | null = endpoint;
-  
-  const drfParams = { ...params };
-  if ('limit' in drfParams) {
-    drfParams.page_size = drfParams.limit;
-    delete drfParams.limit;
-  }
-  if ('offset' in drfParams) {
-    delete drfParams.offset;
-  }
-  
-  while (nextUrl) {
-    const response = await api.get<PaginatedResponse<T>>(nextUrl, {
-      params: nextUrl === endpoint ? drfParams : undefined
-    });
-    
-    allResults.push(...response.data.results);
-    nextUrl = response.data.next;
-  }
-  
-  return allResults;
-}
 
 export const sitesService = {
   /**

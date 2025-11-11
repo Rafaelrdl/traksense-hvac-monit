@@ -265,6 +265,124 @@ if (import.meta.env.DEV) {
 
 ---
 
+## 🔧 ADDITIONAL FIXES: Code Quality & Architecture (Nov 2025)
+
+**⚠️ ADDITIONAL UPDATES - Production cleanup and optimization:**
+
+### Frontend Fixes (6 additional corrections)
+
+1. **✅ API Interceptor Documentation**
+   - **File**: `src/lib/api.ts` (lines 58-78)
+   - **Problem**: Interceptor tried localStorage without explaining cookie strategy
+   - **Fix**: Added comprehensive documentation about HttpOnly cookie authentication
+   - **Impact**: Clear authentication strategy (cookies primary, localStorage fallback dev)
+
+2. **✅ Registration API URL**
+   - **File**: `src/services/tenantAuthService.ts` (line 296)
+   - **Problem**: Passed `tenantSlug` to `reconfigureApiForTenant()` (expects full URL)
+   - **Fix**: Changed to `reconfigureApiForTenant(apiBaseUrl)`
+   - **Impact**: Registration flow now connects to correct API URL in production
+
+3. **✅ Token Storage Removal (Registration)**
+   - **File**: `src/services/tenantAuthService.ts` (lines 300-313)
+   - **Problem**: Duplicated tokens in tenantStorage + localStorage (XSS risk)
+   - **Fix**: Commented out token storage, rely on HttpOnly cookies
+   - **Impact**: Tokens only in secure cookies, not exposed to JavaScript
+
+4. **✅ Pagination Helper Extraction**
+   - **Files**: `src/lib/pagination.ts` (NEW), `src/services/assetsService.ts`, `src/services/sitesService.ts`
+   - **Problem**: `fetchAllPages()` duplicated across multiple services
+   - **Fix**: Created reusable `src/lib/pagination.ts` with DRF helpers
+   - **Impact**: DRY principle, consistent pagination logic, easier maintenance
+
+5. **✅ SECURITY.md Deduplication**
+   - **Files**: `SECURITY.md` (root), `docs/SECURITY.md` (deleted)
+   - **Problem**: Identical 1775-byte file in two locations (divergence risk)
+   - **Fix**: Deleted `docs/SECURITY.md`, kept root version
+   - **Impact**: Single source of truth for security policy
+
+6. **✅ Empty File Cleanup**
+   - **Files**: `src/store/abtest.ts`, `src/components/brand/TrakSenseWordmark.tsx`, `src/components/notifications/NotificationBell.tsx`, `src/components/assets/TrakNorCTAPro.tsx`, `src/modules/assets/AssetStatusFilter.tsx`
+   - **Problem**: 5 files with 0 bytes (placeholder pollution)
+   - **Fix**: Removed all empty files
+   - **Impact**: Cleaner codebase, no false duplicates in scanners
+
+### Migration Guide
+
+**Using Centralized Pagination:**
+```typescript
+// OLD (duplicated code in each service)
+async function fetchAllPages<T>(...) { /* 20 lines */ }
+
+// NEW (import from lib)
+import { fetchAllPages } from '@/lib/pagination';
+const assets = await fetchAllPages<ApiAsset>('/api/assets/', params);
+```
+
+**Authentication Strategy Clarification:**
+```typescript
+// PRODUCTION STRATEGY (Recommended):
+// - Backend sets HttpOnly cookies (access_token, refresh_token)
+// - Browser automatically includes cookies in requests
+// - NO tokens in localStorage/tenantStorage
+// - Interceptor only used for dev fallback
+
+// DEVELOPMENT FALLBACK:
+// - If cookies not working, try localStorage
+// - Warn in console about non-secure method
+```
+
+**Service Consolidation (Future):**
+```typescript
+// CURRENT STATE:
+// - tenantAuthService.ts (active, multi-tenant aware)
+// - auth.service.ts (legacy, still exists but unused)
+
+// RECOMMENDATION:
+// - Continue using tenantAuthService for all auth operations
+// - Mark auth.service.ts as deprecated or remove
+```
+
+### File Organization Improvements
+
+**Removed Empty Files (0 bytes):**
+- `src/store/abtest.ts` - A/B testing (unimplemented)
+- `src/components/brand/TrakSenseWordmark.tsx` - Branding (unimplemented)
+- `src/components/notifications/NotificationBell.tsx` - Notifications UI (unimplemented)
+- `src/components/assets/TrakNorCTAPro.tsx` - CTA component (unimplemented)
+- `src/modules/assets/AssetStatusFilter.tsx` - Filter UI (unimplemented)
+
+**Deduplication:**
+- `docs/SECURITY.md` → Deleted (use root `SECURITY.md`)
+
+### Validation Checklist (Additional)
+
+**Before deploying:**
+- [ ] API interceptor documented (cookies vs localStorage clear)
+- [ ] Registration uses complete `api_base_url` (not just slug)
+- [ ] No tokens in localStorage after login/register
+- [ ] All services import pagination from `src/lib/pagination.ts`
+- [ ] No empty/placeholder files in `src/` directory
+- [ ] Only one SECURITY.md file exists (in root)
+- [ ] `auth.service.ts` marked deprecated or removed
+
+**Code Quality:**
+- [ ] No duplicate helper functions across services
+- [ ] Authentication strategy documented in `api.ts`
+- [ ] All pagination follows DRF `page`/`page_size` format
+
+### Known Issues
+
+1. **Dual Auth Services**: `auth.service.ts` still exists alongside `tenantAuthService.ts`
+   - **Status**: Legacy code, not actively used
+   - **Recommendation**: Deprecate or remove in next cleanup phase
+
+2. **Add Asset Site Selection**: Modal doesn't have site picker UI
+   - **Status**: Documented, requires `AddAssetDialog.tsx` changes
+   - **Workaround**: Defaults to first available site
+
+---
+
 ## ⚠️ Important: Spark Integration REMOVED
 
 **GitHub Spark has been completely removed from this project.** All Spark-specific code, dependencies, and configurations have been eliminated.

@@ -52,19 +52,30 @@ export const reconfigureApiForTenant = (tenantSlugOrUrl: string): void => {
 
 /**
  * Interceptor de Request
- * Adiciona o token JWT em todas as requisições autenticadas
- * Usa tenantStorage para isolar tokens por tenant
+ * 
+ * 🔐 AUTHENTICATION STRATEGY:
+ * - Backend sends JWT tokens in HttpOnly cookies (access_token, refresh_token)
+ * - These cookies are automatically included in all requests by the browser
+ * - DO NOT store tokens in localStorage/tenantStorage (security risk)
+ * 
+ * This interceptor tries localStorage as fallback for development,
+ * but production should rely exclusively on HttpOnly cookies.
  */
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // 🔧 FALLBACK: Try localStorage only if cookies aren't working (dev mode)
     const token = tenantStorage.get<string>('access_token') || localStorage.getItem('access_token');
     
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
-    } else if (!token && !config.url?.includes('/auth/login') && !config.url?.includes('/auth/register')) {
-      // Só loga warning para endpoints que REQUEREM autenticação
-      console.warn('⚠️ Requisição sem token:', config.url);
+      
+      if (import.meta.env.DEV) {
+        console.warn('⚠️ Using token from localStorage (should use HttpOnly cookie)');
+      }
     }
+    
+    // In production, tokens come from HttpOnly cookies automatically
+    // No Authorization header needed
     
     return config;
   },

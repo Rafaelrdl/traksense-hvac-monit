@@ -294,11 +294,9 @@ export const tenantAuthService = {
       
       // Update tenant configuration
       updateTenantSlugCache(tenantSlug);
-      reconfigureApiForTenant(tenantSlug);
+      reconfigureApiForTenant(apiBaseUrl);  // 🔧 FIX: Pass complete URL, not just slug
       
-      // Save tokens to tenant-isolated storage
-      tenantStorage.set('access_token', response.data.access);
-      tenantStorage.set('refresh_token', response.data.refresh);
+      // 🔧 FIX: Save only metadata (tokens are in HttpOnly cookies)
       tenantStorage.set('user', response.data.user);
       tenantStorage.set('api_base_url', apiBaseUrl);
       tenantStorage.set('tenant_config', {
@@ -308,9 +306,12 @@ export const tenantAuthService = {
         apiBaseUrl,
       });
       
-      // Fallback to global storage
-      localStorage.setItem('access_token', response.data.access);
-      localStorage.setItem('refresh_token', response.data.refresh);
+      // 🔐 SECURITY: Do NOT duplicate tokens in storage (use HttpOnly cookies)
+      // Commented out to prevent XSS exposure:
+      // tenantStorage.set('access_token', response.data.access);
+      // tenantStorage.set('refresh_token', response.data.refresh);
+      // localStorage.setItem('access_token', response.data.access);
+      // localStorage.setItem('refresh_token', response.data.refresh);
       
       console.log('✅ Registro realizado com sucesso');
       return response.data.user;
