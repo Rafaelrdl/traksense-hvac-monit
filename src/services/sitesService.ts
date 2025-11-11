@@ -7,6 +7,8 @@
  * Endpoints disponíveis:
  * - GET/POST   /api/sites/
  * - GET/PATCH/DELETE /api/sites/{id}/
+ * 
+ * 🔧 PAGINATION FIX: Uses DRF page/page_size instead of limit/offset
  */
 
 import { api } from '@/lib/api';
@@ -16,11 +18,42 @@ import type {
   SiteFilters 
 } from '@/types/api';
 
+/**
+ * Helper function to fetch all paginated results by following 'next' links
+ */
+async function fetchAllPages<T>(
+  endpoint: string, 
+  params?: Record<string, any>
+): Promise<T[]> {
+  const allResults: T[] = [];
+  let nextUrl: string | null = endpoint;
+  
+  const drfParams = { ...params };
+  if ('limit' in drfParams) {
+    drfParams.page_size = drfParams.limit;
+    delete drfParams.limit;
+  }
+  if ('offset' in drfParams) {
+    delete drfParams.offset;
+  }
+  
+  while (nextUrl) {
+    const response = await api.get<PaginatedResponse<T>>(nextUrl, {
+      params: nextUrl === endpoint ? drfParams : undefined
+    });
+    
+    allResults.push(...response.data.results);
+    nextUrl = response.data.next;
+  }
+  
+  return allResults;
+}
+
 export const sitesService = {
   /**
    * Lista todos os sites com paginação e filtros
    * 
-   * @param params - Filtros opcionais (company, sector, timezone, search, limit, offset)
+   * @param params - Filtros opcionais (company, sector, timezone, search, page_size)
    * @returns Resposta paginada com lista de sites
    * 
    * @example
@@ -36,10 +69,26 @@ export const sitesService = {
    * ```
    */
   async getAll(params?: SiteFilters): Promise<PaginatedResponse<ApiSite>> {
+    const drfParams: Record<string, any> = { ...params };
+    if (params?.limit) {
+      drfParams.page_size = params.limit;
+      delete drfParams.limit;
+    }
+    if (params?.offset) {
+      delete drfParams.offset;
+    }
+    
     const response = await api.get<PaginatedResponse<ApiSite>>('/sites/', { 
-      params 
+      params: drfParams
     });
     return response.data;
+  },
+
+  /**
+   * Fetch ALL sites across all pages (follows 'next' links)
+   */
+  async getAllComplete(params?: SiteFilters): Promise<ApiSite[]> {
+    return fetchAllPages<ApiSite>('/sites/', params);
   },
 
   /**

@@ -107,13 +107,17 @@ export const tenantAuthService = {
    */
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
     try {
-      console.log('🔐 Iniciando login...');
+      if (import.meta.env.DEV) {
+        console.log('🔐 Iniciando login...');
+      }
       
       // 1. Fazer login na API
       const response = await api.post<LoginResponse>('/auth/login/', credentials);
       const { access, refresh, user, tenant, message } = response.data;
       
-      console.log('✅ Login bem-sucedido:', user.username);
+      if (import.meta.env.DEV) {
+        console.log('✅ Login bem-sucedido:', user.username);
+      }
       
       // 2. Extrair informações de tenant do JWT OU do response.tenant
       let tenantInfo = extractTenantFromToken(access);
@@ -129,7 +133,9 @@ export const tenantAuthService = {
       }
       
       if (tenantInfo) {
-        console.log(`🏢 Tenant detectado: ${tenantInfo.tenantName} (${tenantInfo.tenantSlug})`);
+        if (import.meta.env.DEV) {
+          console.log(`🏢 Tenant detectado: ${tenantInfo.tenantName} (${tenantInfo.tenantSlug})`);
+        }
         
         // 🆕 Atualizar cache do tenantStorage ANTES de qualquer operação
         updateTenantSlugCache(tenantInfo.tenantSlug);
@@ -149,25 +155,25 @@ export const tenantAuthService = {
           apiBaseUrl: apiBaseUrl,  // 🆕 URL real, não localhost
         });
         
-        // 🆕 Persistir api_base_url para uso futuro
+        // 5. 🔧 FIX: Save minimal data in tenantStorage (tokens are in HttpOnly cookies)
+        // Only save non-sensitive user info and tenant config for UI purposes
+        tenantStorage.set('user', user);
         tenantStorage.set('api_base_url', apiBaseUrl);
       }
       
-      // 5. Salvar tokens no tenant storage (isolado)
-      tenantStorage.set('access_token', access);
-      tenantStorage.set('refresh_token', refresh);
-      tenantStorage.set('user', user);
+      // 🔐 SECURITY: Do NOT duplicate tokens in localStorage/tenantStorage
+      // Backend uses HttpOnly cookies for actual authentication
+      // We only store flags/metadata for UI state management
       
-      // 6. Fallback para localStorage global (compatibilidade)
-      localStorage.setItem('access_token', access);
-      localStorage.setItem('refresh_token', refresh);
-      localStorage.setItem('user', JSON.stringify(user));
-      
-      console.log('💾 Tokens salvos com sucesso');
+      if (import.meta.env.DEV) {
+        console.log('💾 User info saved (tokens in HttpOnly cookies)');
+      }
       
       return response.data;
     } catch (error: any) {
-      console.error('❌ Erro no login:', error);
+      if (import.meta.env.DEV) {
+        console.error('❌ Erro no login:', error);
+      }
       throw error;
     }
   },
@@ -177,7 +183,9 @@ export const tenantAuthService = {
    */
   async logout(): Promise<void> {
     try {
-      console.log('🚪 Realizando logout...');
+      if (import.meta.env.DEV) {
+        console.log('🚪 Realizando logout...');
+      }
       
       // 1. Tentar invalidar token no backend (se endpoint existir)
       try {
@@ -186,21 +194,30 @@ export const tenantAuthService = {
         // Ignorar erro - endpoint pode não existir
       }
       
-      // 2. Limpar tenant storage (já limpa o cache internamente)
-      tenantStorage.clear();
+      // 2. 🔧 FIX: Use clearTokens() instead of localStorage.clear()
+      // Preserve other data like consent flags, preferences, etc.
+      const keysToRemove = ['access_token', 'refresh_token', 'user', 'tenant_config', 'api_base_url'];
       
-      // 3. Limpar localStorage global
-      localStorage.clear();
+      // Clear from tenantStorage
+      keysToRemove.forEach(key => tenantStorage.remove(key));
       
-      // 4. Resetar cache explicitamente
+      // Clear from localStorage (legacy support)
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      
+      // 3. Resetar cache explicitamente
       updateTenantSlugCache(null);
       
-      console.log('✅ Logout realizado com sucesso');
+      if (import.meta.env.DEV) {
+        console.log('✅ Logout realizado com sucesso');
+      }
     } catch (error) {
       console.error('❌ Erro no logout:', error);
       // Limpar mesmo com erro
-      tenantStorage.clear();
-      localStorage.clear();
+      const keysToRemove = ['access_token', 'refresh_token', 'user', 'tenant_config', 'api_base_url'];
+      keysToRemove.forEach(key => {
+        tenantStorage.remove(key);
+        localStorage.removeItem(key);
+      });
       updateTenantSlugCache(null);
     }
   },

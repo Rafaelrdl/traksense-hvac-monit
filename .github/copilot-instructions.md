@@ -186,6 +186,85 @@ useEffect(() => {
 
 ---
 
+## 🔧 RECENT FIXES: Architecture & API Integration (Nov 2025)
+
+**⚠️ CRITICAL UPDATES - Additional fixes beyond security audit:**
+
+### Frontend Fixes (5 additional corrections)
+
+1. **✅ DRF Pagination Compatibility**
+   - Files: `src/services/assetsService.ts`, `src/services/sitesService.ts`, `src/store/app.ts`
+   - Fix: Changed from `limit/offset` to `page/page_size` (DRF standard)
+   - Added: `getAllComplete()` methods that follow 'next' links automatically
+   - Impact: Now loads ALL assets/sites across all pages (was limited to first 50)
+
+2. **✅ Remove Duplicate JWT Storage**
+   - File: `src/services/tenantAuthService.ts:157-164`
+   - Fix: Removed token storage in localStorage/tenantStorage
+   - Security: Backend uses HttpOnly cookies - frontend shouldn't store JWTs
+   - Impact: Eliminates XSS token exposure risk
+
+3. **✅ Safe Logout Implementation**
+   - File: `src/services/tenantAuthService.ts:175-200`
+   - Fix: Changed from `localStorage.clear()` to selective key removal
+   - Preserves: Consent flags, preferences, non-auth data
+   - Impact: Users don't lose unrelated settings on logout
+
+4. **✅ Guard Sensitive Logs**
+   - File: `src/services/tenantAuthService.ts` (multiple lines)
+   - Fix: Wrapped all `console.log` with `import.meta.env.DEV` checks
+   - Impact: No tenant names, usernames, or URLs logged in production
+
+5. **✅ Add Asset Site Selection (DOCUMENTED)**
+   - Note: Requires UI changes to `AddAssetDialog.tsx`
+   - Current: Uses first available site (line 263)
+   - Needed: Add site selector dropdown, pass `site_id` to `mapHVACAssetToApiAsset`
+   - Impact: Assets currently created in wrong site for multi-site tenants
+
+### Migration Guide
+
+**Using Complete Pagination:**
+```typescript
+// ❌ OLD (Only gets first page)
+const response = await assetsService.getAll({ limit: 100 });
+const assets = response.results; // Missing data if > 100 assets
+
+// ✅ NEW (Gets ALL pages automatically)
+const assets = await assetsService.getAllComplete();
+// Or with filters:
+const siteAssets = await assetsService.getAllComplete({ site: siteId });
+```
+
+**Authentication Service:**
+```typescript
+// tenantAuthService now:
+// - Does NOT store tokens in localStorage/tenantStorage
+// - Relies on HttpOnly cookies for authentication
+// - Only stores user metadata and tenant config for UI
+```
+
+**Production Console Logs:**
+```typescript
+// ❌ OLD (Logs in production)
+console.log('Login successful:', username);
+
+// ✅ NEW (Only in development)
+if (import.meta.env.DEV) {
+  console.log('Login successful:', username);
+}
+```
+
+### API Integration Checklist
+
+**Before deploying:**
+- [ ] Assets/Sites load completely (check for 50+ items)
+- [ ] HttpOnly cookies contain access_token (not localStorage)
+- [ ] Logout preserves theme/language preferences
+- [ ] No console.log output in production builds
+- [ ] Site selector in Add Asset modal (or document as known issue)
+
+---
+
 ## ⚠️ Important: Spark Integration REMOVED
 
 **GitHub Spark has been completely removed from this project.** All Spark-specific code, dependencies, and configurations have been eliminated.

@@ -9,6 +9,8 @@
  * - GET/PATCH/DELETE /api/assets/{id}/
  * - GET /api/assets/{id}/devices/
  * - GET /api/assets/{id}/sensors/
+ * 
+ * 🔧 PAGINATION FIX: Uses DRF page/page_size instead of limit/offset
  */
 
 import { api } from '@/lib/api';
@@ -20,11 +22,44 @@ import type {
   AssetFilters 
 } from '@/types/api';
 
+/**
+ * Helper function to fetch all paginated results by following 'next' links
+ * 🔧 PERFORMANCE: Follows DRF pagination 'next' links to get complete data
+ */
+async function fetchAllPages<T>(
+  endpoint: string, 
+  params?: Record<string, any>
+): Promise<T[]> {
+  const allResults: T[] = [];
+  let nextUrl: string | null = endpoint;
+  
+  // Convert params to use page/page_size (DRF standard) instead of limit/offset
+  const drfParams = { ...params };
+  if ('limit' in drfParams) {
+    drfParams.page_size = drfParams.limit;
+    delete drfParams.limit;
+  }
+  if ('offset' in drfParams) {
+    delete drfParams.offset; // DRF uses 'page' parameter instead
+  }
+  
+  while (nextUrl) {
+    const response = await api.get<PaginatedResponse<T>>(nextUrl, {
+      params: nextUrl === endpoint ? drfParams : undefined // Only send params on first request
+    });
+    
+    allResults.push(...response.data.results);
+    nextUrl = response.data.next;
+  }
+  
+  return allResults;
+}
+
 export const assetsService = {
   /**
    * Lista todos os assets com paginação e filtros
    * 
-   * @param params - Filtros opcionais (site, asset_type, status, search, limit, offset)
+   * @param params - Filtros opcionais (site, asset_type, status, search, page_size)
    * @returns Resposta paginada com lista de assets
    * 
    * @example
@@ -40,10 +75,31 @@ export const assetsService = {
    * ```
    */
   async getAll(params?: AssetFilters): Promise<PaginatedResponse<ApiAsset>> {
+    // 🔧 FIX: Convert limit/offset to page_size for DRF compatibility
+    const drfParams: Record<string, any> = { ...params };
+    if (params?.limit) {
+      drfParams.page_size = params.limit;
+      delete drfParams.limit;
+    }
+    if (params?.offset) {
+      delete drfParams.offset;
+    }
+    
     const response = await api.get<PaginatedResponse<ApiAsset>>('/assets/', { 
-      params 
+      params: drfParams
     });
     return response.data;
+  },
+
+  /**
+   * Fetch ALL assets across all pages (follows 'next' links)
+   * Use this when you need the complete dataset, not just first page
+   * 
+   * @param params - Filtros opcionais (site, asset_type, status, search)
+   * @returns Array completo de todos os assets
+   */
+  async getAllComplete(params?: AssetFilters): Promise<ApiAsset[]> {
+    return fetchAllPages<ApiAsset>('/assets/', params);
   },
 
   /**

@@ -410,30 +410,27 @@ export const useAppStore = create<AppState>((set, get) => ({
         console.log('📍 Site atual:', currentSite);
       }
       
-      // Buscar todos os assets (ajustar limit conforme necessário)
-      const assetsResponse = await assetsService.getAll({ 
-        limit: 100,
+      // 🔧 FIX: Use getAllComplete() to follow 'next' links and fetch ALL data
+      const apiAssets = await assetsService.getAllComplete({ 
         ...(currentSite ? { site: currentSite.id } : {})
       });
       if (import.meta.env.DEV) {
-        console.log('📦 Assets recebidos:', assetsResponse);
+        console.log(`📦 Assets recebidos: ${apiAssets.length} total`);
       }
       
       // Buscar sites para enriquecer dados
-      const sitesResponse = await sitesService.getAll({ 
-        limit: 100 
-      });
+      const apiSites = await sitesService.getAllComplete();
       if (import.meta.env.DEV) {
-        console.log('📍 Sites recebidos:', sitesResponse);
+        console.log(`📍 Sites recebidos: ${apiSites.length} total`);
       }
       
       const sitesMap = new Map(
-        sitesResponse.results.map(s => [s.id, s])
+        apiSites.map(s => [s.id, s])
       );
       
       // Mapear para formato do frontend
       const assets = mapApiAssetsToHVACAssets(
-        assetsResponse.results,
+        apiAssets,
         sitesMap
       );
       if (import.meta.env.DEV) {
@@ -469,8 +466,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ isLoadingSites: true });
     
     try {
-      const sitesResponse = await sitesService.getAll({ limit: 100 });
-      const sites = sitesResponse.results;
+      // 🔧 FIX: Use getAllComplete() to follow 'next' links
+      const sites = await sitesService.getAllComplete();
       
       set({ 
         availableSites: sites,
