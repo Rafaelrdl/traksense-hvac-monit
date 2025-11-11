@@ -28,11 +28,64 @@ export function mapApiAssetToHVACAsset(
   apiAsset: ApiAsset,
   site?: ApiSite
 ): HVACAsset {
+  console.log('🔄 mapApiAssetToHVACAsset - Dados recebidos:', {
+    location_description: apiAsset.location_description,
+    full_location: apiAsset.full_location,
+    specifications: apiAsset.specifications,
+    site_sector: site?.sector
+  });
+  
+  // Extrair company, sector e subsector (priorizar specifications, depois site)
+  const company = apiAsset.specifications?.company || site?.company || extractCompanyFromSiteName(apiAsset.site_name);
+  const sector = apiAsset.specifications?.sector || site?.sector;
+  const subsector = apiAsset.specifications?.subsector || site?.subsector;
+  
+  console.log('  📍 Valores extraídos:', { company, sector, subsector });
+  
+  // Gerar location a partir de company/sector/subsector se location_description estiver vazio
+  const generateLocation = () => {
+    // 1. Tentar location_description da API
+    if (apiAsset.location_description?.trim()) {
+      console.log('  ✅ Usando location_description da API:', apiAsset.location_description);
+      return apiAsset.location_description;
+    }
+    
+    // 2. Tentar full_location da API
+    if (apiAsset.full_location?.trim()) {
+      console.log('  ✅ Usando full_location da API:', apiAsset.full_location);
+      return apiAsset.full_location;
+    }
+    
+    // 3. Gerar a partir de specifications (dados salvos pelo usuário)
+    if (apiAsset.specifications?.company || apiAsset.specifications?.sector) {
+      const specParts = [
+        apiAsset.specifications.company,
+        apiAsset.specifications.sector,
+        apiAsset.specifications.subsector
+      ].filter(Boolean);
+      
+      if (specParts.length > 0) {
+        const generated = specParts.join(' - ');
+        console.log('  ✅ Gerando a partir de specifications:', generated);
+        return generated;
+      }
+    }
+    
+    // 4. Fallback: gerar a partir de site (último recurso)
+    const parts = [company, sector, subsector].filter(Boolean);
+    const generated = parts.length > 0 ? parts.join(' - ') : '';
+    console.log('  ⚠️ Usando fallback do site:', generated);
+    return generated;
+  };
+  
+  const location = generateLocation();
+  console.log('  🎯 Location final:', location);
+  
   return {
     id: apiAsset.id.toString(),
     tag: apiAsset.tag,
     type: mapAssetTypeToFrontend(apiAsset.asset_type),
-    location: apiAsset.location_description || apiAsset.full_location,
+    location: location,
     healthScore: apiAsset.health_score,
     
     // NOTA: Estes campos não existem no backend ainda
@@ -59,10 +112,9 @@ export function mapApiAssetToHVACAsset(
     },
     
     // Dados do site (localização)
-    // Tentar pegar das specifications primeiro (dados salvos), senão do site
-    company: apiAsset.specifications?.company || site?.company || extractCompanyFromSiteName(apiAsset.site_name),
-    sector: apiAsset.specifications?.sector || site?.sector,
-    subsector: apiAsset.specifications?.subsector || site?.subsector,
+    company: company,
+    sector: sector,
+    subsector: subsector,
   };
 }
 
@@ -91,10 +143,23 @@ export function mapHVACAssetToApiAsset(
 ): Partial<ApiAsset> {
   const mappedType = mapAssetTypeToApi(asset.type);
   
+  // Gerar location_description se não foi fornecido
+  const getLocationDescription = () => {
+    // Se já tem location, usar ele
+    if (asset.location?.trim()) {
+      return asset.location.trim();
+    }
+    // Senão, gerar a partir de company, sector, subsector
+    const parts = [asset.company, asset.sector, asset.subsector].filter(Boolean);
+    return parts.join(' - ');
+  };
+  
   console.log('📝 Mapeando HVACAsset para ApiAsset:', {
     assetType: asset.type,
     mappedAssetType: mappedType,
-    equipmentType: asset.specifications?.equipmentType
+    equipmentType: asset.specifications?.equipmentType,
+    location: asset.location,
+    generatedLocation: getLocationDescription()
   });
   
   return {
@@ -105,7 +170,7 @@ export function mapHVACAssetToApiAsset(
     manufacturer: asset.specifications?.brand || '',
     model: asset.specifications?.model || '',
     serial_number: asset.specifications?.serialNumber || '',
-    location_description: asset.location || '',
+    location_description: getLocationDescription(),
     status: mapStatusToApi(asset.status),
     health_score: asset.healthScore || 100,
     last_maintenance: asset.lastMaintenance 

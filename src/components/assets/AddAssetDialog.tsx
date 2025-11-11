@@ -135,8 +135,26 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, edit
     setActiveTab('basic');
   };
 
+  // Handler para prevenir submit ao pressionar Enter em qualquer input, exceto na última aba
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && activeTab !== 'specs') {
+      e.preventDefault();
+      console.log('⚠️ Enter bloqueado - não está na última aba. Aba atual:', activeTab);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('📝 handleSubmit chamado - Aba atual:', activeTab);
+    
+    // Prevenir submit se não estiver na última aba
+    if (activeTab !== 'specs') {
+      console.log('⚠️ Tentativa de submit bloqueada - não está na última aba');
+      return;
+    }
+
+    console.log('✅ Prosseguindo com submit na última aba');
 
     // Validação básica
     if (!tag.trim()) {
@@ -228,7 +246,12 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, edit
           tag: tag,
           newAssetType: newAsset.type,
           equipmentTypeFromForm: equipmentType,
+          location: newAsset.location,
+          company: newAsset.company,
+          sector: newAsset.sector,
+          subsector: newAsset.subsector,
           apiData: apiAssetData,
+          location_description_sent: apiAssetData.location_description,
           asset_type_sent: apiAssetData.asset_type
         });
 
@@ -311,7 +334,7 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, edit
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="basic">Informações Básicas</TabsTrigger>
@@ -545,11 +568,16 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, edit
               {activeTab !== 'specs' ? (
                 <Button
                   type="button"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔵 Botão Próximo clicado - Aba atual:', activeTab);
                     const tabs = ['basic', 'location', 'specs'];
                     const currentIndex = tabs.indexOf(activeTab);
                     if (currentIndex < tabs.length - 1) {
-                      setActiveTab(tabs[currentIndex + 1]);
+                      const nextTab = tabs[currentIndex + 1];
+                      console.log('  ➡️ Mudando para aba:', nextTab);
+                      setActiveTab(nextTab);
                     }
                   }}
                 >
