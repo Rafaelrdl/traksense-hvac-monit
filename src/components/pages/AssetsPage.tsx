@@ -73,6 +73,11 @@ export const AssetsPage: React.FC = () => {
           onAddAsset={addAsset} 
           editingAsset={editingAsset}
           onClose={() => setEditingAsset(null)}
+          onEditSuccess={async () => {
+            // Pequeno delay para garantir que o backend processou
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await loadAssetsFromApi(); // Recarregar assets da API após edição
+          }}
         />
       </div>
 

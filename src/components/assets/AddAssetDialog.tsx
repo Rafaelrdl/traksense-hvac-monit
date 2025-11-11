@@ -32,9 +32,10 @@ interface AddAssetDialogProps {
   onAddAsset: (asset: Omit<HVACAsset, 'id' | 'healthScore' | 'powerConsumption' | 'status' | 'operatingHours' | 'lastMaintenance'>) => Promise<void>;
   editingAsset?: HVACAsset | null;
   onClose?: () => void;
+  onEditSuccess?: () => void;
 }
 
-export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, editingAsset, onClose }) => {
+export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, editingAsset, onClose, onEditSuccess }) => {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
 
@@ -63,21 +64,56 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, edit
   // Preencher formulário quando estiver editando
   React.useEffect(() => {
     if (editingAsset) {
-      setTag(editingAsset.tag || '');
-      setBrand(editingAsset.specifications?.brand || '');
-      setModel(editingAsset.specifications?.model || '');
-      setCapacity(editingAsset.specifications?.capacity?.toString() || '');
-      setSerialNumber(editingAsset.specifications?.serialNumber || '');
-      setEquipmentType(editingAsset.specifications?.equipmentType || 'AHU');
-      setEquipmentTypeOther(editingAsset.specifications?.equipmentTypeOther || '');
-      setCompany(editingAsset.company || '');
-      setSector(editingAsset.sector || '');
-      setSubsector(editingAsset.subsector || '');
-      setLocation(editingAsset.location || '');
-      setVoltage(editingAsset.specifications?.voltage?.toString() || '');
-      setMaxCurrent(editingAsset.specifications?.maxCurrent?.toString() || '');
-      setRefrigerant(editingAsset.specifications?.refrigerant || 'none');
-      setOpen(true); // Abrir o modal
+      // Buscar dados mais recentes da API
+      const fetchAssetData = async () => {
+        try {
+          const assetId = typeof editingAsset.id === 'number' ? editingAsset.id : parseInt(editingAsset.id);
+          console.log('🔄 Carregando dados atualizados do ativo:', assetId);
+          
+          const apiAsset = await assetsService.getById(assetId);
+          const updatedAsset = mapApiAssetToHVACAsset(apiAsset);
+          
+          console.log('✅ Dados atualizados carregados:', {
+            asset_type: apiAsset.asset_type,
+            type: updatedAsset.type,
+            specifications: updatedAsset.specifications
+          });
+          
+          // Mapear o type do ativo para equipmentType do formulário
+          const typeToEquipmentType = (type: HVACAsset['type']): EquipmentType => {
+            const mapping: Record<HVACAsset['type'], EquipmentType> = {
+              'AHU': 'AHU',
+              'Chiller': 'CHILLER',
+              'VRF': 'VRF',
+              'RTU': 'RTU',
+              'Boiler': 'BOILER',
+              'CoolingTower': 'COOLING_TOWER',
+            };
+            return mapping[type] || 'AHU';
+          };
+          
+          setTag(updatedAsset.tag || '');
+          setBrand(updatedAsset.specifications?.brand || '');
+          setModel(updatedAsset.specifications?.model || '');
+          setCapacity(updatedAsset.specifications?.capacity?.toString() || '');
+          setSerialNumber(updatedAsset.specifications?.serialNumber || '');
+          setEquipmentType(typeToEquipmentType(updatedAsset.type));
+          setEquipmentTypeOther(updatedAsset.specifications?.equipmentTypeOther || '');
+          setCompany(updatedAsset.company || '');
+          setSector(updatedAsset.sector || '');
+          setSubsector(updatedAsset.subsector || '');
+          setLocation(updatedAsset.location || '');
+          setVoltage(updatedAsset.specifications?.voltage?.toString() || '');
+          setMaxCurrent(updatedAsset.specifications?.maxCurrent?.toString() || '');
+          setRefrigerant(updatedAsset.specifications?.refrigerant || 'none');
+          setOpen(true);
+        } catch (error) {
+          console.error('❌ Erro ao carregar dados do ativo:', error);
+          toast.error('Erro ao carregar dados do ativo');
+        }
+      };
+      
+      fetchAssetData();
     }
   }, [editingAsset]);
 
@@ -181,15 +217,35 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, edit
             healthScore: editingAsset.healthScore,
             status: editingAsset.status,
             lastMaintenance: editingAsset.lastMaintenance,
+            powerConsumption: editingAsset.powerConsumption,
+            operatingHours: editingAsset.operatingHours,
           },
           siteId
         );
+
+        console.log('🔄 Atualizando ativo:', {
+          id: editingAsset.id,
+          tag: tag,
+          newAssetType: newAsset.type,
+          equipmentTypeFromForm: equipmentType,
+          apiData: apiAssetData,
+          asset_type_sent: apiAssetData.asset_type
+        });
 
         // Atualizar na API
         const updatedApiAsset = await assetsService.update(
           typeof editingAsset.id === 'number' ? editingAsset.id : parseInt(editingAsset.id),
           apiAssetData
         );
+        
+        console.log('✅ Ativo atualizado na API:', {
+          id: updatedApiAsset.id,
+          tag: updatedApiAsset.tag,
+          asset_type: updatedApiAsset.asset_type,
+          manufacturer: updatedApiAsset.manufacturer,
+          model: updatedApiAsset.model,
+          specifications: updatedApiAsset.specifications
+        });
         
         // Converter resposta para formato frontend
         const updatedHVACAsset = mapApiAssetToHVACAsset(updatedApiAsset);
@@ -202,6 +258,11 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, edit
         useAppStore.setState({ assets: updatedAssets });
         
         toast.success(`Ativo ${tag} atualizado com sucesso!`);
+        
+        // Chamar callback de sucesso para recarregar dados
+        if (onEditSuccess) {
+          onEditSuccess();
+        }
       } else {
         // Modo de criação
         await onAddAsset(newAsset);

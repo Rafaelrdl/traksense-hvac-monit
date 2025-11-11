@@ -53,14 +53,16 @@ export function mapApiAssetToHVACAsset(
       serialNumber: apiAsset.serial_number,
       voltage: apiAsset.specifications?.voltage,
       refrigerant: apiAsset.specifications?.refrigerant,
-      // Merge com outras especificações do backend
-      ...apiAsset.specifications,
+      maxCurrent: apiAsset.specifications?.maxCurrent,
+      equipmentType: apiAsset.specifications?.equipmentType,
+      equipmentTypeOther: apiAsset.specifications?.equipmentTypeOther,
     },
     
     // Dados do site (localização)
-    company: site?.company || extractCompanyFromSiteName(apiAsset.site_name),
-    sector: site?.sector,
-    subsector: site?.subsector,
+    // Tentar pegar das specifications primeiro (dados salvos), senão do site
+    company: apiAsset.specifications?.company || site?.company || extractCompanyFromSiteName(apiAsset.site_name),
+    sector: apiAsset.specifications?.sector || site?.sector,
+    subsector: apiAsset.specifications?.subsector || site?.subsector,
   };
 }
 
@@ -87,11 +89,19 @@ export function mapHVACAssetToApiAsset(
   asset: Partial<HVACAsset>,
   siteId: number
 ): Partial<ApiAsset> {
+  const mappedType = mapAssetTypeToApi(asset.type);
+  
+  console.log('📝 Mapeando HVACAsset para ApiAsset:', {
+    assetType: asset.type,
+    mappedAssetType: mappedType,
+    equipmentType: asset.specifications?.equipmentType
+  });
+  
   return {
     tag: asset.tag,
     name: asset.tag, // Usar tag como name se não tiver outro
     site: siteId,
-    asset_type: mapAssetTypeToApi(asset.type),
+    asset_type: mappedType,
     manufacturer: asset.specifications?.brand || '',
     model: asset.specifications?.model || '',
     serial_number: asset.specifications?.serialNumber || '',
@@ -105,8 +115,13 @@ export function mapHVACAssetToApiAsset(
       capacity: asset.specifications?.capacity,
       voltage: asset.specifications?.voltage,
       refrigerant: asset.specifications?.refrigerant,
-      // Incluir outras specs se houver
-      ...asset.specifications,
+      maxCurrent: asset.specifications?.maxCurrent,
+      equipmentType: asset.specifications?.equipmentType,
+      equipmentTypeOther: asset.specifications?.equipmentTypeOther,
+      // Adicionar campos de localização para persistência
+      company: asset.company,
+      sector: asset.sector,
+      subsector: asset.subsector,
     },
   };
 }
