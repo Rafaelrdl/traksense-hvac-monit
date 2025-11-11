@@ -386,8 +386,7 @@ export const AssetDetailPage: React.FC = () => {
             { id: 'telemetry', label: 'Telemetria' },
             { id: 'performance', label: 'Performance', conditional: showPerformanceTab },
             { id: 'maintenance', label: 'Manutenção' },
-            { id: 'alerts', label: 'Histórico Alertas' },
-            { id: 'raw', label: 'Telemetria Bruta' }
+            { id: 'alerts', label: 'Histórico Alertas' }
           ]
             .filter(tab => tab.conditional !== false)
             .map(tab => (
@@ -751,46 +750,6 @@ export const AssetDetailPage: React.FC = () => {
               ))}
             </div>
           )}
-        </div>
-      )}
-
-      {activeTab === 'raw' && (
-        <div className="bg-card rounded-xl p-6 border shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">Telemetria Bruta</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2 px-4">Timestamp</th>
-                  <th className="text-left py-2 px-4">Sensor</th>
-                  <th className="text-left py-2 px-4">Valor</th>
-                  <th className="text-left py-2 px-4">Unidade</th>
-                  <th className="text-left py-2 px-4">Qualidade</th>
-                </tr>
-              </thead>
-              <tbody>
-                {assetSensors.slice(0, 10).map(sensor => (
-                  <tr key={sensor.id} className="border-b">
-                    <td className="py-2 px-4">
-                      {sensor.lastReading?.timestamp ? (sensor.lastReading.timestamp instanceof Date ? sensor.lastReading.timestamp : new Date(sensor.lastReading.timestamp)).toLocaleString('pt-BR') : 'N/A'}
-                    </td>
-                    <td className="py-2 px-4">{sensor.tag}</td>
-                    <td className="py-2 px-4">
-                      {sensor.lastReading?.value.toFixed(2)}
-                    </td>
-                    <td className="py-2 px-4">{sensor.unit}</td>
-                    <td className="py-2 px-4">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        sensor.lastReading?.quality === 'good' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {sensor.lastReading?.quality}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
       )}
       
