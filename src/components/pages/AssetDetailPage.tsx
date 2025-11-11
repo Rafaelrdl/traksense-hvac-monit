@@ -22,7 +22,11 @@ import {
   Zap,
   Activity,
   AlertTriangle,
-  Loader2 
+  Loader2,
+  Thermometer,
+  Droplets,
+  Wind,
+  Antenna
 } from 'lucide-react';
 
 export const AssetDetailPage: React.FC = () => {
@@ -567,7 +571,152 @@ export const AssetDetailPage: React.FC = () => {
       )}
 
       {activeTab === 'je02' && (
-        <JE02SensorDetail assetId={selectedAsset.id} />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {apiSensors.length > 0 ? (
+            apiSensors.map(sensor => {
+              // Formatação do valor
+              const formatValue = (value: number | null) => {
+                if (value === null) return 'N/A';
+                return value.toFixed(2);
+              };
+
+              // Ícone e tipo baseado na UNIDADE (unit) - muito mais preciso!
+              const getMetricInfo = () => {
+                const unit = sensor.unit?.toLowerCase() || '';
+                
+                // Temperatura
+                if (unit.includes('celsius') || unit.includes('°c') || unit === 'cel') {
+                  return { 
+                    icon: <Thermometer className="w-5 h-5" />, 
+                    type: 'Temperatura',
+                    color: 'text-orange-600',
+                    bgColor: 'bg-orange-100'
+                  };
+                }
+                
+                // Umidade
+                if (unit.includes('percent_rh') || unit.includes('%rh') || unit.includes('humidity')) {
+                  return { 
+                    icon: <Droplets className="w-5 h-5" />, 
+                    type: 'Umidade',
+                    color: 'text-blue-600',
+                    bgColor: 'bg-blue-100'
+                  };
+                }
+                
+                // Pressão
+                if (unit.includes('pa') || unit.includes('bar') || unit.includes('psi')) {
+                  return { 
+                    icon: <Gauge className="w-5 h-5" />, 
+                    type: 'Pressão',
+                    color: 'text-purple-600',
+                    bgColor: 'bg-purple-100'
+                  };
+                }
+                
+                // Sinal (RSSI, dBW, dB)
+                if (unit.includes('dbw') || unit.includes('db') || unit.includes('rssi')) {
+                  return { 
+                    icon: <Antenna className="w-5 h-5" />, 
+                    type: 'Sinal',
+                    color: 'text-green-600',
+                    bgColor: 'bg-green-100'
+                  };
+                }
+                
+                // Velocidade/Fluxo
+                if (unit.includes('m/s') || unit.includes('meters_per_second') || unit.includes('rpm')) {
+                  return { 
+                    icon: <Wind className="w-5 h-5" />, 
+                    type: 'Velocidade',
+                    color: 'text-cyan-600',
+                    bgColor: 'bg-cyan-100'
+                  };
+                }
+                
+                // Potência/Energia
+                if (unit.includes('w') || unit.includes('kw') || unit.includes('volt') || unit.includes('amp')) {
+                  return { 
+                    icon: <Zap className="w-5 h-5" />, 
+                    type: 'Energia',
+                    color: 'text-yellow-600',
+                    bgColor: 'bg-yellow-100'
+                  };
+                }
+                
+                // Padrão
+                return { 
+                  icon: <Activity className="w-5 h-5" />, 
+                  type: sensor.metric_type || 'Outros',
+                  color: 'text-gray-600',
+                  bgColor: 'bg-gray-100'
+                };
+              };
+
+              const metricInfo = getMetricInfo();
+
+              // Status da variável
+              const isOnline = sensor.is_online;
+              const statusColor = isOnline ? 'text-green-600' : 'text-gray-400';
+              const bgColor = isOnline ? 'bg-green-50' : 'bg-gray-50';
+
+              return (
+                <div 
+                  key={sensor.id} 
+                  className={`${bgColor} rounded-xl p-6 border shadow-sm transition-all hover:shadow-md`}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className={`p-2 rounded-lg ${metricInfo.bgColor}`}>
+                        <div className={metricInfo.color}>
+                          {metricInfo.icon}
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-sm text-gray-900">
+                          {sensor.tag?.replace(/_/g, ' ')}
+                        </h4>
+                        <span className={`text-xs ${statusColor}`}>
+                          {isOnline ? 'Online' : 'Offline'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-3xl font-bold text-gray-900">
+                        {formatValue(sensor.last_value)}
+                      </p>
+                      <p className="text-sm text-gray-500">{sensor.unit}</p>
+                    </div>
+
+                    {sensor.last_reading_at && (
+                      <p className="text-xs text-gray-400">
+                        Última leitura: {new Date(sensor.last_reading_at).toLocaleString('pt-BR')}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Badge com tipo de métrica baseado na unidade */}
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${metricInfo.bgColor} ${metricInfo.color}`}>
+                      {metricInfo.type}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          ) : isLoadingSensors ? (
+            <div className="col-span-full flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="col-span-full text-center py-12 text-muted-foreground">
+              Nenhuma variável encontrada para este equipamento.
+            </div>
+          )}
+        </div>
       )}
 
       {activeTab === 'performance' && showPerformanceTab && (
