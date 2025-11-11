@@ -112,54 +112,67 @@ export const tenantAuthService = {
       }
       
       // 1. Fazer login na API
+      // 🔧 FIX: Backend now returns tokens in HttpOnly cookies (not JSON)
+      // Response contains: { user, tenant, message } (no access/refresh)
       const response = await api.post<LoginResponse>('/auth/login/', credentials);
-      const { access, refresh, user, tenant, message } = response.data;
+      const { user, tenant, message } = response.data;
       
       if (import.meta.env.DEV) {
         console.log('✅ Login bem-sucedido:', user.username);
       }
       
-      // 2. Extrair informações de tenant do JWT OU do response.tenant
-      let tenantInfo = extractTenantFromToken(access);
+      // 2. Extrair informações de tenant do response.tenant (não JWT)
+      // Tokens estão em cookies HttpOnly (inacessíveis ao JavaScript)
+      let tenantInfo: {
+        tenantId: string;
+        tenantSlug: string;
+        tenantName: string;
+        api_base_url?: string;
+      };
       
-      // 🆕 Preferir tenant do response (mais completo e confiável)
       if (tenant) {
         tenantInfo = {
-          tenantId: tenantInfo?.tenantId || '',
+          tenantId: tenant.slug, // Use slug as ID
           tenantSlug: tenant.slug,
-          tenantName: tenantInfo?.tenantName || tenant.slug,
-          api_base_url: tenant.api_base_url
+          tenantName: tenant.domain || tenant.slug,
+          api_base_url: tenant.api_base_url,
+        };
+      } else {
+        // Fallback: usar configuração atual do tenant
+        const currentConfig = getTenantConfig();
+        tenantInfo = {
+          tenantId: currentConfig.tenantId,
+          tenantSlug: currentConfig.tenantSlug,
+          tenantName: currentConfig.tenantName,
         };
       }
       
-      if (tenantInfo) {
-        if (import.meta.env.DEV) {
-          console.log(`🏢 Tenant detectado: ${tenantInfo.tenantName} (${tenantInfo.tenantSlug})`);
-        }
-        
-        // 🆕 Atualizar cache do tenantStorage ANTES de qualquer operação
-        updateTenantSlugCache(tenantInfo.tenantSlug);
-        
-        // 3. Reconfigurar API para o tenant do usuário
-        // 🆕 Usar api_base_url fornecida pelo backend (não localhost hard-coded)
-        const apiBaseUrl = tenantInfo.api_base_url || 
-                          `http://${tenantInfo.tenantSlug}.localhost:8000/api`;
-        
-        reconfigureApiForTenant(apiBaseUrl);
-        
-        // 4. Salvar configuração de tenant com URL real do backend
-        setCurrentTenant({
-          tenantId: tenantInfo.tenantId,
-          tenantSlug: tenantInfo.tenantSlug,
-          tenantName: tenantInfo.tenantName,
-          apiBaseUrl: apiBaseUrl,  // 🆕 URL real, não localhost
-        });
-        
-        // 5. 🔧 FIX: Save minimal data in tenantStorage (tokens are in HttpOnly cookies)
-        // Only save non-sensitive user info and tenant config for UI purposes
-        tenantStorage.set('user', user);
-        tenantStorage.set('api_base_url', apiBaseUrl);
+      if (import.meta.env.DEV) {
+        console.log(`🏢 Tenant detectado: ${tenantInfo.tenantName} (${tenantInfo.tenantSlug})`);
       }
+      
+      // 🆕 Atualizar cache do tenantStorage ANTES de qualquer operação
+      updateTenantSlugCache(tenantInfo.tenantSlug);
+      
+      // 3. Reconfigurar API para o tenant do usuário
+      // 🆕 Usar api_base_url fornecida pelo backend (não localhost hard-coded)
+      const apiBaseUrl = tenantInfo.api_base_url || 
+                        `http://${tenantInfo.tenantSlug}.localhost:8000/api`;
+      
+      reconfigureApiForTenant(apiBaseUrl);
+      
+      // 4. Salvar configuração de tenant com URL real do backend
+      setCurrentTenant({
+        tenantId: tenantInfo.tenantId,
+        tenantSlug: tenantInfo.tenantSlug,
+        tenantName: tenantInfo.tenantName,
+        apiBaseUrl: apiBaseUrl,  // 🆕 URL real, não localhost
+      });
+      
+      // 5. 🔧 FIX: Save minimal data in tenantStorage (tokens are in HttpOnly cookies)
+      // Only save non-sensitive user info and tenant config for UI purposes
+      tenantStorage.set('user', user);
+      tenantStorage.set('api_base_url', apiBaseUrl);
       
       // 🔐 SECURITY: Do NOT duplicate tokens in localStorage/tenantStorage
       // Backend uses HttpOnly cookies for actual authentication

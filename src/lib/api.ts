@@ -7,6 +7,7 @@
  * - Auto-refresh de tokens expirados
  * - CORS credentials
  * - Multi-tenant awareness
+ * - Cookie-based authentication (HttpOnly)
  */
 
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
@@ -15,6 +16,14 @@ import { tenantStorage } from './tenantStorage';
 
 // Base URL da API (dinâmica por tenant)
 const getApiBaseUrl = (): string => {
+  // 🔧 DEV MODE: Use relative URL to enable Vite proxy (cookies work)
+  // Frontend: localhost:5173/api → Proxy → Backend: umc.localhost:8000/api
+  // This way cookies are shared because browser sees same origin (localhost:5173)
+  if (import.meta.env.DEV) {
+    return '/api';
+  }
+  
+  // PRODUCTION: Use full tenant URL
   return getTenantApiUrl();
 };
 
@@ -36,6 +45,14 @@ export const api = axios.create({
  * @param tenantSlugOrUrl - Slug do tenant (para localhost) ou URL completa da API
  */
 export const reconfigureApiForTenant = (tenantSlugOrUrl: string): void => {
+  // 🔧 DEV MODE: Keep using relative URL (proxy handles routing)
+  if (import.meta.env.DEV) {
+    console.log(`🔄 API mantida em modo proxy: /api → ${tenantSlugOrUrl}`);
+    // Don't change baseURL in dev mode - proxy handles it
+    return;
+  }
+  
+  // PRODUCTION: Reconfigure to tenant's full URL
   let newBaseUrl: string;
   
   // Se parece com URL completa (contém http/https), usa direto
@@ -55,16 +72,11 @@ export const reconfigureApiForTenant = (tenantSlugOrUrl: string): void => {
  * 
  * 🔐 AUTHENTICATION STRATEGY (SECURITY FIX - Nov 2025):
  * 
- * PRODUCTION (Recommended):
+ * COOKIE-BASED AUTHENTICATION (Secure):
  * - Backend sends JWT tokens in HttpOnly cookies (access_token, refresh_token)
- * - Browser automatically includes cookies in all requests
+ * - Browser automatically includes cookies in all requests via withCredentials: true
  * - Cookies are NOT accessible via JavaScript → XSS protection
- * - NO Authorization header needed
- * 
- * DEVELOPMENT FALLBACK (Not secure):
- * - If cookies aren't working, tries localStorage as fallback
- * - Warns in console about non-secure method
- * - Should only be used for local debugging
+ * - NO Authorization header needed (cookies are sent automatically)
  * 
  * ⚠️ WHY NOT localStorage?
  * - Vulnerable to XSS attacks (any script can read tokens)
@@ -77,19 +89,15 @@ export const reconfigureApiForTenant = (tenantSlugOrUrl: string): void => {
  */
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // 🔧 FALLBACK: Try localStorage only if cookies aren't working (dev mode)
-    const token = tenantStorage.get<string>('access_token') || localStorage.getItem('access_token');
+    // � COOKIE-BASED AUTHENTICATION:
+    // Tokens are sent automatically via HttpOnly cookies (withCredentials: true)
+    // NO need to add Authorization header manually
     
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-      
-      if (import.meta.env.DEV) {
-        console.warn('⚠️ Using token from localStorage (should use HttpOnly cookie in production)');
-      }
+    // Debug log in development
+    if (import.meta.env.DEV) {
+      console.log('📤 Request:', config.method?.toUpperCase(), config.url);
+      console.log('🍪 Cookies will be sent automatically (withCredentials: true)');
     }
-    
-    // In production, tokens come from HttpOnly cookies automatically
-    // No Authorization header needed
     
     return config;
   },

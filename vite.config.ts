@@ -18,4 +18,18 @@ export default defineConfig({
       '@': resolve(projectRoot, 'src')
     }
   },
+  server: {
+    proxy: {
+      // 🔐 Proxy API requests to backend (enables cookie sharing)
+      // Frontend (localhost:5173) → Backend (umc.localhost:8000)
+      // This way cookies work because both are on localhost:5173 from browser's perspective
+      '/api': {
+        target: 'http://umc.localhost:8000',
+        changeOrigin: true,
+        secure: false,
+        // Preserve /api prefix in the request
+        // rewrite: (path) => path.replace(/^\/api/, '/api'),
+      }
+    }
+  }
 });
