@@ -253,4 +253,170 @@ export const tenantAuthService = {
   getRefreshToken(): string | null {
     return tenantStorage.get<string>('refresh_token') || localStorage.getItem('refresh_token');
   },
+
+  /**
+   * 🔒 FIX #14: Register - Migrated from auth.service.ts
+   * Registro de novo usuário com suporte multi-tenant
+   */
+  async register(data: {
+    username: string;
+    email: string;
+    password: string;
+    password_confirm: string;
+    first_name: string;
+    last_name: string;
+  }): Promise<LoginResponse['user']> {
+    try {
+      console.log('📝 Registrando novo usuário...');
+      
+      const response = await api.post<LoginResponse>('/auth/register/', data);
+      
+      // Extract tenant info from response
+      const tenantSlug = response.data.tenant?.slug || 'umc';
+      const apiBaseUrl = response.data.tenant?.api_base_url || `http://${tenantSlug}.localhost:8000/api`;
+      
+      // Update tenant configuration
+      updateTenantSlugCache(tenantSlug);
+      reconfigureApiForTenant(tenantSlug);
+      
+      // Save tokens to tenant-isolated storage
+      tenantStorage.set('access_token', response.data.access);
+      tenantStorage.set('refresh_token', response.data.refresh);
+      tenantStorage.set('user', response.data.user);
+      tenantStorage.set('api_base_url', apiBaseUrl);
+      tenantStorage.set('tenant_config', {
+        tenantId: tenantSlug,
+        tenantSlug,
+        tenantName: response.data.user.full_name || tenantSlug,
+        apiBaseUrl,
+      });
+      
+      // Fallback to global storage
+      localStorage.setItem('access_token', response.data.access);
+      localStorage.setItem('refresh_token', response.data.refresh);
+      
+      console.log('✅ Registro realizado com sucesso');
+      return response.data.user;
+    } catch (error: any) {
+      console.error('❌ Erro no registro:', error);
+      
+      // Extract specific error messages
+      const errors = error.response?.data;
+      if (errors) {
+        const firstError = Object.values(errors)[0];
+        throw new Error(Array.isArray(firstError) ? firstError[0] : String(firstError));
+      }
+      
+      throw error;
+    }
+  },
+
+  /**
+   * 🔒 FIX #14: Profile Update - Migrated from auth.service.ts
+   * Atualiza perfil do usuário
+   */
+  async updateProfile(data: {
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+    bio?: string;
+    timezone?: string;
+    time_format?: '12h' | '24h';
+  }): Promise<LoginResponse['user']> {
+    try {
+      console.log('👤 Atualizando perfil...');
+      
+      const response = await api.patch<{ user: LoginResponse['user'] }>('/auth/me/', data);
+      
+      // Update stored user
+      tenantStorage.set('user', response.data.user);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      
+      console.log('✅ Perfil atualizado com sucesso');
+      return response.data.user;
+    } catch (error: any) {
+      console.error('❌ Erro ao atualizar perfil:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 🔒 FIX #14: Avatar Upload - Migrated from auth.service.ts
+   * Upload de avatar do usuário
+   */
+  async uploadAvatar(file: File): Promise<LoginResponse['user']> {
+    try {
+      console.log('📸 Fazendo upload de avatar...');
+      
+      const formData = new FormData();
+      formData.append('avatar', file);
+      
+      const response = await api.post<{ user: LoginResponse['user'] }>('/auth/avatar/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      // Update stored user
+      tenantStorage.set('user', response.data.user);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      
+      console.log('✅ Avatar atualizado com sucesso');
+      return response.data.user;
+    } catch (error: any) {
+      console.error('❌ Erro ao fazer upload de avatar:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 🔒 FIX #14: Remove Avatar - Migrated from auth.service.ts
+   * Remove avatar do usuário
+   */
+  async removeAvatar(): Promise<LoginResponse['user']> {
+    try {
+      console.log('🗑️ Removendo avatar...');
+      
+      const response = await api.delete<{ user: LoginResponse['user'] }>('/auth/avatar/');
+      
+      // Update stored user
+      tenantStorage.set('user', response.data.user);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      
+      console.log('✅ Avatar removido com sucesso');
+      return response.data.user;
+    } catch (error: any) {
+      console.error('❌ Erro ao remover avatar:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 🔒 FIX #14: Change Password - Migrated from auth.service.ts
+   * Altera senha do usuário
+   */
+  async changePassword(data: {
+    old_password: string;
+    new_password: string;
+    new_password_confirm: string;
+  }): Promise<void> {
+    try {
+      console.log('🔐 Alterando senha...');
+      
+      await api.post('/auth/change-password/', data);
+      
+      console.log('✅ Senha alterada com sucesso');
+    } catch (error: any) {
+      console.error('❌ Erro ao alterar senha:', error);
+      
+      // Extract specific error messages
+      const errors = error.response?.data;
+      if (errors) {
+        const firstError = Object.values(errors)[0];
+        throw new Error(Array.isArray(firstError) ? firstError[0] : String(firstError));
+      }
+      
+      throw error;
+    }
+  },
 };

@@ -80,8 +80,11 @@ export const LineChartTemp: React.FC<LineChartTempProps> = ({ data, height = 300
         params.forEach((param: any) => {
           const value = param.value?.[1];
           if (typeof value === 'number') {
-            // 🔧 Buscar valor anterior da MESMA série (dataIndex - 1)
-            const prevValue = dataIndex > 0 && param.data?.[dataIndex - 1]?.[1];
+            // � FIX #13: Access full series data for previous value calculation
+            // Previously: Used param.data[dataIndex - 1] but param.data is just current tuple
+            // Now: Access full series array from option.series
+            const seriesData = option.series[param.seriesIndex]?.data;
+            const prevValue = dataIndex > 0 && seriesData?.[dataIndex - 1]?.[1];
             const hasPrevValue = typeof prevValue === 'number';
             const change = hasPrevValue ? (value - prevValue).toFixed(1) : '0.0';
             const changeNum = parseFloat(change);

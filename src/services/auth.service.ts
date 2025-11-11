@@ -87,10 +87,14 @@ export interface BackendUser {
  * Converte BackendUser para User (formato do frontend)
  */
 const mapBackendUserToUser = (backendUser: BackendUser): User => {
-  console.log('🔄 mapBackendUserToUser - Input:', backendUser); // Debug
-  console.log('🕐 mapBackendUserToUser - time_format recebido:', backendUser.time_format); // Debug
-  console.log('👤 mapBackendUserToUser - role recebido:', backendUser.role); // Debug
-  console.log('🏢 mapBackendUserToUser - site recebido:', backendUser.site); // Debug
+  // 🔒 SECURITY FIX #15: Remove PII logging in production
+  // Only log in development mode to prevent exposing names, emails, roles in production logs
+  if (import.meta.env.DEV) {
+    console.log('🔄 mapBackendUserToUser - Input:', backendUser);
+    console.log('🕐 mapBackendUserToUser - time_format recebido:', backendUser.time_format);
+    console.log('👤 mapBackendUserToUser - role recebido:', backendUser.role);
+    console.log('🏢 mapBackendUserToUser - site recebido:', backendUser.site);
+  }
   
   const mappedUser: User = {
     id: backendUser.id.toString(),
@@ -115,8 +119,10 @@ const mapBackendUserToUser = (backendUser: BackendUser): User => {
     date_joined: backendUser.date_joined,
   };
   
-  console.log('✅ mapBackendUserToUser - Output:', mappedUser); // Debug
-  console.log('🕐 mapBackendUserToUser - time_format mapeado:', mappedUser.time_format); // Debug
+  if (import.meta.env.DEV) {
+    console.log('✅ mapBackendUserToUser - Output:', mappedUser);
+    console.log('🕐 mapBackendUserToUser - time_format mapeado:', mappedUser.time_format);
+  }
   
   return mappedUser;
 };
@@ -174,14 +180,33 @@ class AuthService {
 
   /**
    * Registro de novo usuário
+   * 🔒 FIX #11: Migrated to tenantAuthService for proper multi-tenant support
+   * @deprecated Use tenantAuthService.register() instead
    */
   async register(data: RegisterData): Promise<User> {
     try {
       const { data: response } = await api.post<AuthResponse>('/auth/register/', data);
 
-      // Salva tokens no localStorage
-      localStorage.setItem('access_token', response.access);
-      localStorage.setItem('refresh_token', response.refresh);
+      // 🔒 FIX #11: Use tenantStorage instead of localStorage for tenant isolation
+      // Extract tenant info from JWT response
+      const tenantConfig = {
+        tenantId: response.tenant?.slug || 'default',
+        tenantSlug: response.tenant?.slug || 'umc',
+        tenantName: response.user.site || 'TrakSense',
+        apiBaseUrl: response.tenant?.api_base_url || api.defaults.baseURL || 'http://umc.localhost:8000/api',
+      };
+
+      // Import tenantStorage dynamically to avoid circular dependency
+      const { tenantStorage } = await import('@/lib/tenantStorage');
+      const { reconfigureApiForTenant } = await import('@/lib/api');
+
+      // Save tokens to tenant-isolated storage
+      tenantStorage.set('access_token', response.access);
+      tenantStorage.set('refresh_token', response.refresh);
+      tenantStorage.set('tenant_config', tenantConfig);
+
+      // Reconfigure API base URL for the registered tenant
+      reconfigureApiForTenant(tenantConfig.tenantSlug);
 
       // Retorna usuário no formato do frontend
       return mapBackendUserToUser(response.user);

@@ -306,17 +306,18 @@ export const useAuthStore = create<AuthState>()(
       clearError: () => set({ error: null }),
     }),
     {
-      name: (() => {
-        // Namespace por tenant para isolar autenticação
-        const tenant = getTenantConfig();
-        return `ts:auth:${tenant.tenantSlug || 'default'}`;
-      })(),
+      // 🔒 SECURITY FIX #10: Dynamic storage key scoped by tenant
+      // Previously: Built key once at import with default tenant, all tenants shared namespace
+      // Now: Storage factory that detects tenant on each read/write
+      name: 'ts:auth',  // Base name, tenantStorage adds tenant prefix dynamically
       storage: createJSONStorage(() => ({
         getItem: (name) => {
+          // Storage key is automatically scoped by current tenant via tenantStorage
           const value = tenantStorage.get(name);
           return value !== null ? JSON.stringify(value) : null;
         },
         setItem: (name, value) => {
+          // Storage key is automatically scoped by current tenant via tenantStorage
           tenantStorage.set(name, JSON.parse(value));
         },
         removeItem: (name) => {

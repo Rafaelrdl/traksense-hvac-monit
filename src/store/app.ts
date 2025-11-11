@@ -385,10 +385,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   /**
    * Carrega assets da API REST Django
    * Esta função substitui o uso do simEngine quando useApiData = true
+   * 🔒 FIX #12: Now checks tenantStorage instead of localStorage
    */
   loadAssetsFromApi: async () => {
-    // Verificar se há token antes de tentar carregar
-    if (!localStorage.getItem('access_token')) {
+    // 🔒 FIX #12: Check tenantStorage for multi-tenant token isolation
+    const { tenantStorage } = await import('@/lib/tenantStorage');
+    const accessToken = tenantStorage.get<string>('access_token');
+    
+    if (!accessToken) {
       console.warn('⚠️ loadAssetsFromApi: Sem token - abortando carregamento');
       set({ isLoadingAssets: false, error: 'Não autenticado' });
       return;
@@ -710,13 +714,26 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 }));
 
-// Carregar assets automaticamente ao inicializar (somente se autenticado)
-if (localStorage.getItem('access_token')) {
-  console.log('✅ Token encontrado - carregando assets da API');
-  useAppStore.getState().loadAssetsFromApi();
-} else {
-  console.log('⚠️ Sem token - pulando carregamento automático de assets');
-}
+// 🔒 FIX #12: Removed auto-loading at module import
+// Assets should be loaded after authentication is confirmed via useEffect in App.tsx
+// This prevents loading with wrong tenant or before tenant is properly configured
+// 
+// OLD CODE (REMOVED):
+// if (localStorage.getItem('access_token')) {
+//   useAppStore.getState().loadAssetsFromApi();
+// }
+//
+// NEW APPROACH: Use this pattern in App.tsx or authenticated routes:
+// ```tsx
+// const { isAuthenticated } = useAuthStore();
+// const loadAssets = useAppStore(state => state.loadAssetsFromApi);
+// 
+// useEffect(() => {
+//   if (isAuthenticated) {
+//     loadAssets();
+//   }
+// }, [isAuthenticated, loadAssets]);
+// ```
 
 // Utility hooks for specific data
 export const useAssets = () => useAppStore(state => state.assets);

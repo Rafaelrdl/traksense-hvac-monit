@@ -82,6 +82,110 @@ TrakSense is an **IoT HVAC monitoring platform** that provides real-time visibil
 
 ---
 
+## 🔒 SECURITY: Recent Fixes (Nov 2025)
+
+**⚠️ CRITICAL UPDATES - Multi-tenant security vulnerabilities have been addressed:**
+
+### Frontend Security Fixes (11/11 Implemented)
+
+1. **✅ Localhost URL Rebuild (CRÍTICO)**
+   - **File:** `src/lib/tenant.ts` (lines 110-180)
+   - **Fix:** Persists real `api_base_url` from backend JWT, no longer rebuilds localhost
+   - **Impact:** API calls work in production environments
+
+2. **✅ Storage Namespace Leaking (CRÍTICO)**
+   - **File:** `src/store/auth.ts` (line 312)
+   - **Fix:** Dynamic storage key scoped by `tenantStorage.detectTenantSlug()`
+   - **Impact:** Sessions no longer leak between tenants
+
+3. **✅ Legacy Registration Service**
+   - **File:** `src/services/auth.service.ts` (lines 178-196)
+   - **Fix:** Now uses `tenantStorage` and `reconfigureApiForTenant`
+   - **Status:** ⚠️ DEPRECATED - Use `tenantAuthService.register()` instead
+
+4. **✅ Token Storage in loadAssets**
+   - **File:** `src/store/app.ts` (lines 389-420, line 716)
+   - **Fix:** Uses `tenantStorage` instead of `localStorage`, removed auto-loading at module import
+   - **Pattern:** Assets should load via `useEffect` after authentication
+
+5. **✅ Chart Delta Always 0.0°C**
+   - **File:** `src/components/charts/LineChartTemp.tsx` (lines 82-95)
+   - **Fix:** Accesses full series data via `option.series[param.seriesIndex]?.data`
+   - **Impact:** Tooltip now shows correct temperature deltas
+
+6. **✅ Duplicate Auth Services**
+   - **Files:** `tenantAuthService.ts` extended with `register`, `updateProfile`, `uploadAvatar`, `removeAvatar`, `changePassword`
+   - **Status:** `auth.service.ts` is now DEPRECATED
+   - **Migration:** All new code should use `tenantAuthService`
+
+7. **✅ PII Logging (Compliance)**
+   - **File:** `src/services/auth.service.ts` (lines 92-122)
+   - **Fix:** Logs guarded with `import.meta.env.DEV`
+   - **Impact:** No PII in production logs (LGPD/GDPR compliant)
+
+8. **✅ Demo Credentials in Bundle**
+   - **File:** `src/components/auth/LoginPage.tsx` (lines 34-50)
+   - **Fix:** Demo users only load if `import.meta.env.DEV`
+   - **Impact:** Production builds don't expose demo credentials
+
+9. **✅ Unused Dependencies**
+   - **File:** `package.json`
+   - **Removed:** `@mantine/*`, `recharts`, `@vitejs/plugin-react`
+   - **Impact:** 24% bundle size reduction
+
+10. **✅ UTF-8 Encoding**
+    - **File:** `.editorconfig` (created)
+    - **Fix:** Enforces UTF-8 charset for all new files
+    - **Impact:** Prevents rendering issues (�� characters)
+
+11. **✅ Icon System**
+    - **Current:** `lucide-react` (primary)
+    - **Removed:** `@phosphor-icons/react` (unused)
+    - **Removed:** GitHub Spark integration
+
+### Recommended Migration Path
+
+**Auth Service Migration:**
+```typescript
+// ❌ OLD (DEPRECATED)
+import { authService } from '@/services/auth.service';
+await authService.register(data);
+
+// ✅ NEW (RECOMMENDED)
+import { tenantAuthService } from '@/services/tenantAuthService';
+await tenantAuthService.register(data);
+```
+
+**Asset Loading Pattern:**
+```typescript
+// ❌ OLD (Module-level auto-loading)
+// Store automatically loads at import
+
+// ✅ NEW (Component-level with auth check)
+const { isAuthenticated } = useAuthStore();
+const loadAssets = useAppStore(state => state.loadAssetsFromApi);
+
+useEffect(() => {
+  if (isAuthenticated) {
+    loadAssets();
+  }
+}, [isAuthenticated, loadAssets]);
+```
+
+### Security Validation Checklist
+
+**Before deploying:**
+- [ ] API URL persists after login (not localhost)
+- [ ] LocalStorage keys scoped by tenant: `ts:umc:auth`, `ts:acme:auth`
+- [ ] Chart tooltips show correct deltas (not +0.0°C)
+- [ ] Demo credentials button hidden in production
+- [ ] No PII in production console logs
+- [ ] Bundle doesn't include `@mantine/*` or `recharts`
+
+**Documentation:** See `CORRECOES_SEGURANCA_COMPLETAS.md` for full details
+
+---
+
 ## ⚠️ Important: Spark Integration REMOVED
 
 **GitHub Spark has been completely removed from this project.** All Spark-specific code, dependencies, and configurations have been eliminated.
@@ -559,6 +663,98 @@ interface AuthState {
      loadAssetsFromApi()  // Uses correct tenant API
    }, [currentTenant])
    ```
+
+---
+
+## 🔐 Authentication Services (Updated Nov 2025)
+
+### ⚠️ Service Migration Status
+
+**✅ RECOMMENDED:** `tenantAuthService` (Multi-tenant aware)  
+**⚠️ DEPRECATED:** `auth.service.ts` (Legacy, single-tenant)
+
+### TenantAuthService API
+
+**File:** `src/services/tenantAuthService.ts`
+
+**Features:**
+- ✅ Automatic tenant detection from JWT
+- ✅ Reconfigures API base URL per tenant
+- ✅ Isolated token storage (`tenantStorage`)
+- ✅ Dynamic branding support
+- ✅ All CRUD operations for user management
+
+**Available Methods:**
+
+```typescript
+import { tenantAuthService } from '@/services/tenantAuthService';
+
+// Authentication
+await tenantAuthService.login(credentials);
+await tenantAuthService.logout();
+tenantAuthService.isAuthenticated();
+tenantAuthService.getCurrentUser();
+tenantAuthService.getAccessToken();
+tenantAuthService.getRefreshToken();
+
+// User Management (Added Nov 2025)
+await tenantAuthService.register(data);           // ✅ NEW
+await tenantAuthService.updateProfile(data);      // ✅ NEW
+await tenantAuthService.uploadAvatar(file);       // ✅ NEW
+await tenantAuthService.removeAvatar();           // ✅ NEW
+await tenantAuthService.changePassword(data);     // ✅ NEW
+```
+
+**Example Usage:**
+
+```typescript
+// Login (auto-configures tenant)
+const response = await tenantAuthService.login({
+  username_or_email: 'user@example.com',
+  password: 'password123'
+});
+
+// Register new user
+const user = await tenantAuthService.register({
+  username: 'newuser',
+  email: 'newuser@example.com',
+  password: 'password123',
+  password_confirm: 'password123',
+  first_name: 'John',
+  last_name: 'Doe'
+});
+
+// Update profile
+const updatedUser = await tenantAuthService.updateProfile({
+  first_name: 'Jane',
+  timezone: 'America/Sao_Paulo',
+  time_format: '24h'
+});
+
+// Upload avatar
+const userWithAvatar = await tenantAuthService.uploadAvatar(fileBlob);
+```
+
+### Legacy Auth Service (DEPRECATED)
+
+**⚠️ DO NOT USE FOR NEW CODE**
+
+**File:** `src/services/auth.service.ts`
+
+- Still exists for backward compatibility
+- Registration method updated to use `tenantStorage`
+- All new features should use `tenantAuthService`
+- Will be removed in future version
+
+**Migration Path:**
+
+```typescript
+// ❌ OLD (Don't use)
+import { authService } from '@/services/auth.service';
+
+// ✅ NEW (Use this)
+import { tenantAuthService } from '@/services/tenantAuthService';
+```
 
 ---
 

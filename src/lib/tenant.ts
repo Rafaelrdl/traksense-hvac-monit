@@ -109,23 +109,44 @@ const TENANT_BRANDINGS: Record<string, TenantBranding> = {
  * 4. Fallback para default
  */
 export const getTenantConfig = (): TenantConfig => {
-  // 1. Tentar ler do token JWT (mais confiável) via tenantStorage
+  // 🔒 SECURITY FIX #9: Persist real API base URL from backend JWT
+  // Previously: Always rebuilt apiBaseUrl as localhost, breaking production API calls
+  // Now: Use stored api_base_url from backend, only fallback to localhost if missing
+  
+  // 1. Try to read from persisted config (includes real api_base_url from backend)
+  const persistedConfig = tenantStorage.get<TenantConfig>('tenant_config');
+  if (persistedConfig && persistedConfig.apiBaseUrl) {
+    // Use persisted config that includes real backend URL
+    return {
+      ...persistedConfig,
+      branding: TENANT_BRANDINGS[persistedConfig.tenantSlug] || TENANT_BRANDINGS.default,
+    };
+  }
+  
+  // 2. Tentar ler do token JWT (após login, antes de persistir config)
   const token = tenantStorage.get<string>('access_token') || localStorage.getItem('access_token');
   if (token) {
     const payload = decodeJWT(token);
     if (payload?.tenant_id) {
       const tenantSlug = payload.tenant_slug || payload.tenant_id;
-      return {
+      // Use api_base_url from JWT if present, otherwise construct localhost fallback
+      const apiBaseUrl = payload.api_base_url || `http://${tenantSlug}.localhost:8000/api`;
+      
+      const config: TenantConfig = {
         tenantId: payload.tenant_id,
         tenantSlug,
         tenantName: payload.tenant_name || tenantSlug.toUpperCase(),
-        apiBaseUrl: `http://${tenantSlug}.localhost:8000/api`,
+        apiBaseUrl,
         branding: TENANT_BRANDINGS[tenantSlug] || TENANT_BRANDINGS.default,
       };
+      
+      // Persist config for future use
+      tenantStorage.set('tenant_config', config);
+      return config;
     }
   }
   
-  // 2. Tentar ler do hostname
+  // 3. Tentar ler do hostname
   const hostnameTenant = getTenantFromHostname();
   if (hostnameTenant) {
     return {
@@ -137,7 +158,7 @@ export const getTenantConfig = (): TenantConfig => {
     };
   }
   
-  // 3. Tentar ler tenant salvo anteriormente via tenantStorage
+  // 4. Tentar ler tenant salvo anteriormente via tenantStorage (legacy)
   const savedTenant = tenantStorage.get<any>('current_tenant') || 
                       (localStorage.getItem('current_tenant') ? 
                         JSON.parse(localStorage.getItem('current_tenant')!) : null);
@@ -151,7 +172,7 @@ export const getTenantConfig = (): TenantConfig => {
     };
   }
   
-  // 4. Fallback para configuração padrão
+  // 5. Fallback para configuração padrão
   const defaultUrl = import.meta.env.VITE_API_URL || 'http://umc.localhost:8000/api';
   return {
     tenantId: 'default',

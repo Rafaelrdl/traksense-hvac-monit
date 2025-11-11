@@ -31,7 +31,11 @@ export const LoginPage: React.FC = () => {
   const [showDemoUsers, setShowDemoUsers] = useState(false);
   
   const { login, isLoading, error, clearError } = useAuthStore();
-  const demoUsers = getDemoUsers();
+  
+  // 🔒 SECURITY FIX #16: Move demo credentials behind DEV flag
+  // Previously: Real demo emails + passwords shipped in production bundle
+  // Now: Only load demo users in development mode
+  const demoUsers = import.meta.env.DEV ? getDemoUsers() : [];
 
   useEffect(() => {
     // Clear any existing error when component mounts
@@ -52,6 +56,12 @@ export const LoginPage: React.FC = () => {
   };
 
   const handleDemoLogin = (demoEmail: string, role: string) => {
+    // 🔒 SECURITY: Only allow demo login in development
+    if (!import.meta.env.DEV) {
+      toast.error('Demo login não disponível em produção');
+      return;
+    }
+    
     setEmail(demoEmail);
     
     // Define passwords based on email
