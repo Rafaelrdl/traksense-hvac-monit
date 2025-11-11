@@ -105,18 +105,18 @@ export const AlertsPage: React.FC = () => {
 
       {/* Statistics Cards - Compact Layout */}
       {statistics && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => {
             setStatusFilter('active');
             handleApplyFilters();
           }}>
-            <CardContent className="py-4 px-6">
+            <CardContent className="py-3 px-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-2xl font-bold text-red-600">{statistics.active}</div>
-                  <p className="text-xs text-muted-foreground">Alertas Ativos</p>
+                  <div className="text-3xl font-bold text-red-600">{statistics.active}</div>
+                  <p className="text-sm text-muted-foreground">Alertas Ativos</p>
                 </div>
-                <AlertCircle className="h-6 w-6 text-red-500" />
+                <AlertCircle className="h-6 w-5 text-red-500" />
               </div>
             </CardContent>
           </Card>
@@ -125,13 +125,13 @@ export const AlertsPage: React.FC = () => {
             setStatusFilter('acknowledged');
             handleApplyFilters();
           }}>
-            <CardContent className="py-4 px-6">
+            <CardContent className="py-3 px-4">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-2xl font-bold text-yellow-600">{statistics.acknowledged}</div>
-                  <p className="text-xs text-muted-foreground">Reconhecidos</p>
+                  <p className="text-sm text-muted-foreground">Reconhecidos</p>
                 </div>
-                <Bell className="h-6 w-6 text-yellow-500" />
+                <Bell className="h-5 w-5 text-yellow-500" />
               </div>
             </CardContent>
           </Card>
@@ -140,13 +140,13 @@ export const AlertsPage: React.FC = () => {
             setStatusFilter('resolved');
             handleApplyFilters();
           }}>
-            <CardContent className="py-4 px-6">
+            <CardContent className="py-3 px-4">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-2xl font-bold text-green-600">{statistics.resolved}</div>
-                  <p className="text-xs text-muted-foreground">Resolvidos</p>
+                  <p className="text-sm text-muted-foreground">Resolvidos</p>
                 </div>
-                <CheckCircle2 className="h-6 w-6 text-green-500" />
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
               </div>
             </CardContent>
           </Card>
@@ -155,13 +155,13 @@ export const AlertsPage: React.FC = () => {
             setStatusFilter('all');
             handleResetFilters();
           }}>
-            <CardContent className="py-4 px-6">
+            <CardContent className="py-3 px-4">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-2xl font-bold text-blue-600">{statistics.total}</div>
-                  <p className="text-xs text-muted-foreground">Total</p>
+                  <p className="text-sm text-muted-foreground">Total</p>
                 </div>
-                <Clock className="h-6 w-6 text-blue-500" />
+                <Clock className="h-5 w-5 text-blue-500" />
               </div>
             </CardContent>
           </Card>
