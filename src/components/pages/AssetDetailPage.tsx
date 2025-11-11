@@ -26,7 +26,11 @@ import {
   Thermometer,
   Droplets,
   Wind,
-  Antenna
+  Antenna,
+  Info,
+  MapPin,
+  Package,
+  FileText
 } from 'lucide-react';
 
 export const AssetDetailPage: React.FC = () => {
@@ -35,7 +39,7 @@ export const AssetDetailPage: React.FC = () => {
   const timeRange = useTimeRangeMs();
   const hidePerformanceWhenNoSensors = useFeaturesStore(state => state.hidePerformanceWhenNoSensors);
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState('je02');
+  const [activeTab, setActiveTab] = useState('info');
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
   
   // Estados para busca dinâmica de sensores
@@ -386,6 +390,7 @@ export const AssetDetailPage: React.FC = () => {
       <div className="border-b border-border">
         <nav className="flex space-x-8 overflow-x-auto">
           {[
+            { id: 'info', label: 'Informações' },
             { id: 'je02', label: 'Monitoramento' },
             { id: 'telemetry', label: 'Telemetria' },
             { id: 'performance', label: 'Performance', conditional: showPerformanceTab },
@@ -410,6 +415,163 @@ export const AssetDetailPage: React.FC = () => {
       </div>
 
       {/* Tab Content */}
+      {activeTab === 'info' && (
+        <div className="space-y-6">
+          {/* Informações Básicas */}
+          <div className="bg-card rounded-xl p-6 border shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <Info className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold">Informações Básicas</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Tag</label>
+                <p className="text-base font-semibold mt-1">{selectedAsset.tag}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Tipo</label>
+                <p className="text-base font-semibold mt-1">{selectedAsset.type}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Status</label>
+                <div className="mt-1">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    selectedAsset.status === 'OK' ? 'bg-green-100 text-green-800' :
+                    selectedAsset.status === 'Maintenance' ? 'bg-yellow-100 text-yellow-800' :
+                    selectedAsset.status === 'Stopped' ? 'bg-red-100 text-red-800' :
+                    selectedAsset.status === 'Alert' ? 'bg-orange-100 text-orange-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {selectedAsset.status === 'OK' ? 'Operacional' :
+                     selectedAsset.status === 'Maintenance' ? 'Em Manutenção' :
+                     selectedAsset.status === 'Stopped' ? 'Parado' :
+                     selectedAsset.status === 'Alert' ? 'Alerta' : selectedAsset.status}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Pontuação de Saúde</label>
+                <p className="text-base font-semibold mt-1">{selectedAsset.healthScore.toFixed(0)}%</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Horas de Operação</label>
+                <p className="text-base font-semibold mt-1">{selectedAsset.operatingHours.toLocaleString('pt-BR')} h</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Última Manutenção</label>
+                <p className="text-base font-semibold mt-1">
+                  {selectedAsset.lastMaintenance 
+                    ? new Date(selectedAsset.lastMaintenance).toLocaleDateString('pt-BR')
+                    : 'N/A'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Localização */}
+          <div className="bg-card rounded-xl p-6 border shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <MapPin className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold">Localização</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Local</label>
+                <p className="text-base font-semibold mt-1">{selectedAsset.location || 'N/A'}</p>
+              </div>
+              {selectedAsset.company && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Empresa</label>
+                  <p className="text-base font-semibold mt-1">{selectedAsset.company}</p>
+                </div>
+              )}
+              {selectedAsset.sector && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Setor</label>
+                  <p className="text-base font-semibold mt-1">{selectedAsset.sector}</p>
+                </div>
+              )}
+              {selectedAsset.subsector && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Subsetor</label>
+                  <p className="text-base font-semibold mt-1">{selectedAsset.subsector}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Especificações Técnicas */}
+          <div className="bg-card rounded-xl p-6 border shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <Package className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold">Especificações Técnicas</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {selectedAsset.specifications?.brand && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Marca</label>
+                  <p className="text-base font-semibold mt-1">{selectedAsset.specifications.brand}</p>
+                </div>
+              )}
+              {selectedAsset.specifications?.model && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Modelo</label>
+                  <p className="text-base font-semibold mt-1">{selectedAsset.specifications.model}</p>
+                </div>
+              )}
+              {selectedAsset.specifications?.serialNumber && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Número de Série</label>
+                  <p className="text-base font-semibold mt-1">{selectedAsset.specifications.serialNumber}</p>
+                </div>
+              )}
+              {selectedAsset.specifications?.equipmentType && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Tipo de Equipamento</label>
+                  <p className="text-base font-semibold mt-1">
+                    {selectedAsset.specifications.equipmentType === 'OTHER' && selectedAsset.specifications.equipmentTypeOther
+                      ? selectedAsset.specifications.equipmentTypeOther
+                      : selectedAsset.specifications.equipmentType}
+                  </p>
+                </div>
+              )}
+              {selectedAsset.specifications?.capacity && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Capacidade</label>
+                  <p className="text-base font-semibold mt-1">{selectedAsset.specifications.capacity} TR</p>
+                </div>
+              )}
+              {selectedAsset.specifications?.voltage && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Tensão</label>
+                  <p className="text-base font-semibold mt-1">{selectedAsset.specifications.voltage} V</p>
+                </div>
+              )}
+              {selectedAsset.specifications?.maxCurrent && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Corrente Nominal</label>
+                  <p className="text-base font-semibold mt-1">{selectedAsset.specifications.maxCurrent} A</p>
+                </div>
+              )}
+              {selectedAsset.specifications?.refrigerant && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Refrigerante</label>
+                  <p className="text-base font-semibold mt-1">{selectedAsset.specifications.refrigerant}</p>
+                </div>
+              )}
+              {selectedAsset.powerConsumption && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Consumo de Energia</label>
+                  <p className="text-base font-semibold mt-1">{selectedAsset.powerConsumption.toFixed(2)} kWh/dia</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Notas e Observações - Removido pois não existe no tipo */}
+        </div>
+      )}
+
       {activeTab === 'telemetry' && (
         <div className="space-y-6">
           {/* Period Selector */}
@@ -580,6 +742,25 @@ export const AssetDetailPage: React.FC = () => {
                 return value.toFixed(2);
               };
 
+              // Extrair nome limpo do sensor (Device + sufixo)
+              const getSensorDisplayName = () => {
+                // Se tiver device_display_name, usar ele
+                if (sensor.device_display_name) {
+                  return sensor.device_display_name;
+                }
+                
+                // Senão, extrair sufixo do tag do sensor
+                // Ex: F80332010002C857_rssi -> Device C857
+                const parts = sensor.tag?.split('_') || [];
+                if (parts.length > 0 && parts[0].length > 4) {
+                  const suffix = parts[0].slice(-4); // Pegar últimos 4 chars
+                  return `Device ${suffix}`;
+                }
+                
+                // Fallback: usar tag completo
+                return sensor.tag || 'Device';
+              };
+
               // Ícone e tipo baseado na UNIDADE (unit) - muito mais preciso!
               const getMetricInfo = () => {
                 const unit = sensor.unit?.toLowerCase() || '';
@@ -674,7 +855,7 @@ export const AssetDetailPage: React.FC = () => {
                       </div>
                       <div>
                         <h4 className="font-semibold text-sm text-gray-900">
-                          {sensor.tag?.replace(/_/g, ' ')}
+                          {getSensorDisplayName()}
                         </h4>
                         <span className={`text-xs ${statusColor}`}>
                           {isOnline ? 'Online' : 'Offline'}

@@ -23,12 +23,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { HVACAsset, EquipmentType } from '@/types/hvac';
 import { EquipmentTypeField } from './EquipmentTypeField';
+import { assetsService } from '@/services/assetsService';
+import { sitesService } from '@/services/sitesService';
+import { mapHVACAssetToApiAsset, mapApiAssetToHVACAsset } from '@/lib/mappers/assetMapper';
+import { useAppStore } from '@/store/app';
 
 interface AddAssetDialogProps {
   onAddAsset: (asset: Omit<HVACAsset, 'id' | 'healthScore' | 'powerConsumption' | 'status' | 'operatingHours' | 'lastMaintenance'>) => Promise<void>;
+  editingAsset?: HVACAsset | null;
+  onClose?: () => void;
 }
 
-export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) => {
+export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, editingAsset, onClose }) => {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
 
@@ -53,6 +59,27 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
   const [voltage, setVoltage] = useState('');
   const [maxCurrent, setMaxCurrent] = useState('');
   const [refrigerant, setRefrigerant] = useState('none');
+
+  // Preencher formulário quando estiver editando
+  React.useEffect(() => {
+    if (editingAsset) {
+      setTag(editingAsset.tag || '');
+      setBrand(editingAsset.specifications?.brand || '');
+      setModel(editingAsset.specifications?.model || '');
+      setCapacity(editingAsset.specifications?.capacity?.toString() || '');
+      setSerialNumber(editingAsset.specifications?.serialNumber || '');
+      setEquipmentType(editingAsset.specifications?.equipmentType || 'AHU');
+      setEquipmentTypeOther(editingAsset.specifications?.equipmentTypeOther || '');
+      setCompany(editingAsset.company || '');
+      setSector(editingAsset.sector || '');
+      setSubsector(editingAsset.subsector || '');
+      setLocation(editingAsset.location || '');
+      setVoltage(editingAsset.specifications?.voltage?.toString() || '');
+      setMaxCurrent(editingAsset.specifications?.maxCurrent?.toString() || '');
+      setRefrigerant(editingAsset.specifications?.refrigerant || 'none');
+      setOpen(true); // Abrir o modal
+    }
+  }, [editingAsset]);
 
   const resetForm = () => {
     setTag('');
@@ -133,18 +160,78 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
     };
 
     try {
-      await onAddAsset(newAsset);
-      toast.success(`Ativo ${tag} adicionado com sucesso!`);
+      if (editingAsset) {
+        // Modo de edição - buscar siteId e atualizar
+        let siteId = 1; // Default
+        
+        try {
+          const sites = await sitesService.getAllComplete();
+          if (sites.length > 0) {
+            siteId = sites[0].id;
+          }
+        } catch (siteError) {
+          console.warn('⚠️ Não foi possível buscar sites, usando ID padrão:', siteError);
+        }
+
+        // Converter para formato da API
+        const apiAssetData = mapHVACAssetToApiAsset(
+          {
+            ...newAsset,
+            id: editingAsset.id,
+            healthScore: editingAsset.healthScore,
+            status: editingAsset.status,
+            lastMaintenance: editingAsset.lastMaintenance,
+          },
+          siteId
+        );
+
+        // Atualizar na API
+        const updatedApiAsset = await assetsService.update(
+          typeof editingAsset.id === 'number' ? editingAsset.id : parseInt(editingAsset.id),
+          apiAssetData
+        );
+        
+        // Converter resposta para formato frontend
+        const updatedHVACAsset = mapApiAssetToHVACAsset(updatedApiAsset);
+        
+        // Atualizar no store
+        const { assets } = useAppStore.getState();
+        const updatedAssets = assets.map(a => 
+          a.id === editingAsset.id ? updatedHVACAsset : a
+        );
+        useAppStore.setState({ assets: updatedAssets });
+        
+        toast.success(`Ativo ${tag} atualizado com sucesso!`);
+      } else {
+        // Modo de criação
+        await onAddAsset(newAsset);
+        toast.success(`Ativo ${tag} adicionado com sucesso!`);
+      }
+      
       setOpen(false);
       resetForm();
+      if (onClose) {
+        onClose(); // Limpar editingAsset no componente pai
+      }
     } catch (error) {
-      toast.error('Erro ao adicionar ativo. Tente novamente.');
-      console.error('Erro ao adicionar ativo:', error);
+      toast.error(editingAsset ? 'Erro ao atualizar ativo.' : 'Erro ao adicionar ativo. Tente novamente.');
+      console.error('Erro ao processar ativo:', error);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog 
+      open={open} 
+      onOpenChange={(isOpen) => {
+        setOpen(isOpen);
+        if (!isOpen) {
+          resetForm();
+          if (onClose) {
+            onClose(); // Limpar editingAsset no componente pai
+          }
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button size="sm" className="gap-2">
           <Plus className="size-4" />
@@ -156,7 +243,7 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Plus className="w-5 h-5" />
-            <span>Adicionar Novo Ativo</span>
+            <span>{editingAsset ? 'Editar' : 'Adicionar'} Ativo</span>
           </DialogTitle>
           <DialogDescription>
             Preencha as informações do equipamento. Os campos marcados com * são obrigatórios.
@@ -327,7 +414,7 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="maxCurrent">Corrente Máxima (A)</Label>
+                    <Label htmlFor="maxCurrent">Corrente Nominal (A)</Label>
                     <Input
                       id="maxCurrent"
                       type="number"
@@ -410,7 +497,7 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset }) =>
               ) : (
                 <Button type="submit">
                   <Plus className="w-4 h-4 mr-2" />
-                  Adicionar Ativo
+                  {editingAsset ? 'Salvar Alterações' : 'Adicionar Ativo'}
                 </Button>
               )}
             </div>

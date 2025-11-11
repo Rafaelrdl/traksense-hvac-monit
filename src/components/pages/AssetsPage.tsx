@@ -18,6 +18,7 @@ export const AssetsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [editingAsset, setEditingAsset] = useState<HVACAsset | null>(null);
 
   // Carregar assets da API quando o componente montar
   useEffect(() => {
@@ -68,7 +69,11 @@ export const AssetsPage: React.FC = () => {
           </p>
         </div>
         
-        <AddAssetDialog onAddAsset={addAsset} />
+        <AddAssetDialog 
+          onAddAsset={addAsset} 
+          editingAsset={editingAsset}
+          onClose={() => setEditingAsset(null)}
+        />
       </div>
 
       {/* Loading State */}
@@ -210,6 +215,13 @@ export const AssetsPage: React.FC = () => {
                         className="text-primary hover:text-primary/80 text-sm font-medium"
                       >
                         Detalhes
+                      </button>
+                      <span className="text-muted-foreground">•</span>
+                      <button
+                        onClick={() => setEditingAsset(asset)}
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      >
+                        Editar
                       </button>
                       <span className="text-muted-foreground">•</span>
                       <a
