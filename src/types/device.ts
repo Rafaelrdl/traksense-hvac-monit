@@ -26,6 +26,7 @@ export interface AssetInfo {
 export interface DeviceSummary {
   id: number;
   name: string;
+  display_name?: string;  // Nome curto para exibição (sufixo do serial)
   serial_number: string;
   mqtt_client_id: string;
   device_type: string;

@@ -73,7 +73,7 @@ const DeviceCard: React.FC<DeviceCardProps> = ({ device }) => {
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
               <h3 className="text-lg font-semibold text-gray-900">
-                {device.name}
+                {device.display_name || device.name}
               </h3>
               {getStatusBadge(device.device_status === 'ONLINE')}
             </div>

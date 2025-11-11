@@ -85,6 +85,7 @@ export interface ApiAsset {
 export interface ApiDevice {
   id: number;
   name: string;
+  display_name?: string;  // Nome curto para exibição (sufixo do serial)
   serial_number: string;
   asset: number;
   asset_tag: string;
@@ -107,6 +108,7 @@ export interface ApiSensor {
   tag: string;
   device: number;
   device_name: string;
+  device_display_name?: string;  // Nome curto do device (sufixo)
   device_serial: string;
   device_mqtt_client_id: string;
   asset_tag: string;
