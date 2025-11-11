@@ -96,17 +96,11 @@ export const AlertsPage: React.FC = () => {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Alertas</h1>
-          <p className="text-muted-foreground mt-1">
-            Gerencie e monitore os alertas do sistema
-          </p>
-        </div>
-        <Button onClick={() => setIsAddRuleModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Regra
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold">Alertas</h1>
+        <p className="text-muted-foreground mt-1">
+          Gerencie e monitore os alertas do sistema
+        </p>
       </div>
 
       {/* Statistics Cards - Compact Layout */}
@@ -116,13 +110,13 @@ export const AlertsPage: React.FC = () => {
             setStatusFilter('active');
             handleApplyFilters();
           }}>
-            <CardContent className="pt-6">
+            <CardContent className="py-4 px-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-3xl font-bold text-red-600">{statistics.active}</div>
-                  <p className="text-sm text-muted-foreground mt-1">Alertas Ativos</p>
+                  <div className="text-2xl font-bold text-red-600">{statistics.active}</div>
+                  <p className="text-xs text-muted-foreground">Alertas Ativos</p>
                 </div>
-                <AlertCircle className="h-8 w-8 text-red-500" />
+                <AlertCircle className="h-6 w-6 text-red-500" />
               </div>
             </CardContent>
           </Card>
@@ -131,13 +125,13 @@ export const AlertsPage: React.FC = () => {
             setStatusFilter('acknowledged');
             handleApplyFilters();
           }}>
-            <CardContent className="pt-6">
+            <CardContent className="py-4 px-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-3xl font-bold text-yellow-600">{statistics.acknowledged}</div>
-                  <p className="text-sm text-muted-foreground mt-1">Reconhecidos</p>
+                  <div className="text-2xl font-bold text-yellow-600">{statistics.acknowledged}</div>
+                  <p className="text-xs text-muted-foreground">Reconhecidos</p>
                 </div>
-                <Bell className="h-8 w-8 text-yellow-500" />
+                <Bell className="h-6 w-6 text-yellow-500" />
               </div>
             </CardContent>
           </Card>
@@ -146,13 +140,13 @@ export const AlertsPage: React.FC = () => {
             setStatusFilter('resolved');
             handleApplyFilters();
           }}>
-            <CardContent className="pt-6">
+            <CardContent className="py-4 px-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-3xl font-bold text-green-600">{statistics.resolved}</div>
-                  <p className="text-sm text-muted-foreground mt-1">Resolvidos</p>
+                  <div className="text-2xl font-bold text-green-600">{statistics.resolved}</div>
+                  <p className="text-xs text-muted-foreground">Resolvidos</p>
                 </div>
-                <CheckCircle2 className="h-8 w-8 text-green-500" />
+                <CheckCircle2 className="h-6 w-6 text-green-500" />
               </div>
             </CardContent>
           </Card>
@@ -161,13 +155,13 @@ export const AlertsPage: React.FC = () => {
             setStatusFilter('all');
             handleResetFilters();
           }}>
-            <CardContent className="pt-6">
+            <CardContent className="py-4 px-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-3xl font-bold text-blue-600">{statistics.total}</div>
-                  <p className="text-sm text-muted-foreground mt-1">Total</p>
+                  <div className="text-2xl font-bold text-blue-600">{statistics.total}</div>
+                  <p className="text-xs text-muted-foreground">Total</p>
                 </div>
-                <Clock className="h-8 w-8 text-blue-500" />
+                <Clock className="h-6 w-6 text-blue-500" />
               </div>
             </CardContent>
           </Card>
@@ -252,12 +246,19 @@ export const AlertsPage: React.FC = () => {
             <div className="space-y-3">
               {alerts.map((alert) => {
                 const config = severityConfig[alert.severity] || severityConfig.MEDIUM;
+                const borderColor = 
+                  alert.severity === 'CRITICAL' || alert.severity === 'Critical'
+                    ? 'border-red-300'
+                    : alert.severity === 'HIGH' || alert.severity === 'High'
+                    ? 'border-orange-300'
+                    : alert.severity === 'MEDIUM' || alert.severity === 'Medium'
+                    ? 'border-yellow-300'
+                    : 'border-blue-300';
+                
                 return (
                   <div
                     key={alert.id}
-                    className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
-                      config?.bg || 'bg-gray-100'
-                    }`}
+                    className={`p-4 rounded-lg border-2 bg-white cursor-pointer transition-all hover:shadow-md ${borderColor}`}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
