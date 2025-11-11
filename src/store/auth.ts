@@ -5,6 +5,28 @@ import { authService } from '@/services/auth.service'; // TODO: Migrar register,
 import { tenantStorage } from '@/lib/tenantStorage';
 import { getTenantConfig } from '@/lib/tenant';
 
+/**
+ * 🔒 AUTHENTICATION STRATEGY (Nov 2025)
+ * 
+ * This store uses COOKIE-BASED AUTHENTICATION (not JWT storage):
+ * 
+ * - Backend sends JWT tokens in HttpOnly cookies (access_token, refresh_token)
+ * - Browser automatically includes cookies in all API requests
+ * - Tokens are NOT stored in localStorage/sessionStorage (XSS protection)
+ * - This store only persists USER DATA (not tokens)
+ * 
+ * Audit fix #18: "Alinhar com cookie-based auth (não depender de JWT storage)"
+ * 
+ * Authentication flow:
+ * 1. User logs in → tenantAuthService.login()
+ * 2. Backend sets HttpOnly cookies
+ * 3. Store saves user metadata (name, email, avatar, etc.)
+ * 4. API requests automatically include cookies (no Authorization header needed)
+ * 5. User logs out → tenantAuthService.logout() clears cookies
+ * 
+ * See: src/lib/api.ts for interceptor documentation
+ */
+
 export interface User {
   id: string;
   username?: string;

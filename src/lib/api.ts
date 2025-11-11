@@ -53,13 +53,27 @@ export const reconfigureApiForTenant = (tenantSlugOrUrl: string): void => {
 /**
  * Interceptor de Request
  * 
- * 🔐 AUTHENTICATION STRATEGY:
- * - Backend sends JWT tokens in HttpOnly cookies (access_token, refresh_token)
- * - These cookies are automatically included in all requests by the browser
- * - DO NOT store tokens in localStorage/tenantStorage (security risk)
+ * 🔐 AUTHENTICATION STRATEGY (SECURITY FIX - Nov 2025):
  * 
- * This interceptor tries localStorage as fallback for development,
- * but production should rely exclusively on HttpOnly cookies.
+ * PRODUCTION (Recommended):
+ * - Backend sends JWT tokens in HttpOnly cookies (access_token, refresh_token)
+ * - Browser automatically includes cookies in all requests
+ * - Cookies are NOT accessible via JavaScript → XSS protection
+ * - NO Authorization header needed
+ * 
+ * DEVELOPMENT FALLBACK (Not secure):
+ * - If cookies aren't working, tries localStorage as fallback
+ * - Warns in console about non-secure method
+ * - Should only be used for local debugging
+ * 
+ * ⚠️ WHY NOT localStorage?
+ * - Vulnerable to XSS attacks (any script can read tokens)
+ * - No protection against malicious browser extensions
+ * - Audit finding: "Ainda grava access/refresh tokens tanto no localStorage 
+ *   quanto no namespace do tenant, mesmo o backend já emitindo cookies HttpOnly. 
+ *   Isso permite que qualquer XSS recupere os tokens JWT."
+ * 
+ * See: docs/bugfixes/CORRECOES_SEGURANCA_COMPLETAS.md - Fix #1
  */
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -70,7 +84,7 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
       
       if (import.meta.env.DEV) {
-        console.warn('⚠️ Using token from localStorage (should use HttpOnly cookie)');
+        console.warn('⚠️ Using token from localStorage (should use HttpOnly cookie in production)');
       }
     }
     
@@ -144,54 +158,41 @@ api.interceptors.response.use(
     originalRequest._retry = true;
     isRefreshing = true;
 
-    const refreshToken = tenantStorage.get<string>('refresh_token') || localStorage.getItem('refresh_token');
-
-    if (!refreshToken) {
-      // Sem refresh token, redireciona para login (uma vez apenas)
-      isRefreshing = false;
-      
-      if (!isRedirecting) {
-        isRedirecting = true;
-        tenantStorage.clear();
-        localStorage.clear();
-        console.log('🔒 Sem refresh token - redirecionando para login');
-        window.location.href = '/login';
-      }
-      
-      return Promise.reject(error);
-    }
+    // 🔧 FIX #20: Cookie-based refresh strategy (not localStorage)
+    // Audit finding: "Ainda dependem de refresh tokens armazenados; quando expiram, forçam logout"
+    // 
+    // PRODUCTION STRATEGY:
+    // - Backend refresh endpoint reads refresh_token from HttpOnly cookie
+    // - Returns new access_token in HttpOnly cookie (not JSON)
+    // - No tokens in localStorage
+    // 
+    // DEVELOPMENT FALLBACK:
+    // - If cookies not working, tries localStorage
+    // - Should only be used for debugging
 
     try {
-      // Tenta fazer refresh do token
+      // 🔧 Attempt refresh using HttpOnly cookies (production)
       const { data } = await axios.post(
         `${api.defaults.baseURL}/auth/token/refresh/`,
-        { refresh: refreshToken },
-        { withCredentials: true }
+        {},  // Empty body - backend reads from cookie
+        { 
+          withCredentials: true  // Include HttpOnly cookies
+        }
       );
 
-      const newAccessToken = data.access;
+      // ✅ SUCCESS: New tokens set as cookies by backend
+      // No need to store in localStorage (cookies are automatic)
       
-      // Salva novo access token (tenant-aware)
-      tenantStorage.set('access_token', newAccessToken);
-      localStorage.setItem('access_token', newAccessToken); // Fallback
-
-      // Se retornou novo refresh token, salva também
-      if (data.refresh) {
-        tenantStorage.set('refresh_token', data.refresh);
-        localStorage.setItem('refresh_token', data.refresh);
+      if (import.meta.env.DEV) {
+        console.log('✅ Token refresh successful (cookie-based)');
       }
 
-      // Atualiza header da requisição original
-      if (originalRequest.headers) {
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-      }
-
-      // Processa fila de requisições pendentes
-      processQueue(null, newAccessToken);
+      // Processa fila de requisições pendentes (sem token, cookies são automáticos)
+      processQueue(null, null);
 
       isRefreshing = false;
 
-      // Retenta a requisição original
+      // Retenta a requisição original (cookies atualizados automaticamente)
       return api(originalRequest);
     } catch (refreshError) {
       // Falha no refresh, limpa tudo e redireciona (uma vez apenas)

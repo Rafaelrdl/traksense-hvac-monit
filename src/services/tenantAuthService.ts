@@ -344,7 +344,12 @@ export const tenantAuthService = {
     try {
       console.log('👤 Atualizando perfil...');
       
-      const response = await api.patch<{ user: LoginResponse['user'] }>('/auth/me/', data);
+      // 🔧 API FIX (Nov 2025): Correct endpoint path
+      // Audit finding: "Faz chamadas para /auth/me|avatar|change-password/ que não 
+      // existem no backend (que usa /users/me/...)"
+      // OLD: /auth/me/ ❌
+      // NEW: /users/me/ ✅
+      const response = await api.patch<{ user: LoginResponse['user'] }>('/users/me/', data);
       
       // Update stored user
       tenantStorage.set('user', response.data.user);
@@ -369,7 +374,8 @@ export const tenantAuthService = {
       const formData = new FormData();
       formData.append('avatar', file);
       
-      const response = await api.post<{ user: LoginResponse['user'] }>('/auth/avatar/', formData, {
+      // 🔧 API FIX: /auth/avatar/ → /users/me/avatar/
+      const response = await api.post<{ user: LoginResponse['user'] }>('/users/me/avatar/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -395,7 +401,8 @@ export const tenantAuthService = {
     try {
       console.log('🗑️ Removendo avatar...');
       
-      const response = await api.delete<{ user: LoginResponse['user'] }>('/auth/avatar/');
+      // 🔧 API FIX: /auth/avatar/ → /users/me/avatar/
+      const response = await api.delete<{ user: LoginResponse['user'] }>('/users/me/avatar/');
       
       // Update stored user
       tenantStorage.set('user', response.data.user);
@@ -421,7 +428,8 @@ export const tenantAuthService = {
     try {
       console.log('🔐 Alterando senha...');
       
-      await api.post('/auth/change-password/', data);
+      // 🔧 API FIX: /auth/change-password/ → /users/me/change-password/
+      await api.post('/users/me/change-password/', data);
       
       console.log('✅ Senha alterada com sucesso');
     } catch (error: any) {

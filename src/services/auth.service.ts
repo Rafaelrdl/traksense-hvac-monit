@@ -138,14 +138,18 @@ class AuthService {
     try {
       const { data } = await api.post<AuthResponse>('/auth/login/', credentials);
 
-      // Salva tokens no localStorage
-      localStorage.setItem('access_token', data.access);
-      localStorage.setItem('refresh_token', data.refresh);
+      // 🔒 SECURITY FIX: Do NOT store tokens in localStorage/tenantStorage
+      // Backend uses HttpOnly cookies for authentication (XSS protection)
+      // Tokens in localStorage are vulnerable to XSS attacks
+      // See: CORRECOES_SEGURANCA_COMPLETAS.md - Fix #1
 
       // 🆕 Configurar tenant se retornado pelo backend
       if (data.tenant) {
         const { slug, api_base_url } = data.tenant;
-        console.log(`✅ Login com tenant: ${slug} (API: ${api_base_url})`);
+        
+        if (import.meta.env.DEV) {
+          console.log(`✅ Login com tenant: ${slug} (API: ${api_base_url})`);
+        }
         
         // Importar dinamicamente para evitar circular dependency
         const { reconfigureApiForTenant } = await import('@/lib/api');
@@ -154,16 +158,16 @@ class AuthService {
         // Reconfigurar API client com a URL fornecida pelo backend (não localhost fixo)
         reconfigureApiForTenant(api_base_url);
         
-        // Salvar tenant info no storage isolado
+        // Salvar APENAS tenant info no storage isolado (não tokens)
         tenantStorage.set('tenant_info', {
           slug,
           domain: data.tenant.domain,
           api_base_url,
         });
         
-        // Salvar tokens também no tenant storage
-        tenantStorage.set('access_token', data.access);
-        tenantStorage.set('refresh_token', data.refresh);
+        // ❌ REMOVED: Token storage (authentication via HttpOnly cookies only)
+        // tenantStorage.set('access_token', data.access);
+        // tenantStorage.set('refresh_token', data.refresh);
       }
 
       // Retorna usuário no formato do frontend
@@ -200,13 +204,22 @@ class AuthService {
       const { tenantStorage } = await import('@/lib/tenantStorage');
       const { reconfigureApiForTenant } = await import('@/lib/api');
 
-      // Save tokens to tenant-isolated storage
-      tenantStorage.set('access_token', response.access);
-      tenantStorage.set('refresh_token', response.refresh);
+      // 🔒 SECURITY FIX (Nov 2025): Do NOT store tokens (HttpOnly cookies only)
+      // Audit finding: "Ainda grava access/refresh tokens tanto no localStorage 
+      // quanto no namespace do tenant"
+      // ❌ REMOVED: Token storage
+      // tenantStorage.set('access_token', response.access);
+      // tenantStorage.set('refresh_token', response.refresh);
+      
+      // Save only tenant config (no tokens)
       tenantStorage.set('tenant_config', tenantConfig);
 
-      // Reconfigure API base URL for the registered tenant
-      reconfigureApiForTenant(tenantConfig.tenantSlug);
+      // 🔧 API FIX (Nov 2025): Use complete api_base_url (not just slug)
+      // Audit finding: "Após registro, reconfigura o Axios com apenas o slug, 
+      // ignorando api_base_url retornado pelo backend"
+      // OLD: reconfigureApiForTenant(tenantConfig.tenantSlug)  // ❌ Wrong
+      // NEW: reconfigureApiForTenant(tenantConfig.apiBaseUrl)  // ✅ Correct
+      reconfigureApiForTenant(tenantConfig.apiBaseUrl);
 
       // Retorna usuário no formato do frontend
       return mapBackendUserToUser(response.user);

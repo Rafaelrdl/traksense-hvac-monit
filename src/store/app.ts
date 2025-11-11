@@ -257,11 +257,14 @@ export const useAppStore = create<AppState>((set, get) => ({
       let siteId = 1; // Default para Uberlândia Medical Center
       
       try {
-        // Tentar buscar sites existentes
-        const sitesResponse = await sitesService.getAll();
-        if (sitesResponse.results.length > 0) {
+        // 🔧 FIX #17: Use getAllComplete() to respect DRF pagination
+        // Audit finding: "Busca todas as páginas de ativos e sites a cada carregamento"
+        // OLD: getAll() - only first page
+        // NEW: getAllComplete() - follows 'next' links
+        const sites = await sitesService.getAllComplete();
+        if (sites.length > 0) {
           // Usar primeiro site disponível
-          siteId = sitesResponse.results[0].id;
+          siteId = sites[0].id;
         }
       } catch (siteError) {
         console.warn('⚠️ Não foi possível buscar sites, usando ID padrão:', siteError);
@@ -386,14 +389,20 @@ export const useAppStore = create<AppState>((set, get) => ({
    * Carrega assets da API REST Django
    * Esta função substitui o uso do simEngine quando useApiData = true
    * 🔒 FIX #12: Now checks tenantStorage instead of localStorage
+   * 🔧 FIX #19: Use authentication state instead of token check
+   * Audit finding: "Cancela carregamentos quando não há token, mas o novo login 
+   * não define mais tokens → dashboard nunca carrega"
    */
   loadAssetsFromApi: async () => {
-    // 🔒 FIX #12: Check tenantStorage for multi-tenant token isolation
-    const { tenantStorage } = await import('@/lib/tenantStorage');
-    const accessToken = tenantStorage.get<string>('access_token');
+    // 🔧 FIX #19: Check authentication via store state (not token storage)
+    // Tokens are in HttpOnly cookies, not accessible to JavaScript
+    const { useAuthStore } = await import('@/store/auth');
+    const isAuthenticated = useAuthStore.getState().isAuthenticated;
     
-    if (!accessToken) {
-      console.warn('⚠️ loadAssetsFromApi: Sem token - abortando carregamento');
+    if (!isAuthenticated) {
+      if (import.meta.env.DEV) {
+        console.warn('⚠️ loadAssetsFromApi: Usuário não autenticado - abortando');
+      }
       set({ isLoadingAssets: false, error: 'Não autenticado' });
       return;
     }
