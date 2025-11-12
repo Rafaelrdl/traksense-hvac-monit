@@ -11,6 +11,23 @@ interface DeviceCardProps {
 const DeviceCard: React.FC<DeviceCardProps> = ({ device }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // Calcular disponibilidade
+  const availability = device.total_variables_count > 0
+    ? (device.online_variables_count / device.total_variables_count) * 100
+    : 0;
+
+  const getAvailabilityColor = (availability: number) => {
+    if (availability >= 90) return 'bg-green-500';
+    if (availability >= 70) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
+  const getAvailabilityTextColor = (availability: number) => {
+    if (availability >= 90) return 'text-green-700';
+    if (availability >= 70) return 'text-yellow-700';
+    return 'text-red-700';
+  };
+
   const getStatusColor = (isOnline: boolean) => {
     return isOnline ? 'text-green-600' : 'text-gray-400';
   };
@@ -100,16 +117,37 @@ const DeviceCard: React.FC<DeviceCardProps> = ({ device }) => {
             </div>
           </div>
 
-          {/* Variables Summary */}
-          <div className="ml-4 text-right">
-            <div className="text-sm font-medium text-gray-700 mb-1">
-              Variáveis
+          {/* Variables Summary with Availability */}
+          <div className="ml-4 text-right space-y-3">
+            {/* Variables Count */}
+            <div>
+              <div className="text-sm font-medium text-gray-700 mb-1">
+                Variáveis
+              </div>
+              <div className="text-2xl font-bold text-gray-900">
+                {device.total_variables_count}
+              </div>
+              <div className="text-xs text-gray-500">
+                {device.online_variables_count} online
+              </div>
             </div>
-            <div className="text-2xl font-bold text-gray-900">
-              {device.total_variables_count}
-            </div>
-            <div className="text-xs text-gray-500">
-              {device.online_variables_count} online
+
+            {/* Availability Progress Bar */}
+            <div className="w-32">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-gray-700">
+                  Disponibilidade
+                </span>
+                <span className={`text-xs font-bold ${getAvailabilityTextColor(availability)}`}>
+                  {availability.toFixed(1)}%
+                </span>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-full ${getAvailabilityColor(availability)} transition-all duration-300`}
+                  style={{ width: `${availability}%` }}
+                />
+              </div>
             </div>
           </div>
         </div>
