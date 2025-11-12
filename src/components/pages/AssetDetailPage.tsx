@@ -538,7 +538,9 @@ export const AssetDetailPage: React.FC = () => {
               {selectedAsset.specifications?.capacity && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Capacidade</label>
-                  <p className="text-base font-semibold mt-1">{selectedAsset.specifications.capacity} TR</p>
+                  <p className="text-base font-semibold mt-1">
+                    {selectedAsset.specifications.capacity} {selectedAsset.specifications.capacityUnit || 'TR'}
+                  </p>
                 </div>
               )}
               {selectedAsset.specifications?.voltage && (
@@ -547,10 +549,44 @@ export const AssetDetailPage: React.FC = () => {
                   <p className="text-base font-semibold mt-1">{selectedAsset.specifications.voltage} V</p>
                 </div>
               )}
+              {selectedAsset.specifications?.phases && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Fases</label>
+                  <p className="text-base font-semibold mt-1">
+                    {selectedAsset.specifications.phases === 'monofasico' && 'Monofásico'}
+                    {selectedAsset.specifications.phases === 'bifasico' && 'Bifásico'}
+                    {selectedAsset.specifications.phases === 'trifasico' && 'Trifásico'}
+                  </p>
+                </div>
+              )}
               {selectedAsset.specifications?.maxCurrent && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Corrente Nominal</label>
                   <p className="text-base font-semibold mt-1">{selectedAsset.specifications.maxCurrent} A</p>
+                </div>
+              )}
+              {selectedAsset.specifications?.powerFactor && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Fator de Potência</label>
+                  <p className="text-base font-semibold mt-1">{selectedAsset.specifications.powerFactor}</p>
+                </div>
+              )}
+              {selectedAsset.specifications?.activePower && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Potência Ativa</label>
+                  <p className="text-base font-semibold mt-1">{selectedAsset.specifications.activePower} kW</p>
+                </div>
+              )}
+              {selectedAsset.specifications?.apparentPower && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Potência Aparente</label>
+                  <p className="text-base font-semibold mt-1">{selectedAsset.specifications.apparentPower} kVA</p>
+                </div>
+              )}
+              {selectedAsset.specifications?.reactivePower && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Potência Reativa</label>
+                  <p className="text-base font-semibold mt-1">{selectedAsset.specifications.reactivePower} kVAr</p>
                 </div>
               )}
               {selectedAsset.specifications?.refrigerant && (
@@ -559,7 +595,7 @@ export const AssetDetailPage: React.FC = () => {
                   <p className="text-base font-semibold mt-1">{selectedAsset.specifications.refrigerant}</p>
                 </div>
               )}
-              {selectedAsset.powerConsumption && (
+              {selectedAsset.powerConsumption > 0 && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Consumo de Energia</label>
                   <p className="text-base font-semibold mt-1">{selectedAsset.powerConsumption.toFixed(2)} kWh/dia</p>

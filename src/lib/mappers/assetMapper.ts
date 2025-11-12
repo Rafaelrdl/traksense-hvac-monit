@@ -101,12 +101,18 @@ export function mapApiAssetToHVACAsset(
     
     specifications: {
       capacity: apiAsset.specifications?.capacity,
+      capacityUnit: apiAsset.specifications?.capacityUnit || 'TR', // Carregar unidade com default
       brand: apiAsset.manufacturer,
       model: apiAsset.model,
       serialNumber: apiAsset.serial_number,
       voltage: apiAsset.specifications?.voltage,
+      phases: apiAsset.specifications?.phases,
       refrigerant: apiAsset.specifications?.refrigerant,
       maxCurrent: apiAsset.specifications?.maxCurrent,
+      powerFactor: apiAsset.specifications?.powerFactor,
+      activePower: apiAsset.specifications?.activePower,
+      apparentPower: apiAsset.specifications?.apparentPower,
+      reactivePower: apiAsset.specifications?.reactivePower,
       equipmentType: apiAsset.specifications?.equipmentType,
       equipmentTypeOther: apiAsset.specifications?.equipmentTypeOther,
     },
@@ -178,9 +184,15 @@ export function mapHVACAssetToApiAsset(
       : null,
     specifications: {
       capacity: asset.specifications?.capacity,
+      capacityUnit: asset.specifications?.capacityUnit, // Salvar unidade
       voltage: asset.specifications?.voltage,
+      phases: asset.specifications?.phases,
       refrigerant: asset.specifications?.refrigerant,
       maxCurrent: asset.specifications?.maxCurrent,
+      powerFactor: asset.specifications?.powerFactor,
+      activePower: asset.specifications?.activePower,
+      apparentPower: asset.specifications?.apparentPower,
+      reactivePower: asset.specifications?.reactivePower,
       equipmentType: asset.specifications?.equipmentType,
       equipmentTypeOther: asset.specifications?.equipmentTypeOther,
       // Adicionar campos de localização para persistência

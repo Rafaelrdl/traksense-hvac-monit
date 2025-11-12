@@ -27,8 +27,14 @@ export interface HVACAsset {
   lastMaintenance: Date;
   specifications: {
     capacity?: number; // tons or kW
+    capacityUnit?: string; // Unidade da capacidade (TR, BTU/h, kcal/h)
     voltage?: number;
+    phases?: string; // Fases: monofasico, bifasico, trifasico
     maxCurrent?: number;
+    powerFactor?: number; // Fator de potência (0-1)
+    activePower?: number; // Potência Ativa (kW)
+    apparentPower?: number; // Potência Aparente (kVA)
+    reactivePower?: number; // Potência Reativa (kVAr)
     refrigerant?: string;
     brand?: string; // Marca
     model?: string; // Modelo

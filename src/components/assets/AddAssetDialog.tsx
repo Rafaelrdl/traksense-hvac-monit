@@ -44,6 +44,7 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, edit
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [capacity, setCapacity] = useState('');
+  const [capacityUnit, setCapacityUnit] = useState('TR'); // Unidade de capacidade
   const [serialNumber, setSerialNumber] = useState('');
 
   // Tipo expandido de equipamento
@@ -58,7 +59,12 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, edit
 
   // Especificações Técnicas Adicionais
   const [voltage, setVoltage] = useState('');
+  const [phases, setPhases] = useState('trifasico'); // Monofásico, Bifásico, Trifásico
   const [maxCurrent, setMaxCurrent] = useState('');
+  const [powerFactor, setPowerFactor] = useState(''); // Fator de potência
+  const [activePower, setActivePower] = useState(''); // Potência Ativa (kW)
+  const [apparentPower, setApparentPower] = useState(''); // Potência Aparente (kVA)
+  const [reactivePower, setReactivePower] = useState(''); // Potência Reativa (kVAr)
   const [refrigerant, setRefrigerant] = useState('none');
 
   // Preencher formulário quando estiver editando
@@ -96,6 +102,7 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, edit
           setBrand(updatedAsset.specifications?.brand || '');
           setModel(updatedAsset.specifications?.model || '');
           setCapacity(updatedAsset.specifications?.capacity?.toString() || '');
+          setCapacityUnit(updatedAsset.specifications?.capacityUnit || 'TR'); // Carregar unidade
           setSerialNumber(updatedAsset.specifications?.serialNumber || '');
           setEquipmentType(typeToEquipmentType(updatedAsset.type));
           setEquipmentTypeOther(updatedAsset.specifications?.equipmentTypeOther || '');
@@ -104,7 +111,12 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, edit
           setSubsector(updatedAsset.subsector || '');
           setLocation(updatedAsset.location || '');
           setVoltage(updatedAsset.specifications?.voltage?.toString() || '');
+          setPhases(updatedAsset.specifications?.phases || 'trifasico');
           setMaxCurrent(updatedAsset.specifications?.maxCurrent?.toString() || '');
+          setPowerFactor(updatedAsset.specifications?.powerFactor?.toString() || '');
+          setActivePower(updatedAsset.specifications?.activePower?.toString() || '');
+          setApparentPower(updatedAsset.specifications?.apparentPower?.toString() || '');
+          setReactivePower(updatedAsset.specifications?.reactivePower?.toString() || '');
           setRefrigerant(updatedAsset.specifications?.refrigerant || 'none');
           setOpen(true);
         } catch (error) {
@@ -117,11 +129,61 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, edit
     }
   }, [editingAsset]);
 
+  // Cálculo automático de Potência Ativa e Aparente
+  React.useEffect(() => {
+    const v = parseFloat(voltage);
+    const i = parseFloat(maxCurrent);
+    const fp = parseFloat(powerFactor);
+
+    // Só calcula se todos os valores necessários estiverem preenchidos
+    if (!isNaN(v) && !isNaN(i) && v > 0 && i > 0) {
+      let apparentPowerCalc = 0;
+      let activePowerCalc = 0;
+      let reactivePowerCalc = 0;
+
+      // Fórmulas baseadas no tipo de sistema
+      switch (phases) {
+        case 'trifasico':
+          // S = √3 * V * I / 1000 (kVA)
+          apparentPowerCalc = (Math.sqrt(3) * v * i) / 1000;
+          break;
+        case 'bifasico':
+          // S = 2 * V * I / 1000 (kVA)
+          apparentPowerCalc = (2 * v * i) / 1000;
+          break;
+        case 'monofasico':
+          // S = V * I / 1000 (kVA)
+          apparentPowerCalc = (v * i) / 1000;
+          break;
+      }
+
+      // P = S * fp (kW)
+      // Q = √(S² - P²) (kVAr)
+      if (!isNaN(fp) && fp > 0 && fp <= 1) {
+        activePowerCalc = apparentPowerCalc * fp;
+        reactivePowerCalc = Math.sqrt(Math.pow(apparentPowerCalc, 2) - Math.pow(activePowerCalc, 2));
+        setActivePower(activePowerCalc.toFixed(2));
+        setReactivePower(reactivePowerCalc.toFixed(2));
+      } else {
+        setActivePower('');
+        setReactivePower('');
+      }
+
+      setApparentPower(apparentPowerCalc.toFixed(2));
+    } else {
+      // Limpar campos se não houver dados suficientes
+      setApparentPower('');
+      setActivePower('');
+      setReactivePower('');
+    }
+  }, [voltage, maxCurrent, powerFactor, phases]);
+
   const resetForm = () => {
     setTag('');
     setBrand('');
     setModel('');
     setCapacity('');
+    setCapacityUnit('TR'); // Reset para TR
     setSerialNumber('');
     setEquipmentType('AHU');
     setEquipmentTypeOther('');
@@ -130,7 +192,12 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, edit
     setSubsector('');
     setLocation('');
     setVoltage('');
+    setPhases('trifasico');
     setMaxCurrent('');
+    setPowerFactor('');
+    setActivePower('');
+    setApparentPower('');
+    setReactivePower('');
     setRefrigerant('none');
     setActiveTab('basic');
   };
@@ -202,8 +269,14 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, edit
       subsector: subsector.trim() || undefined,
       specifications: {
         capacity: capacity ? parseFloat(capacity) : undefined,
+        capacityUnit: capacityUnit, // Salvar unidade
         voltage: voltage ? parseFloat(voltage) : undefined,
+        phases: phases, // Salvar fases
         maxCurrent: maxCurrent ? parseFloat(maxCurrent) : undefined,
+        powerFactor: powerFactor ? parseFloat(powerFactor) : undefined,
+        activePower: activePower ? parseFloat(activePower) : undefined,
+        apparentPower: apparentPower ? parseFloat(apparentPower) : undefined,
+        reactivePower: reactivePower ? parseFloat(reactivePower) : undefined,
         refrigerant: refrigerant !== 'none' ? refrigerant : undefined,
         brand: brand.trim() || undefined,
         model: model.trim() || undefined,
@@ -393,21 +466,6 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, edit
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="capacity">Capacidade</Label>
-                    <Input
-                      id="capacity"
-                      type="number"
-                      step="0.1"
-                      placeholder="Ex: 500"
-                      value={capacity}
-                      onChange={(e) => setCapacity(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {equipmentType === 'CHILLER' ? 'Toneladas de refrigeração (TR)' : 'Potência (kW)'}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
                     <Label htmlFor="serialNumber">Número de Série</Label>
                     <Input
                       id="serialNumber"
@@ -485,6 +543,7 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, edit
 
               {/* Especificações Técnicas */}
               <TabsContent value="specs" className="space-y-4 px-1">
+                {/* 1. Tensão e Fases */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="voltage">Tensão Nominal (V)</Label>
@@ -498,6 +557,23 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, edit
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="phases">Fases</Label>
+                    <Select value={phases} onValueChange={setPhases}>
+                      <SelectTrigger id="phases">
+                        <SelectValue placeholder="Selecione as fases" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="monofasico">Monofásico</SelectItem>
+                        <SelectItem value="bifasico">Bifásico</SelectItem>
+                        <SelectItem value="trifasico">Trifásico</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* 2. Corrente Nominal e Fator de Potência */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
                     <Label htmlFor="maxCurrent">Corrente Nominal (A)</Label>
                     <Input
                       id="maxCurrent"
@@ -508,10 +584,57 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, edit
                       onChange={(e) => setMaxCurrent(e.target.value)}
                     />
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="powerFactor">Fator de Potência</Label>
+                    <Input
+                      id="powerFactor"
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      max="1"
+                      placeholder="Ex: 0.915"
+                      value={powerFactor}
+                      onChange={(e) => setPowerFactor(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Valor entre 0 e 1
+                    </p>
+                  </div>
                 </div>
 
+                {/* 3. Capacidade e Unidade */}
                 <div className="space-y-2">
-                  <Label htmlFor="refrigerant">Fluido Refrigerante (Opcional)</Label>
+                  <Label htmlFor="capacity">Capacidade</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="capacity"
+                      type="number"
+                      step="0.1"
+                      placeholder="Ex: 120"
+                      value={capacity}
+                      onChange={(e) => setCapacity(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Select value={capacityUnit} onValueChange={setCapacityUnit}>
+                      <SelectTrigger className="w-[110px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TR">TR</SelectItem>
+                        <SelectItem value="BTU/h">BTU/h</SelectItem>
+                        <SelectItem value="kcal/h">kcal/h</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Capacidade de refrigeração/aquecimento
+                  </p>
+                </div>
+
+                {/* 4. Fluido Refrigerante */}
+                <div className="space-y-2">
+                  <Label htmlFor="refrigerant">Fluido Refrigerante</Label>
                   <Select value={refrigerant} onValueChange={setRefrigerant}>
                     <SelectTrigger id="refrigerant">
                       <SelectValue placeholder="Selecione o refrigerante" />
@@ -531,6 +654,55 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({ onAddAsset, edit
                   <p className="text-xs text-muted-foreground">
                     Tipo de gás refrigerante utilizado no sistema
                   </p>
+                </div>
+
+                {/* 5. Potência Ativa */}
+                <div className="space-y-2">
+                  <Label htmlFor="activePower">Potência Ativa (kW)</Label>
+                  <Input
+                    id="activePower"
+                    type="number"
+                    step="0.01"
+                    placeholder="Ex: 145.4"
+                    value={activePower}
+                    onChange={(e) => setActivePower(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Calculado automaticamente
+                  </p>
+                </div>
+
+                {/* 6. Potência Aparente e Reativa */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="apparentPower">Potência Aparente (kVA)</Label>
+                    <Input
+                      id="apparentPower"
+                      type="number"
+                      step="0.01"
+                      placeholder="Ex: 158.9"
+                      value={apparentPower}
+                      onChange={(e) => setApparentPower(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Calculado automaticamente
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="reactivePower">Potência Reativa (kVAr)</Label>
+                    <Input
+                      id="reactivePower"
+                      type="number"
+                      step="0.01"
+                      placeholder="Ex: 64.1"
+                      value={reactivePower}
+                      onChange={(e) => setReactivePower(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Calculado automaticamente
+                    </p>
+                  </div>
                 </div>
               </TabsContent>
             </ScrollArea>
