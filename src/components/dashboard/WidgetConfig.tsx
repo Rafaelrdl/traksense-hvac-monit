@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardWidget } from '../../types/dashboard';
 import { useAppStore } from '../../store/app';
 import { useDashboardStore } from '../../store/dashboard';
@@ -9,8 +9,11 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { ScrollArea } from '../ui/scroll-area';
-import { Settings, Save, X, Zap, Code } from 'lucide-react';
+import { Settings, Save, X, Zap, Code, Loader2 } from 'lucide-react';
 import { FORMULA_EXAMPLES } from '../../utils/formula-eval';
+import { assetsService } from '../../services/assetsService';
+import { ApiSensor } from '../../types/api';
+import { mapApiAssetsToHVACAssets } from '../../lib/mappers/assetMapper';
 
 interface WidgetConfigProps {
   widget: DashboardWidget;
@@ -23,17 +26,163 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
   const { sensors, assets } = useAppStore();
   const updateWidget = useDashboardStore(state => state.updateWidget);
   
+  // Estados locais para carregamento
+  const [localAssets, setLocalAssets] = useState<typeof assets>([]);
+  const [isLoadingLocalAssets, setIsLoadingLocalAssets] = useState(false);
+  const [hasLoadedAssets, setHasLoadedAssets] = useState(false);
+  
+  // Carregar assets: primeiro tenta usar do store (cache), se vazio, busca da API
+  React.useEffect(() => {
+    if (!open) {
+      // Reset quando fechar o modal
+      return;
+    }
+    
+    // Se já tem assets no store (cache), usa eles
+    if (assets.length > 0) {
+      console.log(`✅ WidgetConfig: Usando ${assets.length} assets do cache (store)`);
+      setLocalAssets(assets);
+      setHasLoadedAssets(true);
+      return;
+    }
+    
+    // Se já carregou localmente, não carrega novamente
+    if (hasLoadedAssets) {
+      return;
+    }
+    
+    // Se não tem no cache e não carregou ainda, busca da API
+    const loadAssetsDirectly = async () => {
+      setIsLoadingLocalAssets(true);
+      try {
+        console.log('🔄 WidgetConfig: Cache vazio, buscando assets da API...');
+        const response = await assetsService.getAllComplete();
+        console.log(`✅ WidgetConfig: ${response.length} assets carregados da API`);
+        const mappedAssets = mapApiAssetsToHVACAssets(response);
+        setLocalAssets(mappedAssets);
+        setHasLoadedAssets(true);
+      } catch (error) {
+        console.error('❌ Erro ao carregar assets:', error);
+      } finally {
+        setIsLoadingLocalAssets(false);
+      }
+    };
+    
+    loadAssetsDirectly();
+  }, [open, assets.length, hasLoadedAssets]);
+  
+  // Usa localAssets se tiver, senão usa do store
+  const displayAssets = localAssets.length > 0 ? localAssets : assets;
+  
   const [title, setTitle] = useState(widget.title);
   const [size, setSize] = useState(widget.size);
   const [config, setConfig] = useState(widget.config || {});
 
-  // Filtrar sensores disponíveis
-  const availableSensors = sensors.filter(s => s.online);
+  // Novo fluxo: Asset → Device (Sensor) → Variável
+  const [selectedAssetId, setSelectedAssetId] = useState<number | null>(
+    config.assetId ? parseInt(config.assetId.toString()) : null
+  );
+  const [assetSensors, setAssetSensors] = useState<ApiSensor[]>([]);
+  const [loadingSensors, setLoadingSensors] = useState(false);
   
-  // Obter sensor selecionado
-  const selectedSensor = config.sensorId 
-    ? sensors.find(s => s.id === config.sensorId)
+  // Agrupar sensores por device (MAC address)
+  const [selectedDeviceName, setSelectedDeviceName] = useState<string | null>(config.deviceName || null);
+  const [selectedMetricType, setSelectedMetricType] = useState<string | null>(config.metricType || null);
+  
+  // Obter devices únicos (agrupados por device ID para garantir unicidade)
+  const availableDevices = React.useMemo(() => {
+    const deviceMap = new Map<number, { displayName: string; fullSerial: string; deviceId: number }>();
+    
+    assetSensors.forEach(sensor => {
+      if (!deviceMap.has(sensor.device)) {
+        const displayName = sensor.device_display_name || sensor.device_serial.slice(-4);
+        deviceMap.set(sensor.device, {
+          displayName,
+          fullSerial: sensor.device_serial,
+          deviceId: sensor.device
+        });
+      }
+    });
+    
+    const devices = Array.from(deviceMap.values());
+    console.log(`📡 Devices disponíveis:`, devices);
+    return devices;
+  }, [assetSensors]);
+  
+  // Obter variáveis (metric_type) do device selecionado
+  const availableVariables = React.useMemo(() => {
+    if (!selectedDeviceName) return [];
+    
+    // Encontrar o deviceId correspondente ao displayName selecionado
+    const selectedDevice = availableDevices.find(d => d.displayName === selectedDeviceName);
+    if (!selectedDevice) {
+      console.warn(`⚠️ Device ${selectedDeviceName} não encontrado`);
+      return [];
+    }
+    
+    console.log(`🔍 Filtrando sensores para device ID: ${selectedDevice.deviceId} (${selectedDeviceName})`);
+    
+    const filtered = assetSensors.filter(s => s.device === selectedDevice.deviceId);
+    
+    console.log(`📊 Sensores filtrados:`, filtered.map(s => ({ 
+      tag: s.tag, 
+      metric_type: s.metric_type,
+      device_id: s.device,
+      unit: s.unit 
+    })));
+    
+    // NÃO remover duplicatas - cada sensor é uma variável única
+    // Retornar todos os sensores do device selecionado
+    console.log(`✅ Total de variáveis disponíveis: ${filtered.length}`);
+    return filtered;
+  }, [assetSensors, selectedDeviceName]);
+  
+  // Obter sensor selecionado completo
+  const selectedSensor = selectedMetricType 
+    ? availableVariables.find(s => s.tag === selectedMetricType)
     : null;
+
+  // Carregar sensores quando o asset é selecionado
+  useEffect(() => {
+    if (!selectedAssetId) {
+      setAssetSensors([]);
+      setSelectedDeviceName(null);
+      setSelectedMetricType(null);
+      return;
+    }
+
+    const loadAssetSensors = async () => {
+      setLoadingSensors(true);
+      try {
+        console.log(`🔍 Carregando sensores do asset ${selectedAssetId}`);
+        const sensors = await assetsService.getSensors(selectedAssetId);
+        setAssetSensors(sensors);
+        console.log(`✅ ${sensors.length} sensores carregados`);
+      } catch (error) {
+        console.error('❌ Erro ao carregar sensores do asset:', error);
+        setAssetSensors([]);
+      } finally {
+        setLoadingSensors(false);
+      }
+    };
+
+    loadAssetSensors();
+  }, [selectedAssetId]);
+
+  // Resetar widget config quando mudar seleções
+  useEffect(() => {
+    if (selectedSensor) {
+      setConfig({
+        ...config,
+        assetId: selectedAssetId?.toString(),
+        deviceName: selectedDeviceName,
+        metricType: selectedMetricType,
+        sensorId: selectedSensor.id?.toString(),
+        sensorTag: selectedSensor.tag,
+        unit: selectedSensor.unit,
+      });
+    }
+  }, [selectedSensor]);
 
   const handleSave = () => {
     updateWidget(layoutId, widget.id, {
@@ -141,49 +290,163 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
                 Fonte de Dados
               </h3>
               
+              {/* Passo 1: Selecionar Equipamento */}
               <div className="space-y-2">
-                <Label htmlFor="sensor" className="text-sm font-medium">Sensor</Label>
-                <Select
-                  value={config.sensorId || ''}
-                  onValueChange={(value) => {
-                    const sensor = sensors.find(s => s.id === value);
-                    setConfig({
-                      ...config,
-                      sensorId: value,
-                      assetId: sensor?.assetId,
-                      unit: sensor?.unit,
-                    });
-                  }}
-                >
-                  <SelectTrigger id="sensor" className="h-10">
-                    <SelectValue placeholder="🔍 Selecione um sensor" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    {availableSensors.map(sensor => {
-                      const asset = assets.find(a => a.id === sensor.assetId);
-                      return (
-                        <SelectItem key={sensor.id} value={sensor.id}>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{sensor.tag}</span>
-                            <span className="text-muted-foreground">•</span>
-                            <span className="text-muted-foreground text-sm">{asset?.tag}</span>
-                            <span className="text-muted-foreground">•</span>
-                            <span className="text-blue-600 font-medium">{sensor.unit}</span>
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-                {selectedSensor && (
-                  <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-md">
-                    <div className="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <p className="text-sm text-green-700 dark:text-green-400 font-medium">
-                      Último valor: {selectedSensor.lastReading?.value?.toFixed(2)} {selectedSensor.unit}
-                    </p>
+                <Label htmlFor="asset" className="text-sm font-medium">
+                  1️⃣ Equipamento
+                </Label>
+                {isLoadingLocalAssets ? (
+                  <div className="flex items-center justify-center h-10 border rounded-md bg-muted/50">
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    <span className="text-sm text-muted-foreground">Carregando equipamentos...</span>
                   </div>
+                ) : (
+                  <Select
+                    value={selectedAssetId?.toString() || ''}
+                    onValueChange={(value) => {
+                      const assetId = parseInt(value);
+                      setSelectedAssetId(assetId);
+                      setSelectedDeviceName(null); // Reset device quando mudar equipamento
+                      setSelectedMetricType(null); // Reset variável
+                      setAssetSensors([]);
+                    }}
+                  >
+                    <SelectTrigger id="asset" className="h-10">
+                      <SelectValue placeholder="🏢 Selecione um equipamento" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {displayAssets.length === 0 ? (
+                        <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                          ⚠️ Nenhum equipamento disponível
+                        </div>
+                      ) : (
+                        displayAssets.map(asset => (
+                          <SelectItem key={asset.id} value={asset.id.toString()}>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{asset.tag}</span>
+                              <span className="text-muted-foreground">•</span>
+                              <span className="text-muted-foreground text-sm">{asset.type}</span>
+                              <span className="text-muted-foreground">•</span>
+                              <span className="text-blue-600 text-sm">{asset.location}</span>
+                            </div>
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
                 )}
               </div>
+
+              {/* Passo 2: Selecionar Device (Sensor) - Apenas Sufixo do MAC */}
+              {selectedAssetId && (
+                <div className="space-y-2">
+                  <Label htmlFor="device" className="text-sm font-medium">
+                    2️⃣ Sensor (Device)
+                  </Label>
+                  {loadingSensors ? (
+                    <div className="flex items-center justify-center h-10 border rounded-md bg-muted/50">
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      <span className="text-sm text-muted-foreground">Carregando sensores...</span>
+                    </div>
+                  ) : availableDevices.length > 0 ? (
+                    <Select
+                      value={selectedDeviceName || ''}
+                      onValueChange={(value) => {
+                        setSelectedDeviceName(value);
+                        setSelectedMetricType(null); // Reset variável quando mudar device
+                      }}
+                    >
+                      <SelectTrigger id="device" className="h-10">
+                        <SelectValue placeholder="� Selecione um sensor" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[300px]">
+                        {availableDevices.map(device => (
+                          <SelectItem key={device.displayName} value={device.displayName}>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-medium text-blue-600">Device {device.displayName}</span>
+                              <span className="text-muted-foreground text-xs">({device.fullSerial})</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="flex items-center justify-center h-10 border rounded-md bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800">
+                      <span className="text-sm text-orange-700 dark:text-orange-400">
+                        ⚠️ Nenhum sensor encontrado para este equipamento
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Passo 3: Selecionar Variável (metric_type) */}
+              {selectedDeviceName && availableVariables.length > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="variable" className="text-sm font-medium">
+                    3️⃣ Variável
+                  </Label>
+                  <Select
+                    value={selectedMetricType || ''}
+                    onValueChange={(value) => setSelectedMetricType(value)}
+                  >
+                    <SelectTrigger id="variable" className="h-10">
+                      <SelectValue placeholder="📊 Selecione uma variável" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {availableVariables.map((sensor, index) => {
+                        // Formatar nome da variável: remover prefixo MAC e formatar
+                        const varName = sensor.tag.includes('_') 
+                          ? sensor.tag.split('_').slice(1).join('_')
+                          : sensor.metric_type;
+                        const formattedName = varName
+                          .split('_')
+                          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                          .join(' ');
+                        
+                        return (
+                          <SelectItem key={`${sensor.tag}-${index}`} value={sensor.tag}>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{formattedName}</span>
+                              <span className="text-muted-foreground">•</span>
+                              <span className="text-green-600 font-medium text-sm">{sensor.unit}</span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Informações da Variável Selecionada */}
+              {selectedSensor && (
+                <div className="space-y-2">
+                  <div className="flex flex-col gap-2 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-md">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <p className="text-sm text-green-700 dark:text-green-400 font-medium">
+                        ✅ Configuração Completa
+                      </p>
+                    </div>
+                    <div className="text-xs text-green-600 dark:text-green-500 space-y-1 pl-4">
+                      <p>🏢 Equipamento: <span className="font-semibold">{displayAssets.find(a => a.id.toString() === selectedAssetId?.toString())?.tag}</span></p>
+                      <p>📡 Device: <span className="font-semibold">{selectedDeviceName}</span></p>
+                      <p>📊 Variável: <span className="font-semibold">
+                        {selectedSensor.tag.includes('_') 
+                          ? selectedSensor.tag.split('_').slice(1).join('_').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+                          : selectedSensor.metric_type}
+                      </span></p>
+                      <p>📏 Unidade: <span className="font-semibold">{selectedSensor.unit}</span></p>
+                      {selectedSensor.last_value !== null && (
+                        <p>🔢 Último Valor: <span className="font-semibold">{selectedSensor.last_value.toFixed(2)} {selectedSensor.unit}</span></p>
+                      )}
+                      <p>📡 Status: <span className="font-semibold">{selectedSensor.is_online ? '🟢 Online' : '🔴 Offline'}</span></p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
 
               {/* Campo de Fórmula - Transformação de Valores */}
               <div className="space-y-3">
@@ -473,15 +736,29 @@ Exemplo: $VALUE$ == true ? &quot;Ligado&quot; : &quot;Desligado&quot;"
         {/* Ações */}
         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 border-t px-6 py-4">
           <div className="text-sm text-muted-foreground">
-            {config.sensorId ? (
+            {selectedSensor ? (
               <span className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                Sensor vinculado
+                Configuração completa: <span className="font-medium">
+                  {selectedDeviceName} → {selectedSensor.tag.includes('_') 
+                    ? selectedSensor.tag.split('_').slice(1).join('_').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+                    : selectedSensor.metric_type}
+                </span>
+              </span>
+            ) : selectedDeviceName ? (
+              <span className="text-blue-600 flex items-center gap-2">
+                <span className="text-lg">📊</span>
+                Device selecionado. Escolha uma variável.
+              </span>
+            ) : selectedAssetId ? (
+              <span className="text-blue-600 flex items-center gap-2">
+                <span className="text-lg">📍</span>
+                Equipamento selecionado. Escolha um sensor.
               </span>
             ) : (
               <span className="text-orange-600 flex items-center gap-2">
                 <span className="text-lg">⚠️</span>
-                Vincule um sensor para exibir dados
+                Selecione um equipamento para começar
               </span>
             )}
           </div>

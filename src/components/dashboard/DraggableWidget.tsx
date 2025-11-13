@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { MaintenanceWidget } from './widgets/MaintenanceWidget';
 import { safeEvalFormula, formatFormulaResult } from '../../utils/formula-eval';
+import { useSensorData } from '../../hooks/useSensorData';
 
 interface DraggableWidgetProps {
   widget: DashboardWidget;
@@ -42,6 +43,11 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
   
   const [configOpen, setConfigOpen] = useState(false);
   const [toggleState, setToggleState] = useState(false);
+
+  // 🔥 BUSCAR DADOS REAIS DO SENSOR
+  const sensorTag = widget.config?.sensorTag;
+  const assetId = widget.config?.assetId ? parseInt(widget.config.assetId) : undefined;
+  const sensorData = useSensorData(sensorTag, assetId, 30000); // Auto-refresh a cada 30s
 
   // Helper para aplicar transformação de fórmula nos valores do widget
   const applyFormulaTransform = (value: any): any => {
@@ -247,12 +253,15 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
     switch (widget.type) {
       // ============ CARDS KPI (Estilo Overview) ============
       case 'card-kpi':
-        const kpiRawValue = widgetData?.value ?? (Math.random() * 100).toFixed(widget.config?.decimals || 1);
+        // 🔥 USAR DADOS REAIS DO SENSOR
+        const kpiRawValue = sensorData.value ?? widgetData?.value ?? 0;
         const kpiValue = applyFormulaTransform(kpiRawValue);
         const kpiData = widgetData as any;
-        const kpiTrend = typeof kpiData?.trendValue === 'number' ? kpiData.trendValue : (Math.random() * 10 - 5).toFixed(1);
-        const kpiTrendDirection = typeof kpiData?.trend === 'string' ? kpiData.trend : (parseFloat(kpiTrend as string) >= 0 ? 'up' : 'down');
-        const kpiTrendLabel = kpiData?.trendLabel || 'vs ontem';
+        
+        // Trend ainda pode vir de cálculos (não está no last_value)
+        const kpiTrend = typeof kpiData?.trendValue === 'number' ? kpiData.trendValue : null;
+        const kpiTrendDirection = typeof kpiData?.trend === 'string' ? kpiData.trend : (kpiTrend && kpiTrend >= 0 ? 'up' : 'down');
+        const kpiTrendLabel = kpiData?.trendLabel || 'último valor';
         
         // Ícone baseado no tipo ou configuração
         const getKpiIcon = () => {
@@ -287,50 +296,69 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
             <div className="mb-2">
               <div className="flex items-baseline gap-1">
                 <span className="text-3xl font-bold text-gray-900">
-                  {kpiValue}
+                  {sensorData.isLoading ? '...' : (kpiValue !== null && kpiValue !== undefined ? Number(kpiValue).toFixed(widget.config?.decimals || 1) : '--')}
                 </span>
                 <span className="text-sm text-gray-500 font-medium">
-                  {widgetData?.unit || widget.config?.unit || '%'}
+                  {sensorData.unit || widget.config?.unit || '%'}
                 </span>
               </div>
+              {sensorData.error && (
+                <p className="text-xs text-red-500 mt-1">Erro ao carregar dados</p>
+              )}
+              {!sensorData.isOnline && !sensorData.isLoading && !sensorData.error && (
+                <p className="text-xs text-orange-500 mt-1">Sensor offline</p>
+              )}
             </div>
             
             {/* Tendência/Variação */}
-            <div className="flex items-center gap-1 text-xs font-medium">
-              <span className={kpiTrendDirection === 'up' ? 'text-green-600' : 'text-red-600'}>
-                {kpiTrendDirection === 'up' ? '+' : ''}{kpiTrend}%
-              </span>
-              <span className="text-gray-500">• {kpiTrendLabel}</span>
-            </div>
+            {kpiTrend !== null && (
+              <div className="flex items-center gap-1 text-xs font-medium">
+                <span className={kpiTrendDirection === 'up' ? 'text-green-600' : 'text-red-600'}>
+                  {kpiTrendDirection === 'up' ? '+' : ''}{kpiTrend}%
+                </span>
+                <span className="text-gray-500">• {kpiTrendLabel}</span>
+              </div>
+            )}
           </div>
         );
 
       // ============ CARDS SIMPLES ============
       case 'card-value':
-        const cardRawValue = widgetData?.value ?? (Math.random() * 100).toFixed(widget.config?.decimals || 2);
+        // 🔥 USAR DADOS REAIS DO SENSOR
+        const cardRawValue = sensorData.value ?? widgetData?.value ?? 0;
         const cardValue = applyFormulaTransform(cardRawValue);
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col justify-between">
             <div className="flex items-start justify-between mb-4">
               <h3 className="text-sm font-medium text-muted-foreground">{widget.config?.label || widget.title}</h3>
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" title="Online" />
+              <div 
+                className={cn(
+                  "w-2 h-2 rounded-full animate-pulse",
+                  sensorData.isOnline ? "bg-green-500" : "bg-gray-400"
+                )}
+                title={sensorData.isOnline ? "Online" : "Offline"} 
+              />
             </div>
             <div className="flex-1 flex flex-col justify-center">
               <div className="text-4xl font-bold" style={{ color: widgetData?.color || widget.config?.color || '#3b82f6' }}>
-                {cardValue}
+                {sensorData.isLoading ? '...' : (cardValue !== null && cardValue !== undefined ? Number(cardValue).toFixed(widget.config?.decimals || 2) : '--')}
               </div>
               <div className="text-sm text-muted-foreground mt-1">
-                {widgetData?.unit || widget.config?.unit || 'valor'}
+                {sensorData.unit || widget.config?.unit || 'valor'}
               </div>
+              {sensorData.error && (
+                <p className="text-xs text-red-500 mt-2">Erro ao carregar</p>
+              )}
             </div>
           </div>
         );
 
       case 'card-stat':
-        const statRawValue = widgetData?.value ?? (Math.random() * 100).toFixed(widget.config?.decimals || 2);
+        // 🔥 USAR DADOS REAIS DO SENSOR
+        const statRawValue = sensorData.value ?? widgetData?.value ?? 0;
         const statValue = applyFormulaTransform(statRawValue);
         const statData = widgetData as any;
-        const statTrend = typeof statData?.trend === 'number' ? statData.trend : 5.2;
+        const statTrend = typeof statData?.trend === 'number' ? statData.trend : null;
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col justify-between">
             <div className="flex items-start justify-between mb-4">
@@ -339,25 +367,24 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
             </div>
             <div className="flex-1 flex flex-col justify-center">
               <div className="text-3xl font-bold" style={{ color: widgetData?.color || widget.config?.color || '#3b82f6' }}>
-                {statValue}
+                {sensorData.isLoading ? '...' : (statValue !== null && statValue !== undefined ? Number(statValue).toFixed(widget.config?.decimals || 2) : '--')}
               </div>
-              <div className="text-sm text-muted-foreground mt-1">{widgetData?.unit || widget.config?.unit || 'valor'}</div>
-              <div className="flex items-center gap-2 mt-2">
-                <span className={`text-sm font-medium ${statTrend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {statTrend >= 0 ? '↑' : '↓'} {Math.abs(statTrend).toFixed(1)}%
-                </span>
-                <span className="text-xs text-muted-foreground">vs ontem</span>
-              </div>
+              <div className="text-sm text-muted-foreground mt-1">{sensorData.unit || widget.config?.unit || 'valor'}</div>
+              {statTrend !== null && (
+                <div className="flex items-center gap-2 mt-2">
+                  <span className={`text-sm font-medium ${statTrend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {statTrend >= 0 ? '↑' : '↓'} {Math.abs(statTrend).toFixed(1)}%
+                  </span>
+                  <span className="text-xs text-muted-foreground">vs ontem</span>
+                </div>
+              )}
             </div>
           </div>
         );
 
       case 'card-progress':
-        const progressValue = typeof widgetData?.value === 'number' 
-          ? widgetData.value 
-          : typeof widgetData?.value === 'string' 
-            ? parseFloat(widgetData.value) || Math.random() * 100
-            : Math.random() * 100;
+        // 🔥 USAR DADOS REAIS DO SENSOR  
+        const progressValue = sensorData.value ?? (widgetData?.value ? parseFloat(String(widgetData.value)) : 0);
         const progressData = widgetData as any;
         const progressTarget = typeof progressData?.target === 'number'
           ? progressData.target
@@ -390,11 +417,8 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         );
 
       case 'card-gauge':
-        const gaugeValue = typeof widgetData?.value === 'number' 
-          ? widgetData.value 
-          : typeof widgetData?.value === 'string' 
-            ? parseFloat(widgetData.value) || Math.random() * 100
-            : Math.random() * 100;
+        // 🔥 USAR DADOS REAIS DO SENSOR
+        const gaugeValue = sensorData.value ?? (widgetData?.value ? parseFloat(String(widgetData.value)) : 0);
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col items-center justify-center">
             <h3 className="text-sm font-medium text-muted-foreground mb-4">{widget.config?.label || widget.title}</h3>
@@ -459,7 +483,9 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         );
 
       case 'card-status':
-        const statusValue = Math.random();
+        // 🔥 USAR DADOS REAIS DO SENSOR
+        // Valor 0-40 = Crítico, 41-70 = Aviso, 71-100 = OK
+        const statusValue = (sensorData.value ?? 50) / 100; // Normalizar para 0-1
         const status = statusValue > 0.7 ? 'OK' : statusValue > 0.4 ? 'Aviso' : 'Crítico';
         const statusColor = statusValue > 0.7 ? '#10b981' : statusValue > 0.4 ? '#f59e0b' : '#ef4444';
         return (
@@ -470,7 +496,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
               style={{ backgroundColor: `${statusColor}20` }}
             >
               <span className="text-2xl font-bold" style={{ color: statusColor }}>
-                {status}
+                {sensorData.isLoading ? '...' : status}
               </span>
             </div>
           </div>
@@ -897,7 +923,8 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       // ============ MEDIDORES ============
       case 'gauge-circular':
       case 'gauge-semi':
-        const meterValue = Math.random() * 100;
+        // 🔥 USAR DADOS REAIS DO SENSOR
+        const meterValue = sensorData.value ?? 0;
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col items-center justify-center">
             <h3 className="text-sm font-medium text-muted-foreground mb-4">{widget.title}</h3>
@@ -917,16 +944,17 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-3xl font-bold" style={{ color: widget.config?.color || '#3b82f6' }}>
-                  {meterValue.toFixed(widget.config?.decimals || 1)}
+                  {sensorData.isLoading ? '...' : (meterValue !== null ? Number(meterValue).toFixed(widget.config?.decimals || 1) : '--')}
                 </span>
-                <span className="text-sm text-muted-foreground">{widget.config?.unit || '%'}</span>
+                <span className="text-sm text-muted-foreground">{sensorData.unit || widget.config?.unit || '%'}</span>
               </div>
             </div>
           </div>
         );
 
       case 'gauge-tank':
-        const tankLevel = Math.random() * 100;
+        // 🔥 USAR DADOS REAIS DO SENSOR
+        const tankLevel = sensorData.value ?? 0;
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col items-center justify-center gap-4">
             <h3 className="text-sm font-medium text-muted-foreground">{widget.title}</h3>
@@ -941,7 +969,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
               />
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="text-xl font-bold text-foreground z-10">
-                  {tankLevel.toFixed(0)}%
+                  {sensorData.isLoading ? '...' : `${Number(tankLevel).toFixed(0)}%`}
                 </span>
               </div>
             </div>
@@ -949,7 +977,8 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         );
 
       case 'gauge-thermometer':
-        const tempValue = 20 + Math.random() * 15;
+        // 🔥 USAR DADOS REAIS DO SENSOR
+        const tempValue = sensorData.value ?? 0;
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col items-center justify-center gap-4">
             <h3 className="text-sm font-medium text-muted-foreground">{widget.title}</h3>
@@ -958,13 +987,13 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
                 <div 
                   className="absolute bottom-0 left-0 right-0 rounded-full transition-all duration-500"
                   style={{ 
-                    height: `${(tempValue / 35) * 100}%`,
+                    height: `${Math.min((tempValue / 35) * 100, 100)}%`,
                     backgroundColor: widget.config?.color || '#ef4444'
                   }}
                 />
               </div>
               <div className="text-2xl font-bold" style={{ color: widget.config?.color || '#ef4444' }}>
-                {tempValue.toFixed(1)}°C
+                {sensorData.isLoading ? '...' : `${Number(tempValue).toFixed(1)}${sensorData.unit || '°C'}`}
               </div>
             </div>
           </div>
@@ -972,7 +1001,8 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
 
       // ============ INDICADORES ============
       case 'indicator-led':
-        const ledOn = Math.random() > 0.5;
+        // 🔥 USAR DADOS REAIS DO SENSOR (valor > 0 = LED ligado)
+        const ledOn = sensorData.value !== null && sensorData.value > 0;
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col items-center justify-center gap-4">
             <h3 className="text-sm font-medium text-muted-foreground">{widget.title}</h3>
@@ -988,7 +1018,9 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         );
 
       case 'indicator-traffic':
-        const trafficStatus = Math.random();
+        // 🔥 USAR DADOS REAIS DO SENSOR
+        // Valor de 0-33 = verde, 34-66 = amarelo, 67-100 = vermelho
+        const trafficStatus = (sensorData.value ?? 50) / 100; // Normalizar para 0-1
         const trafficColor = trafficStatus > 0.66 ? '#10b981' : trafficStatus > 0.33 ? '#f59e0b' : '#ef4444';
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col items-center justify-center gap-3">
@@ -1002,7 +1034,8 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         );
 
       case 'indicator-battery':
-        const batteryLevel = Math.random() * 100;
+        // 🔥 USAR DADOS REAIS DO SENSOR
+        const batteryLevel = sensorData.value ?? 0;
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col items-center justify-center gap-4">
             <h3 className="text-sm font-medium text-muted-foreground">{widget.title}</h3>
@@ -1011,19 +1044,23 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
                 <div 
                   className="absolute left-0 top-0 bottom-0 transition-all duration-500"
                   style={{ 
-                    width: `${batteryLevel}%`,
+                    width: `${Math.min(batteryLevel, 100)}%`,
                     backgroundColor: batteryLevel > 50 ? '#10b981' : batteryLevel > 20 ? '#f59e0b' : '#ef4444'
                   }}
                 />
               </div>
               <div className="w-1 h-4 bg-gray-300 rounded-r" />
             </div>
-            <span className="text-lg font-bold">{batteryLevel.toFixed(0)}%</span>
+            <span className="text-lg font-bold">
+              {sensorData.isLoading ? '...' : `${Number(batteryLevel).toFixed(0)}%`}
+            </span>
           </div>
         );
 
       case 'indicator-signal':
-        const signalStrength = Math.floor(Math.random() * 5) + 1;
+        // 🔥 USAR DADOS REAIS DO SENSOR (0-100 convertido para 1-5)
+        const signalValue = sensorData.value ?? 0;
+        const signalStrength = Math.max(1, Math.min(5, Math.ceil(signalValue / 20)));
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col items-center justify-center gap-4">
             <h3 className="text-sm font-medium text-muted-foreground">{widget.title}</h3>

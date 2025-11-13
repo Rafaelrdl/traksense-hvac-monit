@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 
 export const CustomDashboard: React.FC = () => {
-  const { layouts, currentLayoutId, editMode, setEditMode, setCurrentLayout, createLayout, deleteLayout, updateLayout } = useDashboardStore();
+  const { layouts, currentLayoutId, editMode, setEditMode, setCurrentLayout, createLayout, deleteLayout, updateLayout, reorderWidgets } = useDashboardStore();
   const { assets, sensors, alerts } = useAppStore();
   const timeRange = useTimeRangeMs();
   const [showNewLayoutDialog, setShowNewLayoutDialog] = useState(false);
@@ -178,9 +178,41 @@ export const CustomDashboard: React.FC = () => {
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
 
-    if (over && active.id !== over.id) {
-      // Handle reordering logic here if needed
-      // For now, we'll keep it simple
+    // Se não há destino ou é o mesmo widget, não faz nada
+    if (!over || active.id === over.id) {
+      console.log('❌ Drag cancelado ou mesmo widget');
+      return;
+    }
+
+    // Obter lista atual de widgets
+    const widgets = currentLayout?.widgets || [];
+    const widgetIds = widgets.map(w => w.id);
+    
+    console.log('🔄 Reordenando widgets:', {
+      from: active.id,
+      to: over.id,
+      currentOrder: widgetIds
+    });
+    
+    // Encontrar índices
+    const oldIndex = widgetIds.indexOf(active.id as string);
+    const newIndex = widgetIds.indexOf(over.id as string);
+    
+    if (oldIndex === -1 || newIndex === -1) {
+      console.error('❌ Índices não encontrados:', { oldIndex, newIndex });
+      return;
+    }
+    
+    // Criar nova ordem
+    const newWidgetIds = [...widgetIds];
+    const [movedWidget] = newWidgetIds.splice(oldIndex, 1);
+    newWidgetIds.splice(newIndex, 0, movedWidget);
+    
+    console.log('✅ Nova ordem:', newWidgetIds);
+    
+    // Atualizar store com nova ordem
+    if (currentLayoutId) {
+      reorderWidgets(currentLayoutId, newWidgetIds);
     }
   }
 

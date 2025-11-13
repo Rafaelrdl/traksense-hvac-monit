@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { DashboardLayout, DashboardWidget, WidgetType } from '../types/dashboard';
 
 interface DashboardState {
@@ -16,6 +17,7 @@ interface DashboardState {
   updateWidget: (layoutId: string, widgetId: string, updates: Partial<DashboardWidget>) => void;
   removeWidget: (layoutId: string, widgetId: string) => void;
   moveWidget: (layoutId: string, widgetId: string, position: { x: number; y: number }) => void;
+  reorderWidgets: (layoutId: string, widgetIds: string[]) => void;  // 🔥 NOVO: Reordenar widgets
   
   setEditMode: (editMode: boolean) => void;
 }
@@ -27,10 +29,12 @@ const defaultLayout: DashboardLayout = {
   widgets: []  // ✅ Dashboard começa vazio - usuário adiciona widgets manualmente
 };
 
-export const useDashboardStore = create<DashboardState>((set, get) => ({
-  layouts: [defaultLayout],
-  currentLayoutId: 'default',
-  editMode: false,
+export const useDashboardStore = create<DashboardState>()(
+  persist(
+    (set, get) => ({
+      layouts: [defaultLayout],
+      currentLayoutId: 'default',
+      editMode: false,
 
       setCurrentLayout: (layoutId: string) => {
         set({ currentLayoutId: layoutId });
@@ -138,11 +142,34 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
         }));
       },
 
+      reorderWidgets: (layoutId: string, widgetIds: string[]) => {
+        set(state => ({
+          layouts: state.layouts.map(layout => {
+            if (layout.id !== layoutId) return layout;
+            
+            // Criar mapa de widgets por ID para lookup rápido
+            const widgetMap = new Map(layout.widgets.map(w => [w.id, w]));
+            
+            // Reordenar widgets de acordo com a nova ordem
+            const reorderedWidgets = widgetIds
+              .map(id => widgetMap.get(id))
+              .filter((w): w is DashboardWidget => w !== undefined);
+            
+            return { ...layout, widgets: reorderedWidgets };
+          })
+        }));
+      },
+
       setEditMode: (editMode: boolean) => {
         set({ editMode });
       }
-    })
-  );
+    }),
+    {
+      name: 'ts:dashboards',
+      version: 1,
+    }
+  )
+);
 
 // Helper functions
 function getWidgetTitle(widgetType: WidgetType): string {
