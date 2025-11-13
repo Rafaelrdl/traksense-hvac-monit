@@ -244,7 +244,9 @@ export const AlertsPage: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {alerts.map((alert) => {
+              {alerts
+                .filter(alert => alert && alert.id && alert.rule_name && alert.message)
+                .map((alert, index) => {
                 const config = severityConfig[alert.severity] || severityConfig.MEDIUM;
                 const borderColor = 
                   alert.severity === 'CRITICAL' || alert.severity === 'Critical'
@@ -257,7 +259,7 @@ export const AlertsPage: React.FC = () => {
                 
                 return (
                   <div
-                    key={alert.id}
+                    key={`alert-${alert.id}-${index}`}
                     className={`p-4 rounded-lg border-2 bg-white cursor-pointer transition-all hover:shadow-md ${borderColor}`}
                   >
                     <div className="flex items-start justify-between gap-4">
@@ -279,10 +281,20 @@ export const AlertsPage: React.FC = () => {
                           </Badge>
                           <span className="font-semibold truncate">{alert.rule_name}</span>
                           <span className="text-xs text-muted-foreground whitespace-nowrap">
-                            {formatDistanceToNow(new Date(alert.triggered_at), {
-                              addSuffix: true,
-                              locale: ptBR,
-                            })}
+                            {(() => {
+                              try {
+                                const date = new Date(alert.triggered_at);
+                                if (isNaN(date.getTime())) {
+                                  return 'Data inválida';
+                                }
+                                return formatDistanceToNow(date, {
+                                  addSuffix: true,
+                                  locale: ptBR,
+                                });
+                              } catch {
+                                return 'Data inválida';
+                              }
+                            })()}
                           </span>
                         </div>
                         <p className="text-sm mb-1">{alert.message}</p>
@@ -292,17 +304,48 @@ export const AlertsPage: React.FC = () => {
                           <span>Equipamento: {alert.equipment_name} ({alert.asset_tag})</span>
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        variant={alert.acknowledged ? 'secondary' : 'default'}
-                        disabled={alert.acknowledged || !alert.is_active}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedAlertId(alert.id);
-                        }}
-                      >
-                        {alert.acknowledged ? 'Reconhecido' : 'Reconhecer'}
-                      </Button>
+                      {/* Botões dinâmicos baseados no estado do alerta */}
+                      {alert.resolved ? (
+                        // Alerta RESOLVIDO → Botão "Detalhes"
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedAlertId(alert.id);
+                          }}
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-2" />
+                          Detalhes
+                        </Button>
+                      ) : alert.acknowledged ? (
+                        // Alerta RECONHECIDO → Botão "Resolver"
+                        <Button
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedAlertId(alert.id);
+                          }}
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-2" />
+                          Resolver
+                        </Button>
+                      ) : (
+                        // Alerta ATIVO → Botão "Reconhecer"
+                        <Button
+                          size="sm"
+                          className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                          disabled={!alert.is_active}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedAlertId(alert.id);
+                          }}
+                        >
+                          <Clock className="w-4 h-4 mr-2" />
+                          Reconhecer
+                        </Button>
+                      )}
                     </div>
                   </div>
                 );

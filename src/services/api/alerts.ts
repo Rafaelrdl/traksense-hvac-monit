@@ -288,16 +288,16 @@ export const alertsApi = {
    * Acknowledge an alert
    */
   acknowledge: async (id: number, data?: AcknowledgeAlertRequest) => {
-    const response = await api.post<Alert>(`/alerts/alerts/${id}/acknowledge/`, data || {});
-    return response.data;
+    const response = await api.post<{ status: string; alert: Alert }>(`/alerts/alerts/${id}/acknowledge/`, data || {});
+    return response.data.alert; // Backend retorna {status, alert}
   },
 
   /**
    * Resolve an alert
    */
   resolve: async (id: number, data?: ResolveAlertRequest) => {
-    const response = await api.post<Alert>(`/alerts/alerts/${id}/resolve/`, data || {});
-    return response.data;
+    const response = await api.post<{ status: string; alert: Alert }>(`/alerts/alerts/${id}/resolve/`, data || {});
+    return response.data.alert; // Backend retorna {status, alert}
   },
 
   /**

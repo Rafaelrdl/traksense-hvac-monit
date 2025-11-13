@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAppStore, useSelectedAsset, useTimeRangeMs } from '../../store/app';
+import { useAlertsStore } from '../../store/alertsStore';
 import { useFeaturesStore } from '../../store/features';
 import { simEngine } from '../../lib/simulation';
 import { hasPerformanceTelemetry, reasonMissingTelemetry } from '../../lib/hasPerformanceTelemetry';
@@ -34,7 +35,8 @@ import {
 } from 'lucide-react';
 
 export const AssetDetailPage: React.FC = () => {
-  const { setSelectedAsset, sensors, alerts } = useAppStore();
+  const { setSelectedAsset, sensors } = useAppStore();
+  const { alerts: apiAlerts, fetchAlerts } = useAlertsStore();
   const selectedAsset = useSelectedAsset();
   const timeRange = useTimeRangeMs();
   const hidePerformanceWhenNoSensors = useFeaturesStore(state => state.hidePerformanceWhenNoSensors);
@@ -68,7 +70,11 @@ export const AssetDetailPage: React.FC = () => {
 
   // Get asset sensors
   const assetSensors = sensors.filter(s => s.assetId === selectedAsset.id);
-  const assetAlerts = alerts.filter(a => a.assetId === selectedAsset.id && !a.resolved);
+  
+  // Filtra alertas da API por asset_tag
+  const assetAlerts = apiAlerts.filter(a => 
+    a.asset_tag === selectedAsset.tag && !a.resolved
+  );
   
   // Check if asset has performance telemetry
   const hasPerf = hasPerformanceTelemetry(selectedAsset, sensors);
@@ -158,6 +164,13 @@ export const AssetDetailPage: React.FC = () => {
     'signal_strength': { label: 'Sinal RSSI', unit: 'dBm' },
     'maintenance': { label: 'RSSI', unit: 'dBW' },
   };
+
+  // Carregar alertas quando a aba de alertas é selecionada
+  useEffect(() => {
+    if (activeTab === 'alerts') {
+      fetchAlerts(); // Busca alertas com os filtros e paginação do store
+    }
+  }, [activeTab, fetchAlerts]);
 
   // Buscar sensores do ativo via API
   useEffect(() => {
@@ -972,23 +985,25 @@ export const AssetDetailPage: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {assetAlerts.map(alert => (
-                <div key={alert.id} className="p-4 border rounded-lg">
+              {assetAlerts
+                .filter(alert => alert && alert.id && alert.rule_name && alert.message)
+                .map((alert, index) => (
+                <div key={`asset-alert-${alert.id}-${index}`} className="p-4 border rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      alert.severity === 'Critical' ? 'bg-red-100 text-red-800' :
-                      alert.severity === 'High' ? 'bg-orange-100 text-orange-800' :
-                      alert.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                      alert.severity === 'Critical' || alert.severity === 'CRITICAL' ? 'bg-red-100 text-red-800' :
+                      alert.severity === 'High' || alert.severity === 'HIGH' ? 'bg-orange-100 text-orange-800' :
+                      alert.severity === 'Medium' || alert.severity === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
                       'bg-blue-100 text-blue-800'
                     }`}>
                       {alert.severity}
                     </span>
                     <span className="text-sm text-muted-foreground">
-                      {(alert.timestamp instanceof Date ? alert.timestamp : new Date(alert.timestamp)).toLocaleString('pt-BR')}
+                      {new Date(alert.triggered_at).toLocaleString('pt-BR')}
                     </span>
                   </div>
                   <p className="text-sm">{alert.message}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Regra: {alert.ruleName}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Regra: {alert.rule_name}</p>
                 </div>
               ))}
             </div>

@@ -98,8 +98,24 @@ export const useAlertsStore = create<AlertsState>((set, get) => ({
         });
       }
       
+      // Validar e filtrar alertas inválidos antes de armazenar
+      const validAlerts = data.results.filter(alert => {
+        const isValid = alert && 
+          typeof alert.id === 'number' && 
+          alert.rule_name && 
+          alert.message &&
+          alert.asset_tag &&
+          alert.equipment_name;
+        
+        if (!isValid) {
+          console.warn('⚠️ Alerta inválido detectado e removido:', alert);
+        }
+        
+        return isValid;
+      });
+      
       set({
-        alerts: data.results,
+        alerts: validAlerts,
         totalCount: data.count,
         isLoading: false,
       });
@@ -132,6 +148,11 @@ export const useAlertsStore = create<AlertsState>((set, get) => ({
       const data: AcknowledgeAlertRequest = notes ? { notes } : {};
       const alert = await alertsApi.acknowledge(id, data);
       
+      // Validar alerta retornado (aviso apenas)
+      if (!alert || !alert.id || !alert.rule_name || !alert.message) {
+        console.warn('⚠️ Alerta retornado possui campos faltantes após acknowledge:', alert);
+      }
+      
       // Update in list
       set((state) => ({
         alerts: state.alerts.map((a) => (a.id === id ? alert : a)),
@@ -160,6 +181,11 @@ export const useAlertsStore = create<AlertsState>((set, get) => ({
     try {
       const data: ResolveAlertRequest = notes ? { notes } : {};
       const alert = await alertsApi.resolve(id, data);
+      
+      // Validar alerta retornado (aviso apenas)
+      if (!alert || !alert.id || !alert.rule_name || !alert.message) {
+        console.warn('⚠️ Alerta retornado possui campos faltantes após resolve:', alert);
+      }
       
       // Update in list
       set((state) => ({
