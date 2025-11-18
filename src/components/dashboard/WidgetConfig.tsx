@@ -422,26 +422,64 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
               {/* Informações da Variável Selecionada */}
               {selectedSensor && (
                 <div className="space-y-2">
-                  <div className="flex flex-col gap-2 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-md">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-3 p-4 bg-card border rounded-lg shadow-sm">
+                    <div className="flex items-center gap-2 pb-2 border-b">
                       <div className="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <p className="text-sm text-green-700 dark:text-green-400 font-medium">
-                        ✅ Configuração Completa
+                      <p className="text-sm font-semibold text-foreground">
+                        Configuração Completa
                       </p>
                     </div>
-                    <div className="text-xs text-green-600 dark:text-green-500 space-y-1 pl-4">
-                      <p>🏢 Equipamento: <span className="font-semibold">{displayAssets.find(a => a.id.toString() === selectedAssetId?.toString())?.tag}</span></p>
-                      <p>📡 Device: <span className="font-semibold">{selectedDeviceName}</span></p>
-                      <p>📊 Variável: <span className="font-semibold">
-                        {selectedSensor.tag.includes('_') 
-                          ? selectedSensor.tag.split('_').slice(1).join('_').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
-                          : selectedSensor.metric_type}
-                      </span></p>
-                      <p>📏 Unidade: <span className="font-semibold">{selectedSensor.unit}</span></p>
+                    <div className="text-sm text-muted-foreground space-y-2">
+                      <div className="flex items-start gap-2">
+                        <span className="text-base">🏢</span>
+                        <div className="flex-1">
+                          <span className="text-muted-foreground">Equipamento:</span>{' '}
+                          <span className="font-medium text-foreground">{displayAssets.find(a => a.id.toString() === selectedAssetId?.toString())?.tag}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-base">📡</span>
+                        <div className="flex-1">
+                          <span className="text-muted-foreground">Device:</span>{' '}
+                          <span className="font-medium text-foreground">{selectedDeviceName}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-base">📊</span>
+                        <div className="flex-1">
+                          <span className="text-muted-foreground">Variável:</span>{' '}
+                          <span className="font-medium text-foreground">
+                            {selectedSensor.tag.includes('_') 
+                              ? selectedSensor.tag.split('_').slice(1).join('_').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+                              : selectedSensor.metric_type}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-base">📏</span>
+                        <div className="flex-1">
+                          <span className="text-muted-foreground">Unidade:</span>{' '}
+                          <span className="font-medium text-foreground">{selectedSensor.unit}</span>
+                        </div>
+                      </div>
                       {selectedSensor.last_value !== null && (
-                        <p>🔢 Último Valor: <span className="font-semibold">{selectedSensor.last_value.toFixed(2)} {selectedSensor.unit}</span></p>
+                        <div className="flex items-start gap-2">
+                          <span className="text-base">🔢</span>
+                          <div className="flex-1">
+                            <span className="text-muted-foreground">Último Valor:</span>{' '}
+                            <span className="font-medium text-foreground">{selectedSensor.last_value.toFixed(2)} {selectedSensor.unit}</span>
+                          </div>
+                        </div>
                       )}
-                      <p>📡 Status: <span className="font-semibold">{selectedSensor.is_online ? '🟢 Online' : '🔴 Offline'}</span></p>
+                      <div className="flex items-start gap-2">
+                        <span className="text-base">📡</span>
+                        <div className="flex-1">
+                          <span className="text-muted-foreground">Status:</span>{' '}
+                          <span className={`font-medium ${selectedSensor.is_online ? 'text-green-600' : 'text-red-600'}`}>
+                            {selectedSensor.is_online ? '🟢 Online' : '🔴 Offline'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -571,41 +609,9 @@ Exemplo: $VALUE$ == true ? &quot;Ligado&quot; : &quot;Desligado&quot;"
               </h3>
               
               <div className="space-y-3">
-                <Label className="text-sm font-medium">Cor do Widget</Label>
-                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
-                  {[
-                    { color: '#3b82f6', name: 'Azul' },
-                    { color: '#10b981', name: 'Verde' },
-                    { color: '#f59e0b', name: 'Laranja' },
-                    { color: '#ef4444', name: 'Vermelho' },
-                    { color: '#8b5cf6', name: 'Roxo' },
-                    { color: '#06b6d4', name: 'Ciano' },
-                    { color: '#ec4899', name: 'Rosa' },
-                    { color: '#64748b', name: 'Cinza' }
-                  ].map(({ color, name }) => (
-                    <button
-                      key={color}
-                      onClick={() => setConfig({ ...config, color })}
-                      className={`relative w-full aspect-square rounded-lg border-2 transition-all hover:scale-105 ${
-                        config.color === color 
-                          ? 'border-foreground ring-2 ring-offset-2 ring-primary scale-105 shadow-lg' 
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
-                      }`}
-                      style={{ backgroundColor: color }}
-                      title={name}
-                    >
-                      {config.color === color && (
-                        <span className="absolute inset-0 flex items-center justify-center text-white text-xl font-bold">
-                          ✓
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-                
-                <div className="flex items-center gap-3 pt-2">
+                <div className="flex items-center gap-3">
                   <Label htmlFor="custom-color" className="text-sm font-medium whitespace-nowrap">
-                    Ou escolha uma cor customizada:
+                    Cor do Widget:
                   </Label>
                   <div className="flex items-center gap-2">
                     <Input
@@ -630,38 +636,41 @@ Exemplo: $VALUE$ == true ? &quot;Ligado&quot; : &quot;Desligado&quot;"
                 Limites e Alertas
               </h3>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="minValue" className="text-sm font-medium flex items-center gap-2">
-                    <span className="text-blue-600">📉</span>
-                    Valor Mínimo
-                  </Label>
-                  <Input
-                    id="minValue"
-                    type="number"
-                    value={config.minValue || ''}
-                    onChange={(e) => setConfig({ ...config, minValue: parseFloat(e.target.value) || undefined })}
-                    placeholder="0"
-                    className="h-10"
-                  />
+              {/* Valor Mínimo e Máximo - NÃO mostrar para card-value */}
+              {widget.type !== 'card-value' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="minValue" className="text-sm font-medium flex items-center gap-2">
+                      <span className="text-blue-600">📉</span>
+                      Valor Mínimo
+                    </Label>
+                    <Input
+                      id="minValue"
+                      type="number"
+                      value={config.minValue || ''}
+                      onChange={(e) => setConfig({ ...config, minValue: parseFloat(e.target.value) || undefined })}
+                      placeholder="0"
+                      className="h-10"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="maxValue" className="text-sm font-medium flex items-center gap-2">
+                      <span className="text-blue-600">📈</span>
+                      Valor Máximo
+                    </Label>
+                    <Input
+                      id="maxValue"
+                      type="number"
+                      value={config.maxValue || ''}
+                      onChange={(e) => setConfig({ ...config, maxValue: parseFloat(e.target.value) || undefined })}
+                      placeholder="100"
+                      className="h-10"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="maxValue" className="text-sm font-medium flex items-center gap-2">
-                    <span className="text-blue-600">📈</span>
-                    Valor Máximo
-                  </Label>
-                  <Input
-                    id="maxValue"
-                    type="number"
-                    value={config.maxValue || ''}
-                    onChange={(e) => setConfig({ ...config, maxValue: parseFloat(e.target.value) || undefined })}
-                    placeholder="100"
-                    className="h-10"
-                  />
-                </div>
-              </div>
+              )}
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${widget.type !== 'card-value' ? 'pt-2' : ''}`}>
                 <div className="space-y-2">
                   <Label htmlFor="warningThreshold" className="text-sm font-medium flex items-center gap-2">
                     <span className="text-yellow-600 text-lg">⚠️</span>

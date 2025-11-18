@@ -29,6 +29,57 @@ import { safeEvalFormula, formatFormulaResult } from '../../utils/formula-eval';
 import { useSensorData } from '../../hooks/useSensorData';
 import { useSensorTrend } from '../../hooks/useSensorTrend';
 
+/**
+ * Calcula a cor baseado nos limites de aviso e crítico
+ * @param value - Valor atual do sensor
+ * @param warningThreshold - Limite de aviso (amarelo)
+ * @param criticalThreshold - Limite crítico (vermelho)
+ * @param defaultColor - Cor padrão quando dentro dos limites normais
+ * @returns Cor hexadecimal para aplicar
+ */
+function getThresholdColor(
+  value: number | null | undefined,
+  warningThreshold?: number,
+  criticalThreshold?: number,
+  defaultColor: string = '#10b981' // verde padrão
+): string {
+  if (value === null || value === undefined) return defaultColor;
+  
+  // Verificar limite crítico primeiro (maior prioridade)
+  if (criticalThreshold !== undefined && value >= criticalThreshold) {
+    return '#ef4444'; // vermelho
+  }
+  
+  // Verificar limite de aviso
+  if (warningThreshold !== undefined && value >= warningThreshold) {
+    return '#f59e0b'; // amarelo/laranja
+  }
+  
+  // Valor normal
+  return defaultColor;
+}
+
+/**
+ * Retorna classe CSS de background baseado nos limites
+ */
+function getThresholdBackgroundClass(
+  value: number | null | undefined,
+  warningThreshold?: number,
+  criticalThreshold?: number
+): string {
+  if (value === null || value === undefined) return 'bg-card';
+  
+  if (criticalThreshold !== undefined && value >= criticalThreshold) {
+    return 'bg-red-50 border-red-300';
+  }
+  
+  if (warningThreshold !== undefined && value >= warningThreshold) {
+    return 'bg-yellow-50 border-yellow-300';
+  }
+  
+  return 'bg-card';
+}
+
 interface DraggableWidgetProps {
   widget: DashboardWidget;
   layoutId: string;
@@ -272,9 +323,23 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         const kpiTrendDirection = typeof kpiData?.trend === 'string' ? kpiData.trend : (kpiTrend && kpiTrend >= 0 ? 'up' : 'down');
         const kpiTrendLabel = kpiData?.trendLabel || 'último valor';
         
+        // 🎨 APLICAR COR BASEADA NOS LIMITES
+        const kpiValueNumber = kpiValue !== null && kpiValue !== undefined ? Number(kpiValue) : null;
+        const kpiColor = getThresholdColor(
+          kpiValueNumber,
+          widget.config?.warningThreshold,
+          widget.config?.criticalThreshold,
+          widget.config?.color || '#3b82f6'
+        );
+        const kpiBgClass = getThresholdBackgroundClass(
+          kpiValueNumber,
+          widget.config?.warningThreshold,
+          widget.config?.criticalThreshold
+        );
+        
         // Ícone baseado no tipo ou configuração
         const getKpiIcon = () => {
-          const iconColor = widget.config?.iconColor || widget.config?.color || '#3b82f6';
+          const iconColor = widget.config?.iconColor || kpiColor;
           const iconStyle = { color: iconColor };
           
           if (widget.config?.icon === 'activity') return <Activity className="w-5 h-5" style={iconStyle} />;
@@ -288,7 +353,8 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         };
         
         return (
-          <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm min-h-[140px] h-full flex flex-col justify-between hover:shadow-md transition-shadow">
+          <div className={cn("rounded-lg p-6 border shadow-sm min-h-[140px] h-full flex flex-col justify-between hover:shadow-md transition-shadow", 
+            kpiBgClass === 'bg-card' ? 'bg-white border-gray-200' : kpiBgClass)}>
             {/* Header com título e ícone */}
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
@@ -304,7 +370,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
             {/* Valor principal */}
             <div className="mb-2">
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-bold text-gray-900">
+                <span className="text-3xl font-bold" style={{ color: kpiColor }}>
                   {sensorData.isLoading ? '...' : (kpiValue !== null && kpiValue !== undefined ? Number(kpiValue).toFixed(widget.config?.decimals || 1) : '--')}
                 </span>
                 <span className="text-sm text-gray-500 font-medium">
@@ -336,8 +402,23 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         // 🔥 USAR DADOS REAIS DO SENSOR
         const cardRawValue = sensorData.value ?? widgetData?.value ?? 0;
         const cardValue = applyFormulaTransform(cardRawValue);
+        
+        // 🎨 APLICAR COR BASEADA NOS LIMITES
+        const cardValueNumber = cardValue !== null && cardValue !== undefined ? Number(cardValue) : null;
+        const cardColor = getThresholdColor(
+          cardValueNumber,
+          widget.config?.warningThreshold,
+          widget.config?.criticalThreshold,
+          widgetData?.color || widget.config?.color || '#3b82f6'
+        );
+        const cardBgClass = getThresholdBackgroundClass(
+          cardValueNumber,
+          widget.config?.warningThreshold,
+          widget.config?.criticalThreshold
+        );
+        
         return (
-          <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col justify-between">
+          <div className={cn("rounded-xl p-6 border shadow-sm h-full flex flex-col justify-between", cardBgClass)}>
             <div className="flex items-start justify-between mb-4">
               <h3 className="text-sm font-medium text-muted-foreground">{widget.config?.label || widget.title}</h3>
               <div 
@@ -349,7 +430,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
               />
             </div>
             <div className="flex-1 flex flex-col justify-center">
-              <div className="text-4xl font-bold" style={{ color: widgetData?.color || widget.config?.color || '#3b82f6' }}>
+              <div className="text-4xl font-bold" style={{ color: cardColor }}>
                 {sensorData.isLoading ? '...' : (cardValue !== null && cardValue !== undefined ? Number(cardValue).toFixed(widget.config?.decimals || 2) : '--')}
               </div>
               <div className="text-sm text-muted-foreground mt-1">
@@ -371,14 +452,28 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         // 📊 Usar tendência calculada do hook (dados reais) ou fallback
         const statTrend = trendData.trendPercentage ?? (typeof statData?.trend === 'number' ? statData.trend : null);
         
+        // 🎨 APLICAR COR BASEADA NOS LIMITES
+        const statValueNumber = statValue !== null && statValue !== undefined ? Number(statValue) : null;
+        const statColor = getThresholdColor(
+          statValueNumber,
+          widget.config?.warningThreshold,
+          widget.config?.criticalThreshold,
+          widgetData?.color || widget.config?.color || '#3b82f6'
+        );
+        const statBgClass = getThresholdBackgroundClass(
+          statValueNumber,
+          widget.config?.warningThreshold,
+          widget.config?.criticalThreshold
+        );
+        
         return (
-          <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col justify-between">
+          <div className={cn("rounded-xl p-6 border shadow-sm h-full flex flex-col justify-between", statBgClass)}>
             <div className="flex items-start justify-between mb-4">
               <h3 className="text-sm font-medium text-muted-foreground">{widget.config?.label || widget.title}</h3>
               <Activity className="w-5 h-5 text-muted-foreground" />
             </div>
             <div className="flex-1 flex flex-col justify-center">
-              <div className="text-3xl font-bold" style={{ color: widgetData?.color || widget.config?.color || '#3b82f6' }}>
+              <div className="text-3xl font-bold" style={{ color: statColor }}>
                 {sensorData.isLoading ? '...' : (statValue !== null && statValue !== undefined ? Number(statValue).toFixed(widget.config?.decimals || 2) : '--')}
               </div>
               <div className="text-sm text-muted-foreground mt-1">{sensorData.unit || widget.config?.unit || 'valor'}</div>
@@ -423,13 +518,27 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
           : typeof widget.config?.target === 'number'
             ? widget.config.target
             : 100;
+        
+        // 🎨 APLICAR COR BASEADA NOS LIMITES
+        const progressColor = getThresholdColor(
+          progressValue,
+          widget.config?.warningThreshold,
+          widget.config?.criticalThreshold,
+          widgetData?.color || widget.config?.color || '#3b82f6'
+        );
+        const progressBgClass = getThresholdBackgroundClass(
+          progressValue,
+          widget.config?.warningThreshold,
+          widget.config?.criticalThreshold
+        );
+        
         return (
-          <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col justify-between">
+          <div className={cn("rounded-xl p-6 border shadow-sm h-full flex flex-col justify-between", progressBgClass)}>
             <div className="flex items-start justify-between mb-4">
               <h3 className="text-sm font-medium text-muted-foreground">{widget.config?.label || widget.title}</h3>
             </div>
             <div className="flex-1 flex flex-col justify-center">
-              <div className="text-2xl font-bold mb-2" style={{ color: widgetData?.color || widget.config?.color || '#3b82f6' }}>
+              <div className="text-2xl font-bold mb-2" style={{ color: progressColor }}>
                 {progressValue.toFixed(1)}%
               </div>
               <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
@@ -437,7 +546,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
                   className="h-full rounded-full transition-all duration-300"
                   style={{ 
                     width: `${progressValue}%`,
-                    backgroundColor: widgetData?.color || widget.config?.color || '#3b82f6'
+                    backgroundColor: progressColor
                   }}
                 />
               </div>
@@ -451,8 +560,22 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       case 'card-gauge':
         // 🔥 USAR DADOS REAIS DO SENSOR
         const gaugeValue = sensorData.value ?? (widgetData?.value ? parseFloat(String(widgetData.value)) : 0);
+        
+        // 🎨 APLICAR COR BASEADA NOS LIMITES
+        const gaugeColor = getThresholdColor(
+          gaugeValue,
+          widget.config?.warningThreshold,
+          widget.config?.criticalThreshold,
+          widget.config?.color || '#3b82f6'
+        );
+        const gaugeBgClass = getThresholdBackgroundClass(
+          gaugeValue,
+          widget.config?.warningThreshold,
+          widget.config?.criticalThreshold
+        );
+        
         return (
-          <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col items-center justify-center">
+          <div className={cn("rounded-xl p-6 border shadow-sm h-full flex flex-col items-center justify-center", gaugeBgClass)}>
             <h3 className="text-sm font-medium text-muted-foreground mb-4">{widget.config?.label || widget.title}</h3>
             <div className="relative w-32 h-32">
               <svg className="w-full h-full transform -rotate-90">
@@ -461,7 +584,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
                   cx="64" 
                   cy="64" 
                   r="56" 
-                  stroke={widget.config?.color || '#3b82f6'}
+                  stroke={gaugeColor}
                   strokeWidth="8" 
                   fill="none"
                   strokeDasharray={`${(gaugeValue / 100) * 352} 352`}
@@ -469,7 +592,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-2xl font-bold" style={{ color: widget.config?.color || '#3b82f6' }}>
+                <span className="text-2xl font-bold" style={{ color: gaugeColor }}>
                   {gaugeValue.toFixed(0)}
                 </span>
                 <span className="text-xs text-muted-foreground">{widget.config?.unit || '%'}</span>
@@ -516,12 +639,46 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
 
       case 'card-status':
         // 🔥 USAR DADOS REAIS DO SENSOR
-        // Valor 0-40 = Crítico, 41-70 = Aviso, 71-100 = OK
-        const statusValue = (sensorData.value ?? 50) / 100; // Normalizar para 0-1
-        const status = statusValue > 0.7 ? 'OK' : statusValue > 0.4 ? 'Aviso' : 'Crítico';
-        const statusColor = statusValue > 0.7 ? '#10b981' : statusValue > 0.4 ? '#f59e0b' : '#ef4444';
+        const statusRawValue = sensorData.value ?? 50;
+        
+        // 🎨 APLICAR COR BASEADA NOS LIMITES (se configurados)
+        // Senão, usar lógica padrão: 0-40 = Crítico, 41-70 = Aviso, 71-100 = OK
+        let statusColor: string;
+        let status: string;
+        let statusBgClass: string;
+        
+        if (widget.config?.criticalThreshold !== undefined || widget.config?.warningThreshold !== undefined) {
+          // Usar thresholds configurados
+          statusColor = getThresholdColor(
+            statusRawValue,
+            widget.config?.warningThreshold,
+            widget.config?.criticalThreshold,
+            '#10b981' // verde padrão
+          );
+          statusBgClass = getThresholdBackgroundClass(
+            statusRawValue,
+            widget.config?.warningThreshold,
+            widget.config?.criticalThreshold
+          );
+          
+          // Determinar status baseado nos thresholds
+          if (widget.config?.criticalThreshold !== undefined && statusRawValue >= widget.config.criticalThreshold) {
+            status = 'Crítico';
+          } else if (widget.config?.warningThreshold !== undefined && statusRawValue >= widget.config.warningThreshold) {
+            status = 'Aviso';
+          } else {
+            status = 'OK';
+          }
+        } else {
+          // Lógica padrão: porcentagem
+          const statusValue = statusRawValue / 100;
+          status = statusValue > 0.7 ? 'OK' : statusValue > 0.4 ? 'Aviso' : 'Crítico';
+          statusColor = statusValue > 0.7 ? '#10b981' : statusValue > 0.4 ? '#f59e0b' : '#ef4444';
+          statusBgClass = 'bg-card';
+        }
+        
         return (
-          <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col items-center justify-center gap-4">
+          <div className={cn("rounded-xl p-6 border shadow-sm h-full flex flex-col items-center justify-center gap-4", statusBgClass)}>
             <h3 className="text-sm font-medium text-muted-foreground">{widget.config?.label || widget.title}</h3>
             <div 
               className="w-24 h-24 rounded-full flex items-center justify-center"
