@@ -27,6 +27,7 @@ import {
 import { MaintenanceWidget } from './widgets/MaintenanceWidget';
 import { safeEvalFormula, formatFormulaResult } from '../../utils/formula-eval';
 import { useSensorData } from '../../hooks/useSensorData';
+import { useSensorTrend } from '../../hooks/useSensorTrend';
 
 interface DraggableWidgetProps {
   widget: DashboardWidget;
@@ -48,6 +49,14 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
   const sensorTag = widget.config?.sensorTag;
   const assetId = widget.config?.assetId ? parseInt(widget.config.assetId) : undefined;
   const sensorData = useSensorData(sensorTag, assetId, 30000); // Auto-refresh a cada 30s
+  
+  // 📊 CALCULAR TENDÊNCIA REAL (apenas para card-stat)
+  const trendData = useSensorTrend(
+    widget.type === 'card-stat' ? sensorTag : undefined,
+    widget.type === 'card-stat' ? assetId : undefined,
+    widget.type === 'card-stat' ? sensorData.value : null,
+    24 // Comparar com últimas 24 horas
+  );
 
   // Helper para aplicar transformação de fórmula nos valores do widget
   const applyFormulaTransform = (value: any): any => {
@@ -358,7 +367,10 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         const statRawValue = sensorData.value ?? widgetData?.value ?? 0;
         const statValue = applyFormulaTransform(statRawValue);
         const statData = widgetData as any;
-        const statTrend = typeof statData?.trend === 'number' ? statData.trend : null;
+        
+        // 📊 Usar tendência calculada do hook (dados reais) ou fallback
+        const statTrend = trendData.trendPercentage ?? (typeof statData?.trend === 'number' ? statData.trend : null);
+        
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col justify-between">
             <div className="flex items-start justify-between mb-4">
@@ -370,12 +382,32 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
                 {sensorData.isLoading ? '...' : (statValue !== null && statValue !== undefined ? Number(statValue).toFixed(widget.config?.decimals || 2) : '--')}
               </div>
               <div className="text-sm text-muted-foreground mt-1">{sensorData.unit || widget.config?.unit || 'valor'}</div>
-              {statTrend !== null && (
+              
+              {/* Tendência com dados reais */}
+              {statTrend !== null && !sensorData.isLoading && !trendData.isLoading && (
                 <div className="flex items-center gap-2 mt-2">
                   <span className={`text-sm font-medium ${statTrend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {statTrend >= 0 ? '↑' : '↓'} {Math.abs(statTrend).toFixed(1)}%
                   </span>
-                  <span className="text-xs text-muted-foreground">vs ontem</span>
+                  <span className="text-xs text-muted-foreground">
+                    vs {trendData.comparisonPeriod || 'período anterior'}
+                  </span>
+                </div>
+              )}
+              
+              {/* Loading state da tendência */}
+              {trendData.isLoading && !sensorData.isLoading && (
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-xs text-muted-foreground">Calculando tendência...</span>
+                </div>
+              )}
+              
+              {/* Error state da tendência */}
+              {trendData.error && !trendData.isLoading && (
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-xs text-orange-500" title={trendData.error}>
+                    ⚠️ Tendência indisponível
+                  </span>
                 </div>
               )}
             </div>
