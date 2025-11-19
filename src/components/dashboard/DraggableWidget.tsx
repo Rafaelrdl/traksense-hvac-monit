@@ -9,6 +9,7 @@ import { WidgetConfig } from './WidgetConfig';
 import { OverviewWidgetConfig } from './OverviewWidgetConfig';
 import { KPICard } from '../ui/KPICard';
 import { LineChartTemp } from '../charts/LineChartTemp';
+import { LineChartGeneric } from '../charts/LineChartGeneric';
 import { BarChartEnergy } from '../charts/BarChartEnergy';
 import { GaugeFilterHealth } from '../charts/GaugeFilterHealth';
 import { HeatmapAlarms } from '../charts/HeatmapAlarms';
@@ -28,6 +29,8 @@ import { MaintenanceWidget } from './widgets/MaintenanceWidget';
 import { safeEvalFormula, formatFormulaResult } from '../../utils/formula-eval';
 import { useSensorData } from '../../hooks/useSensorData';
 import { useSensorTrend } from '../../hooks/useSensorTrend';
+import { useSensorHistory } from '../../hooks/useSensorHistory';
+import { useMultipleSensorHistory } from '../../hooks/useMultipleSensorHistory';
 
 /**
  * Calcula a cor baseado nos limites de aviso e crítico
@@ -98,8 +101,19 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
 
   // 🔥 BUSCAR DADOS REAIS DO SENSOR
   const sensorTag = widget.config?.sensorTag;
+  const sensorTags = widget.config?.sensorTags; // Array de tags para multi-série
   const assetId = widget.config?.assetId ? parseInt(widget.config.assetId) : undefined;
+  const assetTag = widget.config?.assetTag; // 🔥 AssetTag para API de histórico
   const sensorData = useSensorData(sensorTag, assetId, 30000); // Auto-refresh a cada 30s
+  
+  // 📊 BUSCAR HISTÓRICO PARA GRÁFICOS
+  const sensorHistory = useSensorHistory(sensorTag, assetTag, 24, 60000); // 24h, refresh 1min
+  const multiSensorHistory = useMultipleSensorHistory(
+    sensorTags || [],
+    assetTag,
+    24,
+    60000
+  ); // Para gráficos multi-série
   
   // 📊 CALCULAR TENDÊNCIA REAL (apenas para card-stat)
   const trendData = useSensorTrend(
@@ -296,8 +310,9 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
 
   const renderContent = () => {
     // IMPORTANTE: No Overview, widgets não precisam de sensorId (usam dados agregados)
-    // Apenas mostrar placeholder de configuração em Dashboards quando não há sensorId
-    if (!isOverview && !widget.config?.sensorId && widget.type !== 'text-display' && widget.type !== 'iframe-embed') {
+    // Apenas mostrar placeholder de configuração em Dashboards quando não há sensorId ou sensorTags
+    const hasConfiguration = widget.config?.sensorId || (widget.config?.sensorTags && widget.config.sensorTags.length > 0);
+    if (!isOverview && !hasConfiguration && widget.type !== 'text-display' && widget.type !== 'iframe-embed') {
       return (
         <div className="bg-card rounded-xl p-6 border-2 border-dashed border-muted-foreground/20 h-full flex flex-col items-center justify-center gap-3">
           <Settings className="w-12 h-12 text-muted-foreground/50" />
@@ -511,23 +526,32 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
 
       case 'card-progress':
         // 🔥 USAR DADOS REAIS DO SENSOR  
-        const progressValue = sensorData.value ?? (widgetData?.value ? parseFloat(String(widgetData.value)) : 0);
+        const progressRawValue = sensorData.value ?? (widgetData?.value ? parseFloat(String(widgetData.value)) : 0);
         const progressData = widgetData as any;
+        
+        // 📊 Calcular porcentagem baseada em minValue e maxValue
+        const progressMinValue = typeof widget.config?.minValue === 'number' ? widget.config.minValue : 0;
+        const progressMaxValue = typeof widget.config?.maxValue === 'number' ? widget.config.maxValue : 100;
+        const progressRange = progressMaxValue - progressMinValue;
+        const progressPercentage = progressRange > 0 
+          ? Math.min(100, Math.max(0, ((progressRawValue - progressMinValue) / progressRange) * 100))
+          : 0;
+        
         const progressTarget = typeof progressData?.target === 'number'
           ? progressData.target
           : typeof widget.config?.target === 'number'
             ? widget.config.target
             : 100;
         
-        // 🎨 APLICAR COR BASEADA NOS LIMITES
+        // 🎨 APLICAR COR BASEADA NOS LIMITES (usar valor bruto para comparação)
         const progressColor = getThresholdColor(
-          progressValue,
+          progressRawValue,
           widget.config?.warningThreshold,
           widget.config?.criticalThreshold,
           widgetData?.color || widget.config?.color || '#3b82f6'
         );
         const progressBgClass = getThresholdBackgroundClass(
-          progressValue,
+          progressRawValue,
           widget.config?.warningThreshold,
           widget.config?.criticalThreshold
         );
@@ -539,19 +563,19 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
             </div>
             <div className="flex-1 flex flex-col justify-center">
               <div className="text-2xl font-bold mb-2" style={{ color: progressColor }}>
-                {progressValue.toFixed(1)}%
+                {progressRawValue.toFixed(1)} {widgetData?.unit || widget.config?.unit || ''}
               </div>
               <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
                 <div 
                   className="h-full rounded-full transition-all duration-300"
                   style={{ 
-                    width: `${progressValue}%`,
+                    width: `${progressPercentage}%`,
                     backgroundColor: progressColor
                   }}
                 />
               </div>
               <div className="text-xs text-muted-foreground mt-2">
-                Meta: {progressTarget}% {widgetData?.unit || widget.config?.unit || ''}
+                {progressMinValue.toFixed(0)} - {progressMaxValue.toFixed(0)} {widgetData?.unit || widget.config?.unit || ''}
               </div>
             </div>
           </div>
@@ -559,17 +583,25 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
 
       case 'card-gauge':
         // 🔥 USAR DADOS REAIS DO SENSOR
-        const gaugeValue = sensorData.value ?? (widgetData?.value ? parseFloat(String(widgetData.value)) : 0);
+        const gaugeRawValue = sensorData.value ?? (widgetData?.value ? parseFloat(String(widgetData.value)) : 0);
         
-        // 🎨 APLICAR COR BASEADA NOS LIMITES
+        // 📊 Calcular porcentagem baseada em minValue e maxValue
+        const gaugeMinValue = typeof widget.config?.minValue === 'number' ? widget.config.minValue : 0;
+        const gaugeMaxValue = typeof widget.config?.maxValue === 'number' ? widget.config.maxValue : 100;
+        const gaugeRange = gaugeMaxValue - gaugeMinValue;
+        const gaugePercentage = gaugeRange > 0 
+          ? Math.min(100, Math.max(0, ((gaugeRawValue - gaugeMinValue) / gaugeRange) * 100))
+          : 0;
+        
+        // 🎨 APLICAR COR BASEADA NOS LIMITES (usar valor bruto para comparação)
         const gaugeColor = getThresholdColor(
-          gaugeValue,
+          gaugeRawValue,
           widget.config?.warningThreshold,
           widget.config?.criticalThreshold,
           widget.config?.color || '#3b82f6'
         );
         const gaugeBgClass = getThresholdBackgroundClass(
-          gaugeValue,
+          gaugeRawValue,
           widget.config?.warningThreshold,
           widget.config?.criticalThreshold
         );
@@ -587,16 +619,19 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
                   stroke={gaugeColor}
                   strokeWidth="8" 
                   fill="none"
-                  strokeDasharray={`${(gaugeValue / 100) * 352} 352`}
+                  strokeDasharray={`${(gaugePercentage / 100) * 352} 352`}
                   className="transition-all duration-300"
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-2xl font-bold" style={{ color: gaugeColor }}>
-                  {gaugeValue.toFixed(0)}
+                  {gaugeRawValue.toFixed(1)}
                 </span>
                 <span className="text-xs text-muted-foreground">{widget.config?.unit || '%'}</span>
               </div>
+            </div>
+            <div className="text-xs text-muted-foreground mt-3">
+              {gaugeMinValue.toFixed(0)} - {gaugeMaxValue.toFixed(0)} {widget.config?.unit || '%'}
             </div>
           </div>
         );
@@ -809,15 +844,142 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
           );
         }
         
+        // 🔥 DASHBOARD NORMAL: USAR DADOS REAIS DO SENSOR
+        // Verificar se tem múltiplas variáveis
+        const hasMultipleVariables = sensorTags && sensorTags.length > 1;
+        
+        // 🐛 DEBUG: Log dos dados do widget
+        console.log('🔍 DEBUG chart-line widget:', {
+          widgetId: widget.id,
+          sensorTag,
+          sensorTags,
+          assetTag,
+          hasMultipleVariables,
+          multiSensorHistory: {
+            series: multiSensorHistory.series.length,
+            loading: multiSensorHistory.loading,
+            error: multiSensorHistory.error
+          },
+          sensorHistory: {
+            data: sensorHistory.data.length,
+            loading: sensorHistory.loading,
+            error: sensorHistory.error
+          }
+        });
+        
+        // Usar histórico apropriado
+        const historyData = hasMultipleVariables ? multiSensorHistory : sensorHistory;
+        
+        // Mostrar loading apenas se não tem dados ainda
+        if (historyData.loading && (!hasMultipleVariables ? sensorHistory.data.length === 0 : multiSensorHistory.series.length === 0)) {
+          return (
+            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
+              <h3 className="text-lg font-semibold mb-4">{widget.config?.label || widget.title}</h3>
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center text-muted-foreground">
+                  <Activity className="w-12 h-12 mx-auto mb-2 opacity-50 animate-pulse" />
+                  <p className="text-sm">Carregando dados...</p>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        // Mostrar erro apenas se não tem dados
+        if (historyData.error && (!hasMultipleVariables ? sensorHistory.data.length === 0 : multiSensorHistory.series.length === 0)) {
+          return (
+            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
+              <h3 className="text-lg font-semibold mb-4">{widget.config?.label || widget.title}</h3>
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center text-muted-foreground">
+                  <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Gráfico de linha</p>
+                  <p className="text-xs mt-1">
+                    {historyData.error}
+                  </p>
+                  {widget.config?.sensorTag && (
+                    <p className="text-xs mt-2">Sensor: {widget.config.sensorTag}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        // Se não tem dados e não está carregando, mostrar mensagem
+        if (!hasMultipleVariables && sensorHistory.data.length === 0) {
+          return (
+            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
+              <h3 className="text-lg font-semibold mb-4">{widget.config?.label || widget.title}</h3>
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center text-muted-foreground">
+                  <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Nenhum dado disponível</p>
+                  {widget.config?.sensorTag && (
+                    <p className="text-xs mt-2">Sensor: {widget.config.sensorTag}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        if (hasMultipleVariables && multiSensorHistory.series.length === 0) {
+          return (
+            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
+              <h3 className="text-lg font-semibold mb-4">{widget.config?.label || widget.title}</h3>
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center text-muted-foreground">
+                  <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Nenhum dado disponível</p>
+                  <p className="text-xs mt-2">{sensorTags?.length} variáveis selecionadas</p>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        // Renderizar gráfico com dados reais usando LineChartGeneric
+        const totalPoints = hasMultipleVariables 
+          ? multiSensorHistory.series.reduce((sum, s) => sum + s.data.length, 0)
+          : sensorHistory.data.length;
+
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
-            <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center text-muted-foreground">
-                <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Gráfico de linha</p>
-                <p className="text-xs">Dados do sensor: {widget.config?.label}</p>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold">{widget.config?.label || widget.title}</h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {hasMultipleVariables 
+                    ? `${multiSensorHistory.series.length} variáveis`
+                    : (widget.config?.unit || sensorData.unit || '')
+                  }
+                </p>
               </div>
+              <div className="text-right">
+                {!hasMultipleVariables && (
+                  <p className="text-sm font-semibold" style={{ color: widget.config?.color || '#3b82f6' }}>
+                    Atual: {sensorData.value?.toFixed(1) || '--'} {widget.config?.unit || sensorData.unit || ''}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {totalPoints} pontos (24h)
+                </p>
+              </div>
+            </div>
+            <div className="flex-1">
+              {hasMultipleVariables ? (
+                <LineChartGeneric 
+                  series={multiSensorHistory.series}
+                  height={250}
+                />
+              ) : (
+                <LineChartGeneric 
+                  data={sensorHistory.data} 
+                  height={250}
+                  color={widget.config?.color || '#3b82f6'}
+                />
+              )}
             </div>
           </div>
         );

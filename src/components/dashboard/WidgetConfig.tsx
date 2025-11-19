@@ -78,7 +78,7 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
   const [size, setSize] = useState(widget.size);
   const [config, setConfig] = useState(widget.config || {});
 
-  // Novo fluxo: Asset → Device (Sensor) → Variável
+  // Novo fluxo: Asset → Device (Sensor) → Variável(is)
   const [selectedAssetId, setSelectedAssetId] = useState<number | null>(
     config.assetId ? parseInt(config.assetId.toString()) : null
   );
@@ -88,6 +88,12 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
   // Agrupar sensores por device (MAC address)
   const [selectedDeviceName, setSelectedDeviceName] = useState<string | null>(config.deviceName || null);
   const [selectedMetricType, setSelectedMetricType] = useState<string | null>(config.metricType || null);
+  
+  // 🔥 NOVO: Múltiplas variáveis para gráficos de linha
+  const isMultiLineChart = widget.type === 'chart-line' || widget.type === 'chart-line-multi';
+  const [selectedVariables, setSelectedVariables] = useState<string[]>(
+    config.sensorTags || (config.sensorTag ? [config.sensorTag] : [])
+  );
   
   // Obter devices únicos (agrupados por device ID para garantir unicidade)
   const availableDevices = React.useMemo(() => {
@@ -171,18 +177,35 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
 
   // Resetar widget config quando mudar seleções
   useEffect(() => {
-    if (selectedSensor) {
-      setConfig({
-        ...config,
+    if (isMultiLineChart && selectedVariables.length > 0 && selectedAssetId) {
+      // Para gráficos multi-linha: salvar array de sensor tags
+      const selectedAsset = displayAssets.find(a => a.id.toString() === selectedAssetId?.toString());
+      const selectedSensors = availableVariables.filter(s => selectedVariables.includes(s.tag));
+      
+      setConfig(prev => ({
+        ...prev,
         assetId: selectedAssetId?.toString(),
+        assetTag: selectedAsset?.tag,
+        deviceName: selectedDeviceName,
+        sensorTags: selectedVariables, // Array de tags
+        sensorTag: selectedVariables[0], // Primeira para compatibilidade
+        unit: selectedSensors[0]?.unit, // Unidade da primeira variável
+      }));
+    } else if (selectedSensor && selectedAssetId) {
+      // Para outros widgets: salvar sensor único
+      const selectedAsset = displayAssets.find(a => a.id.toString() === selectedAssetId?.toString());
+      setConfig(prev => ({
+        ...prev,
+        assetId: selectedAssetId?.toString(),
+        assetTag: selectedAsset?.tag,
         deviceName: selectedDeviceName,
         metricType: selectedMetricType,
         sensorId: selectedSensor.id?.toString(),
         sensorTag: selectedSensor.tag,
         unit: selectedSensor.unit,
-      });
+      }));
     }
-  }, [selectedSensor]);
+  }, [isMultiLineChart, selectedVariables, selectedSensor, selectedAssetId, selectedDeviceName, selectedMetricType]);
 
   const handleSave = () => {
     updateWidget(layoutId, widget.id, {
@@ -384,18 +407,13 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
               {selectedDeviceName && availableVariables.length > 0 && (
                 <div className="space-y-2">
                   <Label htmlFor="variable" className="text-sm font-medium">
-                    3️⃣ Variável
+                    3️⃣ Variável{isMultiLineChart ? 's' : ''} {isMultiLineChart && '(múltipla seleção)'}
                   </Label>
-                  <Select
-                    value={selectedMetricType || ''}
-                    onValueChange={(value) => setSelectedMetricType(value)}
-                  >
-                    <SelectTrigger id="variable" className="h-10">
-                      <SelectValue placeholder="📊 Selecione uma variável" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[300px]">
+                  
+                  {isMultiLineChart ? (
+                    // Seleção múltipla para gráficos de linha
+                    <div className="border rounded-lg p-3 space-y-2 max-h-[300px] overflow-y-auto">
                       {availableVariables.map((sensor, index) => {
-                        // Formatar nome da variável: remover prefixo MAC e formatar
                         const varName = sensor.tag.includes('_') 
                           ? sensor.tag.split('_').slice(1).join('_')
                           : sensor.metric_type;
@@ -404,25 +422,84 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
                           .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                           .join(' ');
                         
+                        const isSelected = selectedVariables.includes(sensor.tag);
+                        
                         return (
-                          <SelectItem key={`${sensor.tag}-${index}`} value={sensor.tag}>
-                            <div className="flex items-center gap-2">
+                          <label
+                            key={`${sensor.tag}-${index}`}
+                            className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${
+                              isSelected 
+                                ? 'bg-primary/10 border border-primary' 
+                                : 'hover:bg-muted border border-transparent'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedVariables(prev => [...prev, sensor.tag]);
+                                } else {
+                                  setSelectedVariables(prev => prev.filter(t => t !== sensor.tag));
+                                }
+                              }}
+                              className="w-4 h-4"
+                            />
+                            <div className="flex-1 flex items-center gap-2">
                               <span className="font-medium">{formattedName}</span>
                               <span className="text-muted-foreground">•</span>
                               <span className="text-green-600 font-medium text-sm">{sensor.unit}</span>
                             </div>
-                          </SelectItem>
+                          </label>
                         );
                       })}
-                    </SelectContent>
-                  </Select>
+                      {selectedVariables.length > 0 && (
+                        <div className="pt-2 border-t">
+                          <p className="text-xs text-muted-foreground">
+                            {selectedVariables.length} variável(is) selecionada(s)
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    // Seleção única para outros widgets
+                    <Select
+                      value={selectedMetricType || ''}
+                      onValueChange={(value) => setSelectedMetricType(value)}
+                    >
+                      <SelectTrigger id="variable" className="h-10">
+                        <SelectValue placeholder="📊 Selecione uma variável" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[300px]">
+                        {availableVariables.map((sensor, index) => {
+                          const varName = sensor.tag.includes('_') 
+                            ? sensor.tag.split('_').slice(1).join('_')
+                            : sensor.metric_type;
+                          const formattedName = varName
+                            .split('_')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                            .join(' ');
+                          
+                          return (
+                            <SelectItem key={`${sensor.tag}-${index}`} value={sensor.tag}>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{formattedName}</span>
+                                <span className="text-muted-foreground">•</span>
+                                <span className="text-green-600 font-medium text-sm">{sensor.unit}</span>
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               )}
 
               {/* Informações da Variável Selecionada */}
-              {selectedSensor && (
+              {(selectedSensor || (isMultiLineChart && selectedVariables.length > 0)) && (
                 <div className="space-y-2">
-                  <div className="flex flex-col gap-3 p-4 bg-card border rounded-lg shadow-sm">
+                  <div className="flex flex-col gap-3 p-4 border rounded-lg">
                     <div className="flex items-center gap-2 pb-2 border-b">
                       <div className="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                       <p className="text-sm font-semibold text-foreground">
@@ -444,25 +521,56 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
                           <span className="font-medium text-foreground">{selectedDeviceName}</span>
                         </div>
                       </div>
-                      <div className="flex items-start gap-2">
-                        <span className="text-base">📊</span>
-                        <div className="flex-1">
-                          <span className="text-muted-foreground">Variável:</span>{' '}
-                          <span className="font-medium text-foreground">
-                            {selectedSensor.tag.includes('_') 
-                              ? selectedSensor.tag.split('_').slice(1).join('_').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
-                              : selectedSensor.metric_type}
-                          </span>
+                      {isMultiLineChart && selectedVariables.length > 0 ? (
+                        <div className="flex items-start gap-2">
+                          <span className="text-base">📊</span>
+                          <div className="flex-1">
+                            <span className="text-muted-foreground">Variáveis ({selectedVariables.length}):</span>
+                            <div className="mt-2 space-y-1">
+                              {selectedVariables.map((varTag, idx) => {
+                                const sensor = availableVariables.find(s => s.tag === varTag);
+                                if (!sensor) return null;
+                                const varName = sensor.tag.includes('_') 
+                                  ? sensor.tag.split('_').slice(1).join('_')
+                                  : sensor.metric_type;
+                                const formattedName = varName
+                                  .split('_')
+                                  .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                                  .join(' ');
+                                return (
+                                  <div key={varTag} className="flex items-center gap-2 text-xs">
+                                    <span className="font-medium text-foreground">{idx + 1}.</span>
+                                    <span className="font-medium text-foreground">{formattedName}</span>
+                                    <span className="text-green-600">({sensor.unit})</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="text-base">📏</span>
-                        <div className="flex-1">
-                          <span className="text-muted-foreground">Unidade:</span>{' '}
-                          <span className="font-medium text-foreground">{selectedSensor.unit}</span>
-                        </div>
-                      </div>
-                      {selectedSensor.last_value !== null && (
+                      ) : selectedSensor && (
+                        <>
+                          <div className="flex items-start gap-2">
+                            <span className="text-base">📊</span>
+                            <div className="flex-1">
+                              <span className="text-muted-foreground">Variável:</span>{' '}
+                              <span className="font-medium text-foreground">
+                                {selectedSensor.tag.includes('_') 
+                                  ? selectedSensor.tag.split('_').slice(1).join('_').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+                                  : selectedSensor.metric_type}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <span className="text-base">📏</span>
+                            <div className="flex-1">
+                              <span className="text-muted-foreground">Unidade:</span>{' '}
+                              <span className="font-medium text-foreground">{selectedSensor.unit}</span>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                      {selectedSensor && selectedSensor.last_value !== null && (
                         <div className="flex items-start gap-2">
                           <span className="text-base">🔢</span>
                           <div className="flex-1">
@@ -471,15 +579,37 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
                           </div>
                         </div>
                       )}
-                      <div className="flex items-start gap-2">
-                        <span className="text-base">📡</span>
-                        <div className="flex-1">
-                          <span className="text-muted-foreground">Status:</span>{' '}
-                          <span className={`font-medium ${selectedSensor.is_online ? 'text-green-600' : 'text-red-600'}`}>
-                            {selectedSensor.is_online ? '🟢 Online' : '🔴 Offline'}
-                          </span>
+                      {selectedSensor && (
+                        <div className="flex items-start gap-2">
+                          <span className="text-base">📡</span>
+                          <div className="flex-1">
+                            <span className="text-muted-foreground">Status:</span>{' '}
+                            <span className={`font-medium ${selectedSensor.is_online ? 'text-green-600' : 'text-red-600'}`}>
+                              {selectedSensor.is_online ? '🟢 Online' : '🔴 Offline'}
+                            </span>
+                          </div>
                         </div>
-                      </div>
+                      )}
+                      {selectedSensor && selectedSensor.last_value !== null && (
+                        <div className="flex items-start gap-2">
+                          <span className="text-base">🔢</span>
+                          <div className="flex-1">
+                            <span className="text-muted-foreground">Último Valor:</span>{' '}
+                            <span className="font-medium text-foreground">{selectedSensor.last_value.toFixed(2)} {selectedSensor.unit}</span>
+                          </div>
+                        </div>
+                      )}
+                      {selectedSensor && (
+                        <div className="flex items-start gap-2">
+                          <span className="text-base">📡</span>
+                          <div className="flex-1">
+                            <span className="text-muted-foreground">Status:</span>{' '}
+                            <span className={`font-medium ${selectedSensor.is_online ? 'text-green-600' : 'text-red-600'}`}>
+                              {selectedSensor.is_online ? '🟢 Online' : '🔴 Offline'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -636,8 +766,8 @@ Exemplo: $VALUE$ == true ? &quot;Ligado&quot; : &quot;Desligado&quot;"
                 Limites e Alertas
               </h3>
               
-              {/* Valor Mínimo e Máximo - NÃO mostrar para card-value */}
-              {widget.type !== 'card-value' && (
+              {/* Valor Mínimo e Máximo - NÃO mostrar para card-value e card-stat */}
+              {widget.type !== 'card-value' && widget.type !== 'card-stat' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="minValue" className="text-sm font-medium flex items-center gap-2">
@@ -670,7 +800,7 @@ Exemplo: $VALUE$ == true ? &quot;Ligado&quot; : &quot;Desligado&quot;"
                 </div>
               )}
               
-              <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${widget.type !== 'card-value' ? 'pt-2' : ''}`}>
+              <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${widget.type !== 'card-value' && widget.type !== 'card-stat' ? 'pt-2' : ''}`}>
                 <div className="space-y-2">
                   <Label htmlFor="warningThreshold" className="text-sm font-medium flex items-center gap-2">
                     <span className="text-yellow-600 text-lg">⚠️</span>
