@@ -98,6 +98,9 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
   
   const [configOpen, setConfigOpen] = useState(false);
   const [toggleState, setToggleState] = useState(false);
+  
+  // 📅 ESTADO LOCAL PARA PERÍODO DE TEMPO DO GRÁFICO
+  const [chartTimeRange, setChartTimeRange] = useState<number>(24); // Sempre iniciar com 24h
 
   // 🔥 BUSCAR DADOS REAIS DO SENSOR
   const sensorTag = widget.config?.sensorTag;
@@ -106,12 +109,15 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
   const assetTag = widget.config?.assetTag; // 🔥 AssetTag para API de histórico
   const sensorData = useSensorData(sensorTag, assetId, 30000); // Auto-refresh a cada 30s
   
-  // 📊 BUSCAR HISTÓRICO PARA GRÁFICOS
-  const sensorHistory = useSensorHistory(sensorTag, assetTag, 24, 60000); // 24h, refresh 1min
+  // 📊 Log do chartTimeRange para debug
+  console.log('📅 chartTimeRange atual:', chartTimeRange);
+  
+  // 📊 BUSCAR HISTÓRICO PARA GRÁFICOS - usando chartTimeRange do estado local
+  const sensorHistory = useSensorHistory(sensorTag, assetTag, chartTimeRange, 60000);
   const multiSensorHistory = useMultipleSensorHistory(
     sensorTags || [],
     assetTag,
-    24,
+    chartTimeRange,
     60000
   ); // Para gráficos multi-série
   
@@ -854,6 +860,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
           sensorTag,
           sensorTags,
           assetTag,
+          chartTimeRange, // 🆕 Log do período atual
           hasMultipleVariables,
           multiSensorHistory: {
             series: multiSensorHistory.series.length,
@@ -871,74 +878,11 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         const historyData = hasMultipleVariables ? multiSensorHistory : sensorHistory;
         
         // Mostrar loading apenas se não tem dados ainda
-        if (historyData.loading && (!hasMultipleVariables ? sensorHistory.data.length === 0 : multiSensorHistory.series.length === 0)) {
-          return (
-            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
-              <h3 className="text-lg font-semibold mb-4">{widget.config?.label || widget.title}</h3>
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                  <Activity className="w-12 h-12 mx-auto mb-2 opacity-50 animate-pulse" />
-                  <p className="text-sm">Carregando dados...</p>
-                </div>
-              </div>
-            </div>
-          );
-        }
-
-        // Mostrar erro apenas se não tem dados
-        if (historyData.error && (!hasMultipleVariables ? sensorHistory.data.length === 0 : multiSensorHistory.series.length === 0)) {
-          return (
-            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
-              <h3 className="text-lg font-semibold mb-4">{widget.config?.label || widget.title}</h3>
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                  <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Gráfico de linha</p>
-                  <p className="text-xs mt-1">
-                    {historyData.error}
-                  </p>
-                  {widget.config?.sensorTag && (
-                    <p className="text-xs mt-2">Sensor: {widget.config.sensorTag}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        }
-
-        // Se não tem dados e não está carregando, mostrar mensagem
-        if (!hasMultipleVariables && sensorHistory.data.length === 0) {
-          return (
-            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
-              <h3 className="text-lg font-semibold mb-4">{widget.config?.label || widget.title}</h3>
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                  <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Nenhum dado disponível</p>
-                  {widget.config?.sensorTag && (
-                    <p className="text-xs mt-2">Sensor: {widget.config.sensorTag}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        }
-
-        if (hasMultipleVariables && multiSensorHistory.series.length === 0) {
-          return (
-            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
-              <h3 className="text-lg font-semibold mb-4">{widget.config?.label || widget.title}</h3>
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                  <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Nenhum dado disponível</p>
-                  <p className="text-xs mt-2">{sensorTags?.length} variáveis selecionadas</p>
-                </div>
-              </div>
-            </div>
-          );
-        }
-
+        const isLoadingInitial = historyData.loading && (!hasMultipleVariables ? sensorHistory.data.length === 0 : multiSensorHistory.series.length === 0);
+        
+        // Verificar se tem dados para renderizar
+        const hasData = hasMultipleVariables ? multiSensorHistory.series.length > 0 : sensorHistory.data.length > 0;
+        
         // Renderizar gráfico com dados reais usando LineChartGeneric
         const totalPoints = hasMultipleVariables 
           ? multiSensorHistory.series.reduce((sum, s) => sum + s.data.length, 0)
@@ -951,7 +895,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
                 <h3 className="text-lg font-semibold">{widget.config?.label || widget.title}</h3>
                 <p className="text-xs text-muted-foreground mt-1">
                   {hasMultipleVariables 
-                    ? `${multiSensorHistory.series.length} variáveis`
+                    ? `${sensorTags?.length || 0} variáveis` // Usar sensorTags.length em vez de series.length
                     : (widget.config?.unit || sensorData.unit || '')
                   }
                 </p>
@@ -963,11 +907,83 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
                   </p>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  {totalPoints} pontos (24h)
+                  {totalPoints} pontos
                 </p>
               </div>
             </div>
-            <div className="flex-1">
+            
+            {/* 📅 SELETOR DE PERÍODO */}
+            <div className="flex items-center gap-1 mb-3 pb-3 border-b">
+              <span className="text-xs text-muted-foreground mr-2">Período:</span>
+              <button
+                onClick={() => {
+                  console.log('⏱️ Alterando período para 1h');
+                  setChartTimeRange(1);
+                }}
+                className={`px-3 py-1 text-xs rounded transition-colors ${
+                  chartTimeRange === 1 
+                    ? 'bg-primary text-primary-foreground font-medium' 
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                1h
+              </button>
+              <button
+                onClick={() => {
+                  console.log('⏱️ Alterando período para 6h');
+                  setChartTimeRange(6);
+                }}
+                className={`px-3 py-1 text-xs rounded transition-colors ${
+                  chartTimeRange === 6 
+                    ? 'bg-primary text-primary-foreground font-medium' 
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                6h
+              </button>
+              <button
+                onClick={() => {
+                  console.log('⏱️ Alterando período para 24h');
+                  setChartTimeRange(24);
+                }}
+                className={`px-3 py-1 text-xs rounded transition-colors ${
+                  chartTimeRange === 24 
+                    ? 'bg-primary text-primary-foreground font-medium' 
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                24h
+              </button>
+              <button
+                onClick={() => {
+                  console.log('⏱️ Alterando período para 7d (168h)');
+                  setChartTimeRange(168);
+                }}
+                className={`px-3 py-1 text-xs rounded transition-colors ${
+                  chartTimeRange === 168 
+                    ? 'bg-primary text-primary-foreground font-medium' 
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                7d
+              </button>
+              <button
+                onClick={() => {
+                  console.log('⏱️ Alterando período para 30d (720h)');
+                  setChartTimeRange(720);
+                }}
+                className={`px-3 py-1 text-xs rounded transition-colors ${
+                  chartTimeRange === 720 
+                    ? 'bg-primary text-primary-foreground font-medium' 
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                30d
+              </button>
+            </div>
+            
+            <div className="flex-1 relative min-h-[250px]">
+              {/* Gráfico - sempre renderizado */}
               {hasMultipleVariables ? (
                 <LineChartGeneric 
                   series={multiSensorHistory.series}
@@ -979,6 +995,32 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
                   height={250}
                   color={widget.config?.color || '#3b82f6'}
                 />
+              )}
+              
+              {/* Overlay de Loading */}
+              {isLoadingInitial && (
+                <div className="absolute inset-0 flex items-center justify-center bg-card/80 backdrop-blur-sm rounded z-10">
+                  <div className="text-center text-muted-foreground">
+                    <Activity className="w-12 h-12 mx-auto mb-2 opacity-50 animate-pulse" />
+                    <p className="text-sm">Carregando dados...</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Overlay de Erro ou Sem Dados */}
+              {!isLoadingInitial && !hasData && (
+                <div className="absolute inset-0 flex items-center justify-center bg-card/80 backdrop-blur-sm rounded z-10">
+                  <div className="text-center text-muted-foreground px-4">
+                    <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm font-medium">Nenhum dado encontrado</p>
+                    {historyData.error && (
+                      <p className="text-xs mt-1">{historyData.error}</p>
+                    )}
+                    <p className="text-xs mt-2">
+                      Tente selecionar outro período de tempo
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
           </div>

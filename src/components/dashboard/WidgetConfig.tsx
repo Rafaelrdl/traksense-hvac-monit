@@ -838,37 +838,6 @@ Exemplo: $VALUE$ == true ? &quot;Ligado&quot; : &quot;Desligado&quot;"
               </div>
             </div>
 
-            {/* Opções de Gráfico (se aplicável) */}
-            {widget.type.includes('chart') && (
-              <div className="space-y-4">
-                <h3 className="font-semibold text-base text-foreground flex items-center gap-2 pb-3 border-b">
-                  <div className="w-1 h-5 bg-green-500 rounded-full"></div>
-                  Opções de Gráfico
-                </h3>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="timeRange" className="text-sm font-medium">Período de Tempo</Label>
-                  <Select
-                    value={config.timeRange || '24h'}
-                    onValueChange={(value: any) => setConfig({ ...config, timeRange: value })}
-                  >
-                    <SelectTrigger id="timeRange" className="h-10">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1h">⏱️ Última 1 hora</SelectItem>
-                      <SelectItem value="6h">🕐 Últimas 6 horas</SelectItem>
-                      <SelectItem value="24h">📅 Últimas 24 horas</SelectItem>
-                      <SelectItem value="7d">📊 Últimos 7 dias</SelectItem>
-                      <SelectItem value="30d">📈 Últimos 30 dias</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Define o período de dados históricos exibidos no gráfico
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
         </ScrollArea>
 
@@ -887,7 +856,7 @@ Exemplo: $VALUE$ == true ? &quot;Ligado&quot; : &quot;Desligado&quot;"
             ) : selectedDeviceName ? (
               <span className="text-blue-600 flex items-center gap-2">
                 <span className="text-lg">📊</span>
-                Device selecionado. Escolha uma variável.
+                Device selecionado. Escolha uma ou mais variáveis.
               </span>
             ) : selectedAssetId ? (
               <span className="text-blue-600 flex items-center gap-2">
