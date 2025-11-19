@@ -205,14 +205,6 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     defaultSize: 'medium'
   },
   {
-    id: 'chart-line-multi',
-    name: 'Comparativo Multi-Equipamento',
-    description: 'Performance comparada de múltiplos ativos',
-    category: 'analytics',
-    icon: <Activity className="w-5 h-5" />,
-    defaultSize: 'large'
-  },
-  {
     id: 'chart-donut',
     name: 'Status dos Equipamentos',
     description: 'Distribuição: OK, Alerta, Manutenção, Parado',

@@ -50,14 +50,11 @@ export type WidgetType =
   
   // Gráficos de linha
   | 'chart-line'           // Gráfico de linha simples
-  | 'chart-line-multi'     // Gráfico de linha múltiplas séries
   | 'chart-area'           // Gráfico de área
-  | 'chart-spline'         // Gráfico de linha suave
   
   // Gráficos de barra
   | 'chart-bar'            // Gráfico de barras vertical
   | 'chart-bar-horizontal' // Gráfico de barras horizontal
-  | 'chart-column'         // Gráfico de colunas agrupadas
   
   // Gráficos circulares
   | 'chart-pie'            // Gráfico de pizza

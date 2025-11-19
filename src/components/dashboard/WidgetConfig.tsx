@@ -89,8 +89,8 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
   const [selectedDeviceName, setSelectedDeviceName] = useState<string | null>(config.deviceName || null);
   const [selectedMetricType, setSelectedMetricType] = useState<string | null>(config.metricType || null);
   
-  // 🔥 NOVO: Múltiplas variáveis para gráficos de linha
-  const isMultiLineChart = widget.type === 'chart-line' || widget.type === 'chart-line-multi';
+  // 🔥 NOVO: Múltiplas variáveis para gráficos de linha/área/barras
+  const isMultiVariableChart = widget.type === 'chart-line' || widget.type === 'chart-area' || widget.type === 'chart-bar' || widget.type === 'chart-bar-horizontal';
   const [selectedVariables, setSelectedVariables] = useState<string[]>(
     config.sensorTags || (config.sensorTag ? [config.sensorTag] : [])
   );
@@ -177,7 +177,7 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
 
   // Resetar widget config quando mudar seleções
   useEffect(() => {
-    if (isMultiLineChart && selectedVariables.length > 0 && selectedAssetId) {
+    if (isMultiVariableChart && selectedVariables.length > 0 && selectedAssetId) {
       // Para gráficos multi-linha: salvar array de sensor tags
       const selectedAsset = displayAssets.find(a => a.id.toString() === selectedAssetId?.toString());
       const selectedSensors = availableVariables.filter(s => selectedVariables.includes(s.tag));
@@ -205,7 +205,7 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
         unit: selectedSensor.unit,
       }));
     }
-  }, [isMultiLineChart, selectedVariables, selectedSensor, selectedAssetId, selectedDeviceName, selectedMetricType]);
+  }, [isMultiVariableChart, selectedVariables, selectedSensor, selectedAssetId, selectedDeviceName, selectedMetricType]);
 
   const handleSave = () => {
     updateWidget(layoutId, widget.id, {
@@ -407,10 +407,10 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
               {selectedDeviceName && availableVariables.length > 0 && (
                 <div className="space-y-2">
                   <Label htmlFor="variable" className="text-sm font-medium">
-                    3️⃣ Variável{isMultiLineChart ? 's' : ''} {isMultiLineChart && '(múltipla seleção)'}
+                    3️⃣ Variável{isMultiVariableChart ? 's' : ''} {isMultiVariableChart && '(múltipla seleção)'}
                   </Label>
                   
-                  {isMultiLineChart ? (
+                  {isMultiVariableChart ? (
                     // Seleção múltipla para gráficos de linha
                     <div className="border rounded-lg p-3 space-y-2 max-h-[300px] overflow-y-auto">
                       {availableVariables.map((sensor, index) => {
@@ -497,7 +497,7 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
               )}
 
               {/* Informações da Variável Selecionada */}
-              {(selectedSensor || (isMultiLineChart && selectedVariables.length > 0)) && (
+              {(selectedSensor || (isMultiVariableChart && selectedVariables.length > 0)) && (
                 <div className="space-y-2">
                   <div className="flex flex-col gap-3 p-4 border rounded-lg">
                     <div className="flex items-center gap-2 pb-2 border-b">
@@ -521,7 +521,7 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
                           <span className="font-medium text-foreground">{selectedDeviceName}</span>
                         </div>
                       </div>
-                      {isMultiLineChart && selectedVariables.length > 0 ? (
+                      {isMultiVariableChart && selectedVariables.length > 0 ? (
                         <div className="flex items-start gap-2">
                           <span className="text-base">📊</span>
                           <div className="flex-1">

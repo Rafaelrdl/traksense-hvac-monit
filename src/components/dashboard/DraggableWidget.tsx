@@ -11,6 +11,7 @@ import { KPICard } from '../ui/KPICard';
 import { LineChartTemp } from '../charts/LineChartTemp';
 import { LineChartGeneric } from '../charts/LineChartGeneric';
 import { BarChartEnergy } from '../charts/BarChartEnergy';
+import { BarChartGeneric } from '../charts/BarChartGeneric';
 import { GaugeFilterHealth } from '../charts/GaugeFilterHealth';
 import { HeatmapAlarms } from '../charts/HeatmapAlarms';
 import { ChartWrapper } from '../charts/ChartWrapper';
@@ -734,9 +735,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
 
       // ============ GRÁFICOS DE LINHA ============
       case 'chart-line':
-      case 'chart-line-multi':
       case 'chart-area':
-      case 'chart-spline':
         // Se for overview e temos dados de consumo histórico, renderizar gráfico real
         if (isOverview && widget.id === 'overview-consumption-trend' && data?.energyData && data.energyData.length > 0) {
           return (
@@ -1029,7 +1028,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       // ============ GRÁFICOS DE BARRA ============
       case 'chart-bar':
       case 'chart-bar-horizontal':
-      case 'chart-column':
         // Se for overview e widget de consumo por equipamento, gerar dados mockados que variam
         if (isOverview && widget.id === 'overview-consumption-bar') {
           const now = new Date();
@@ -1135,28 +1133,73 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
           );
         }
         
+        // 📊 GRÁFICO DE BARRAS COM DADOS REAIS E MÚLTIPLAS VARIÁVEIS
+        const barHasMultipleSeries = sensorTags && sensorTags.length > 0;
+        const barHistoryData = barHasMultipleSeries ? multiSensorHistory : sensorHistory;
+        const barLoading = barHistoryData.loading;
+        const barHasData = barHasMultipleSeries 
+          ? (barHistoryData.series && barHistoryData.series.length > 0)
+          : (barHistoryData.data && barHistoryData.data.length > 0);
+        const isBarHorizontal = widget.type === 'chart-bar-horizontal';
+        
         return (
-          <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
-            <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
-            <div className="flex-1 flex items-end justify-between gap-2 px-4" style={{ minHeight: '200px' }}>
-              {[...Array(7)].map((_, i) => {
-                const height = 30 + Math.random() * 70;
-                const value = Math.floor(300 + Math.random() * 700);
-                return (
-                  <div key={i} className="flex flex-col items-center justify-end gap-1 flex-1 h-full">
-                    <div className="text-xs font-medium text-center">{value}</div>
-                    <div 
-                      className="w-full rounded-t-md transition-all bg-blue-500"
-                      style={{ 
-                        height: `${height}%`,
-                        minHeight: '4px',
-                        backgroundColor: widget.config?.color || '#3b82f6'
-                      }}
-                    />
-                    <span className="text-xs text-muted-foreground mt-1">{i + 1}</span>
+          <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col relative min-h-[250px]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">{widget.title}</h3>
+              
+              {/* ⏱️ BOTÕES DE SELEÇÃO DE PERÍODO */}
+              <div className="flex gap-1">
+                {[
+                  { label: '1h', value: 1 },
+                  { label: '6h', value: 6 },
+                  { label: '24h', value: 24 },
+                  { label: '7d', value: 168 },
+                  { label: '30d', value: 720 }
+                ].map(period => (
+                  <button
+                    key={period.value}
+                    onClick={() => setChartTimeRange(period.value)}
+                    className={cn(
+                      "px-2 py-1 text-xs rounded transition-colors",
+                      chartTimeRange === period.value
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    )}
+                  >
+                    {period.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* 📊 CHART SEMPRE RENDERIZADO */}
+            <div className="flex-1 relative">
+              <BarChartGeneric
+                data={barHasMultipleSeries ? undefined : barHistoryData.data}
+                series={barHasMultipleSeries ? barHistoryData.series : undefined}
+                horizontal={isBarHorizontal}
+              />
+              
+              {/* 🔄 OVERLAY DE LOADING */}
+              {barLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-card/80 backdrop-blur-sm z-10 rounded-lg">
+                  <div className="text-center">
+                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Carregando dados...</p>
                   </div>
-                );
-              })}
+                </div>
+              )}
+              
+              {/* ⚠️ OVERLAY DE SEM DADOS */}
+              {!barLoading && !barHasData && (
+                <div className="absolute inset-0 flex items-center justify-center bg-card/80 backdrop-blur-sm z-10 rounded-lg">
+                  <div className="text-center text-muted-foreground">
+                    <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Nenhum dado disponível</p>
+                    <p className="text-xs mt-1">Configure o widget ou aguarde dados</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         );

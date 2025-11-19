@@ -257,7 +257,7 @@ function getWidgetTitle(widgetType: WidgetType): string {
     'chart-pie': 'Distribuição',
     'chart-donut': 'Status por Categoria',
     'chart-area': 'Evolução Temporal',
-    'chart-line-multi': 'Comparativo Multi-Ativo',
+
     'chart-bar-horizontal': 'Alertas por Severidade',
     'table-alerts': 'Tabela de Alertas',
     'heatmap-time': 'Mapa de Calor Temporal',
@@ -355,12 +355,6 @@ function getWidgetDefaultConfig(widgetType: WidgetType): Record<string, any> {
       label: 'Área',
       chartType: 'area',
       timeRange: '7d',
-      showLegend: true
-    },
-    'chart-line-multi': {
-      label: 'Comparativo',
-      chartType: 'line',
-      timeRange: '24h',
       showLegend: true
     },
     'chart-bar-horizontal': {

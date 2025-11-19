@@ -134,7 +134,7 @@ export const LineChartGeneric: React.FC<LineChartGenericProps> = ({
         name: seriesData.name,
         type: 'line',
         data: chartData,
-        smooth: true,
+        smooth: false, // Sempre usar linhas retas
         lineStyle: { 
           width: 2, 
           color: seriesColor
