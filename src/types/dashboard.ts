@@ -80,10 +80,8 @@ export type WidgetType =
   | 'heatmap-matrix'       // Matriz de calor
   
   // Outros
-  | 'timeline'             // Linha do tempo de eventos
-  | 'list-items'           // Lista de itens
   | 'text-display'         // Exibição de texto
-  | 'iframe-embed';        // Iframe customizado
+  | 'photo-upload';        // Upload de foto
 
 export interface DashboardLayout {
   id: string;

@@ -257,8 +257,56 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
               </div>
             </div>
 
-            {/* Vinculação de Sensor - NÃO mostrar para table-alerts */}
-            {widget.type !== 'table-alerts' && (
+            {/* Upload de Foto - Apenas para photo-upload */}
+            {widget.type === 'photo-upload' && (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-base text-foreground flex items-center gap-2 pb-3 border-b">
+                  <div className="w-1 h-5 bg-green-500 rounded-full"></div>
+                  Upload de Imagem
+                </h3>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="image-upload" className="text-sm font-medium">Selecione uma imagem</Label>
+                  <Input
+                    id="image-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setConfig({ ...config, imageUrl: reader.result as string });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="h-10"
+                  />
+                  {config.imageUrl && (
+                    <div className="mt-4 p-4 border rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-2">Pré-visualização:</p>
+                      <img 
+                        src={config.imageUrl} 
+                        alt="Preview" 
+                        className="max-w-full max-h-48 object-contain rounded"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => setConfig({ ...config, imageUrl: undefined })}
+                      >
+                        Remover imagem
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Vinculação de Sensor - NÃO mostrar para table-alerts e photo-upload */}
+            {widget.type !== 'table-alerts' && widget.type !== 'photo-upload' && (
             <div className="space-y-4">
               <h3 className="font-semibold text-base text-foreground flex items-center gap-2 pb-3 border-b">
                 <div className="p-1.5 bg-yellow-500 text-white rounded-md">
@@ -686,8 +734,8 @@ Exemplo: $VALUE$ == true ? &quot;Ligado&quot; : &quot;Desligado&quot;"
             </div>
             )}
 
-            {/* Aparência - NÃO mostrar para table-alerts */}
-            {widget.type !== 'table-alerts' && (
+            {/* Aparência - NÃO mostrar para table-alerts e photo-upload */}
+            {widget.type !== 'table-alerts' && widget.type !== 'photo-upload' && (
             <div className="space-y-4">
               <h3 className="font-semibold text-base text-foreground flex items-center gap-2 pb-3 border-b">
                 <div className="w-1 h-5 bg-purple-500 rounded-full"></div>
@@ -716,8 +764,8 @@ Exemplo: $VALUE$ == true ? &quot;Ligado&quot; : &quot;Desligado&quot;"
             </div>
             )}
 
-            {/* Limites e Alertas - NÃO mostrar para tabelas */}
-            {widget.type !== 'table-data' && widget.type !== 'table-alerts' && (
+            {/* Limites e Alertas - NÃO mostrar para tabelas e photo-upload */}
+            {widget.type !== 'table-data' && widget.type !== 'table-alerts' && widget.type !== 'photo-upload' && (
               <div className="space-y-4">
                 <h3 className="font-semibold text-base text-foreground flex items-center gap-2 pb-3 border-b">
                   <div className="w-1 h-5 bg-orange-500 rounded-full"></div>
@@ -807,6 +855,11 @@ Exemplo: $VALUE$ == true ? &quot;Ligado&quot; : &quot;Desligado&quot;"
               <span className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                 Configuração da tabela de alertas
+              </span>
+            ) : widget.type === 'photo-upload' ? (
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                Upload de foto configurado
               </span>
             ) : selectedSensor ? (
               <span className="flex items-center gap-2">

@@ -31,11 +31,9 @@ import {
   Lightbulb,
   Signal,
   Table,
-  Clock,
   Grid3x3,
-  List,
   Type,
-  MonitorPlay,
+  ImagePlus,
   Search
 } from 'lucide-react';
 
@@ -300,26 +298,6 @@ const widgetDefinitions: WidgetDefinition[] = [
   
   // OUTROS
   {
-    id: 'timeline' as WidgetType,
-    name: 'Linha do Tempo',
-    description: 'Eventos cronológicos',
-    category: 'others',
-    defaultSize: 'large',
-    icon: 'Clock',
-    configurable: true,
-    requiresSensor: false,
-  },
-  {
-    id: 'list-items' as WidgetType,
-    name: 'Lista de Itens',
-    description: 'Lista customizada',
-    category: 'others',
-    defaultSize: 'medium',
-    icon: 'List',
-    configurable: true,
-    requiresSensor: false,
-  },
-  {
     id: 'text-display' as WidgetType,
     name: 'Exibição de Texto',
     description: 'Texto formatado',
@@ -330,12 +308,12 @@ const widgetDefinitions: WidgetDefinition[] = [
     requiresSensor: false,
   },
   {
-    id: 'iframe-embed' as WidgetType,
-    name: 'Iframe Customizado',
-    description: 'Incorporar conteúdo externo',
+    id: 'photo-upload' as WidgetType,
+    name: 'Upload de Foto',
+    description: 'Adicionar imagem personalizada',
     category: 'others',
-    defaultSize: 'large',
-    icon: 'MonitorPlay',
+    defaultSize: 'medium',
+    icon: 'ImagePlus',
     configurable: true,
     requiresSensor: false,
   },
@@ -346,7 +324,7 @@ const iconMap: Record<string, any> = {
   Square, TrendingUp, BarChart2, CircleGauge, HandIcon, ToggleLeft, Power,
   LineChart, AreaChart, CandlestickChart, BarChart3, BarChartHorizontal, Columns,
   PieChart, Donut, CircleDot, Gauge, Activity, Battery, Wifi, Circle,
-  Lightbulb, Signal, Table, Clock, Grid3x3, List, Type, MonitorPlay
+  Lightbulb, Signal, Table, Grid3x3, Type, ImagePlus
 };
 
 // Nomes de categorias
