@@ -92,16 +92,32 @@ export const RadialChartGeneric: React.FC<RadialChartGenericProps> = ({
       orient: 'horizontal',
       bottom: 0,
       left: 'center',
-      data: radialData.map(item => item.name)
+      data: radialData.map(item => item.name),
+      textStyle: {
+        overflow: 'truncate',
+        width: 80
+      }
+    },
+    grid: {
+      left: '10%',
+      right: '10%',
+      top: '10%',
+      bottom: '15%',
+      containLabel: true
     },
     radar: {
       indicator: indicators,
       shape: 'circle',
       splitNumber: 5,
+      center: ['50%', '50%'],
+      radius: '65%',
       name: {
         textStyle: {
-          color: '#666'
-        }
+          color: '#666',
+          fontSize: 11
+        },
+        overflow: 'breakAll',
+        width: 100
       },
       splitLine: {
         lineStyle: {

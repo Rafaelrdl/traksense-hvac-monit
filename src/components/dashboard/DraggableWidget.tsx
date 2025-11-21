@@ -322,6 +322,45 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
     }
   };
 
+  // Obter limites mínimos baseado no tipo de widget
+  const getMinDimensions = (): { minWidth: number; minHeight: number } => {
+    switch (widget.type) {
+      // Gráficos que precisam de mais espaço
+      case 'chart-line':
+      case 'chart-area':
+      case 'chart-bar':
+      case 'chart-bar-horizontal':
+      case 'chart-pie':
+      case 'chart-donut':
+      case 'chart-radial':
+        return { minWidth: 400, minHeight: 350 };
+      
+      // Medidores e gauges
+      case 'gauge-circular':
+      case 'gauge-semi':
+      case 'card-gauge':
+        return { minWidth: 250, minHeight: 250 };
+      
+      // Cards menores
+      case 'card-kpi':
+      case 'card-stat':
+      case 'card-value':
+      case 'card-progress':
+        return { minWidth: 200, minHeight: 120 };
+      
+      // Widgets de texto e outros
+      case 'text-display':
+      case 'iframe-embed':
+        return { minWidth: 200, minHeight: 150 };
+      
+      // Padrão para outros tipos
+      default:
+        return { minWidth: 200, minHeight: 150 };
+    }
+  };
+
+  const { minWidth, minHeight } = getMinDimensions();
+
   const handleResizeEnd = (width: number, height: number) => {
     setCustomWidth(width);
     setCustomHeight(height);
@@ -2057,6 +2096,8 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       <ResizableWidget
         width={customWidth}
         height={customHeight}
+        minWidth={minWidth}
+        minHeight={minHeight}
         onResize={handleResize}
         onResizeEnd={handleResizeEnd}
         enabled={editMode}

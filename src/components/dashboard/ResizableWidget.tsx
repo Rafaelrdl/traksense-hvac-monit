@@ -83,8 +83,8 @@ export const ResizableWidget: React.FC<ResizableWidgetProps> = ({
     if (!resizeStateRef.current.isResizing || !containerRef.current) return;
 
     const { startX, startY, startWidth, startHeight, handle } = resizeStateRef.current;
-    const deltaX = e.clientX - startX;
-    const deltaY = e.clientY - startY;
+    let deltaX = e.clientX - startX;
+    let deltaY = e.clientY - startY;
 
     let newWidth = startWidth;
     let newHeight = startHeight;
@@ -103,11 +103,33 @@ export const ResizableWidget: React.FC<ResizableWidgetProps> = ({
       newHeight = startHeight - deltaY;
     }
 
-    // Aplicar limites
-    newWidth = Math.max(minWidth, newWidth);
-    newHeight = Math.max(minHeight, newHeight);
+    // Aplicar limites - garantir que não ultrapasse mínimos
+    const finalWidth = Math.max(minWidth, newWidth);
+    const finalHeight = Math.max(minHeight, newHeight);
+    
+    // Se atingiu o limite, ajustar a posição do cursor visualmente
+    // impedindo que o handle ultrapasse o limite
+    if (newWidth < minWidth || newHeight < minHeight) {
+      // Limitar o movimento do cursor aos limites permitidos
+      if (handle?.includes('e') && newWidth < minWidth) {
+        // Não permitir que arraste mais para esquerda que o mínimo
+        e.preventDefault();
+      }
+      if (handle?.includes('w') && newWidth < minWidth) {
+        // Não permitir que arraste mais para direita que o mínimo
+        e.preventDefault();
+      }
+      if (handle?.includes('s') && newHeight < minHeight) {
+        // Não permitir que arraste mais para cima que o mínimo
+        e.preventDefault();
+      }
+      if (handle?.includes('n') && newHeight < minHeight) {
+        // Não permitir que arraste mais para baixo que o mínimo
+        e.preventDefault();
+      }
+    }
 
-    onResize?.(newWidth, newHeight);
+    onResize?.(finalWidth, finalHeight);
   };
 
   const handleMouseUp = () => {
