@@ -20,12 +20,14 @@ interface UseSensorHistoryResult {
  * @param assetTag - Tag do asset (ex: CHILLER-001)
  * @param hours - Número de horas de histórico (padrão: 24)
  * @param refreshInterval - Intervalo de atualização em ms (padrão: 60000 = 1 min)
+ * @param forceInterval - Forçar intervalo específico de agregação (ex: '1m', '5m', 'raw')
  */
 export function useSensorHistory(
   sensorTag?: string,
   assetTag?: string,
   hours: number = 24,
-  refreshInterval: number = 60000
+  refreshInterval: number = 60000,
+  forceInterval?: string
 ): UseSensorHistoryResult {
   const [result, setResult] = useState<UseSensorHistoryResult>({
     data: [],
@@ -53,13 +55,14 @@ export function useSensorHistory(
       }
 
       try {
-        console.log(`📊 Buscando histórico: assetTag=${assetTag}, sensorTag=${sensorTag}, hours=${hours}`);
+        console.log(`📊 Buscando histórico: assetTag=${assetTag}, sensorTag=${sensorTag}, hours=${hours}, forceInterval=${forceInterval}`);
 
         // Buscar histórico usando assetTag
         const response = await telemetryService.getHistoryByAsset(
           assetTag,
           hours,
-          [sensorTag]
+          [sensorTag],
+          forceInterval
         );
 
         console.log('📊 Resposta da API:', response);
@@ -116,7 +119,7 @@ export function useSensorHistory(
       isMounted = false;
       clearInterval(interval);
     };
-  }, [sensorTag, assetTag, hours, refreshInterval]);
+  }, [sensorTag, assetTag, hours, refreshInterval, forceInterval]);
 
   return result;
 }

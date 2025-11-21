@@ -142,6 +142,15 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
     true // forTable=true para usar alta resolução
   );
   
+  // 📊 BUSCAR HISTÓRICO PARA HEATMAP - últimos 7 dias com resolução de 1 minuto
+  const heatmapHistory = useSensorHistory(
+    widget.type === 'heatmap-time' ? sensorTag : undefined,
+    widget.type === 'heatmap-time' ? assetTag : undefined,
+    168, // 7 dias = 168 horas
+    60000,
+    '1m' // Forçar intervalo de 1 minuto para alta resolução
+  );
+  
   // 📊 CALCULAR TENDÊNCIA REAL (apenas para card-stat)
   const trendData = useSensorTrend(
     widget.type === 'card-stat' ? sensorTag : undefined,
@@ -2122,97 +2131,166 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
 
       // ============ OUTROS ============
       case 'heatmap-time':
-      case 'heatmap-matrix':
-        // Se for overview e widget de mapa de calor de alertas
-        if (isOverview && widget.id === 'overview-alerts-heatmap' && data?.alertHeatmapData) {
-          return (
-            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
-              <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
-              <ChartWrapper title="Mapa de Calor de Alertas" height={200}>
-                <HeatmapAlarms data={data.alertHeatmapData} height={200} />
-              </ChartWrapper>
-            </div>
+        // Mapa de calor temporal - 7 dias x 24 horas com dados reais do sensor
+        const heatmapData = React.useMemo(() => {
+          if (!heatmapHistory.data || heatmapHistory.data.length === 0) {
+            return null;
+          }
+
+          // Criar matriz 7 dias x 24 horas
+          const matrix: { value: number; count: number }[][] = Array.from({ length: 7 }, () =>
+            Array.from({ length: 24 }, () => ({ value: 0, count: 0 }))
           );
-        }
+
+          // Processar dados históricos
+          heatmapHistory.data.forEach(point => {
+            const date = new Date(point.timestamp);
+            const dayOfWeek = date.getDay(); // 0-6 (Dom-Sáb)
+            const hour = date.getHours(); // 0-23
+
+            matrix[dayOfWeek][hour].value += point.value;
+            matrix[dayOfWeek][hour].count += 1;
+          });
+
+          // Calcular médias
+          const averages = matrix.map(day =>
+            day.map(cell => (cell.count > 0 ? cell.value / cell.count : null))
+          );
+
+          // Encontrar min/max para normalização
+          const values = averages.flat().filter(v => v !== null) as number[];
+          const min = Math.min(...values);
+          const max = Math.max(...values);
+
+          return { averages, min, max };
+        }, [heatmapHistory.data]);
+
+        const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        const hours = Array.from({ length: 24 }, (_, i) => i);
         
-        // Se for overview, gerar heatmap mockado realista
-        if (isOverview) {
-          // Gerar 7 dias x 24 horas (168 células)
-          const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-          const hours = Array.from({ length: 24 }, (_, i) => i);
+        // Função para calcular cor baseada no valor normalizado
+        const getHeatmapColor = (value: number | null, min: number, max: number) => {
+          if (value === null) return { bg: '#e5e7eb', opacity: 0.3 };
           
-          // Padrão realista: mais alertas durante horário comercial (8-18h)
-          const getMockIntensity = (day: number, hour: number) => {
-            const isWeekday = day >= 1 && day <= 5; // Seg-Sex
-            const isBusinessHours = hour >= 8 && hour <= 18;
-            
-            let base = 0.2;
-            if (isWeekday && isBusinessHours) base = 0.6;
-            if (isWeekday && !isBusinessHours) base = 0.3;
-            
-            // Adicionar aleatoriedade
-            return Math.min(1, base + (Math.random() * 0.3));
-          };
+          const normalized = (value - min) / (max - min);
           
-          return (
-            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
-              <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
-              <div className="flex-1 flex flex-col gap-2">
-                {/* Labels de dias */}
-                <div className="grid grid-cols-[60px_1fr] gap-2">
-                  <div></div>
-                  <div className="grid grid-cols-24 gap-1 text-xs text-muted-foreground text-center">
-                    {[0, 6, 12, 18].map(h => (
-                      <div key={h} className="col-span-6">{h}h</div>
-                    ))}
-                  </div>
+          // Gradiente: azul (baixo) -> verde -> amarelo -> laranja -> vermelho (alto)
+          if (normalized < 0.25) {
+            return { bg: '#3b82f6', opacity: 0.5 + normalized * 2 }; // Azul
+          } else if (normalized < 0.5) {
+            return { bg: '#22c55e', opacity: 0.5 + normalized * 2 }; // Verde
+          } else if (normalized < 0.75) {
+            return { bg: '#eab308', opacity: 0.5 + normalized * 2 }; // Amarelo
+          } else {
+            return { bg: '#ef4444', opacity: 0.7 + normalized * 0.3 }; // Vermelho
+          }
+        };
+
+        return (
+          <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold truncate">{widget.title}</h3>
+              {heatmapData && (
+                <div className="text-xs text-muted-foreground">
+                  {heatmapData.min.toFixed(1)} - {heatmapData.max.toFixed(1)} {widget.config?.unit || ''}
                 </div>
-                
-                {/* Heatmap */}
-                {days.map((day, dayIdx) => (
-                  <div key={dayIdx} className="grid grid-cols-[60px_1fr] gap-2 items-center">
-                    <div className="text-xs font-medium text-muted-foreground">{day}</div>
-                    <div className="grid grid-cols-24 gap-1">
-                      {hours.map(hour => {
-                        const intensity = getMockIntensity(dayIdx, hour);
-                        return (
-                          <div 
-                            key={hour}
-                            className="aspect-square rounded hover:ring-2 hover:ring-primary cursor-pointer transition-all"
-                            style={{ 
-                              backgroundColor: intensity > 0.7 ? '#ef4444' : intensity > 0.4 ? '#f59e0b' : '#3b82f6',
-                              opacity: intensity
-                            }}
-                            title={`${day} ${hour}:00 - ${Math.floor(intensity * 10)} alertas`}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-                
-                {/* Legenda */}
-                <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground mt-2">
-                  <span>Menos</span>
-                  <div className="flex gap-1">
-                    {[0.2, 0.4, 0.6, 0.8, 1.0].map((opacity, i) => (
-                      <div 
-                        key={i}
-                        className="w-4 h-4 rounded"
-                        style={{ 
-                          backgroundColor: opacity > 0.7 ? '#ef4444' : opacity > 0.4 ? '#f59e0b' : '#3b82f6',
-                          opacity
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <span>Mais</span>
+              )}
+            </div>
+            
+            {heatmapHistory.loading ? (
+              <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                <Activity className="w-8 h-8 animate-pulse" />
+              </div>
+            ) : !heatmapData ? (
+              <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Sem dados disponíveis</p>
                 </div>
               </div>
-            </div>
-          );
-        }
-        
+            ) : (
+              <div className="flex-1 flex flex-col gap-2 min-h-0">
+                {/* Labels de horas (topo) */}
+                <div className="grid grid-cols-[70px_1fr] gap-2">
+                  <div className="text-xs font-medium text-muted-foreground"></div>
+                  <div className="grid grid-cols-24 gap-0.5 text-xs text-muted-foreground text-center">
+                    {[0, 3, 6, 9, 12, 15, 18, 21].map(h => (
+                      <div key={h} className="col-span-3" style={{ fontSize: '10px' }}>
+                        {h}h
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Heatmap grid */}
+                <div className="flex-1 flex flex-col gap-1 overflow-auto">
+                  {days.map((day, dayIdx) => (
+                    <div key={dayIdx} className="grid grid-cols-[70px_1fr] gap-2 items-center">
+                      <div className="text-xs font-semibold text-foreground bg-muted/50 rounded px-2 py-1 text-center">
+                        {day}
+                      </div>
+                      <div className="grid grid-cols-24 gap-0.5">
+                        {hours.map(hour => {
+                          const value = heatmapData.averages[dayIdx][hour];
+                          const { bg, opacity } = getHeatmapColor(value, heatmapData.min, heatmapData.max);
+                          
+                          const tooltipText = value !== null 
+                            ? `${day} ${hour}:00 - ${value.toFixed(2)} ${widget.config?.unit || ''}`
+                            : `${day} ${hour}:00 - Sem dados`;
+                          
+                          return (
+                            <div 
+                              key={hour}
+                              className="aspect-square rounded-sm hover:ring-2 hover:ring-primary cursor-pointer transition-all"
+                              style={{ 
+                                backgroundColor: bg,
+                                opacity
+                              }}
+                              title={tooltipText}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Legenda */}
+                <div className="flex items-center justify-between gap-4 pt-2 border-t">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="font-medium">Escala:</span>
+                    <div className="flex gap-1 items-center">
+                      <span>{heatmapData.min.toFixed(1)}</span>
+                      <div className="flex gap-0.5">
+                        {[
+                          { bg: '#3b82f6', opacity: 0.7 },
+                          { bg: '#22c55e', opacity: 0.8 },
+                          { bg: '#eab308', opacity: 0.9 },
+                          { bg: '#ef4444', opacity: 1.0 }
+                        ].map((style, i) => (
+                          <div 
+                            key={i}
+                            className="w-6 h-3 rounded-sm"
+                            style={style}
+                          />
+                        ))}
+                      </div>
+                      <span>{heatmapData.max.toFixed(1)}</span>
+                      <span className="ml-1">{widget.config?.unit || ''}</span>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Últimos 7 dias
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'heatmap-matrix':
+        // Heatmap-matrix usa mesma lógica do heatmap-time mas pode ter visualização diferente no futuro
+        // Por enquanto, renderizar grid simples de matriz
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
             <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
@@ -2222,11 +2300,12 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
                 return (
                   <div 
                     key={i}
-                    className="aspect-square rounded"
+                    className="aspect-square rounded hover:ring-2 hover:ring-primary cursor-pointer transition-all"
                     style={{ 
                       backgroundColor: widget.config?.color || '#3b82f6',
-                      opacity: intensity
+                      opacity: 0.3 + intensity * 0.7
                     }}
+                    title={`Célula ${i + 1}`}
                   />
                 );
               })}
