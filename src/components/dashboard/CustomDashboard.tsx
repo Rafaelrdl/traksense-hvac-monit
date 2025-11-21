@@ -267,20 +267,6 @@ export const CustomDashboard: React.FC = () => {
         
         <div className="flex items-center gap-4">
           {/* Time Range Selector */}
-          <div className="flex items-center space-x-2">
-            <label className="text-sm text-muted-foreground">Período:</label>
-            <select 
-              className="px-3 py-1 border border-input rounded-md text-sm bg-background"
-              value={useAppStore(state => state.selectedTimeRange)}
-              onChange={(e) => useAppStore.getState().setTimeRange(e.target.value as any)}
-            >
-              <option value="1h">1 Hora</option>
-              <option value="6h">6 Horas</option>
-              <option value="24h">24 Horas</option>
-              <option value="7d">7 Dias</option>
-              <option value="30d">30 Dias</option>
-            </select>
-          </div>
           
           {/* Edit Mode Toggle */}
           <div className="flex items-center gap-2">
