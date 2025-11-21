@@ -509,10 +509,10 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
 
   const renderContent = () => {
     // IMPORTANTE: No Overview, widgets não precisam de sensorId (usam dados agregados)
-    // Alguns widgets não precisam de sensor: text-display, iframe-embed, table-alerts
+    // Alguns widgets não precisam de sensor: text-display, table-alerts, photo-upload
     // Apenas mostrar placeholder de configuração em Dashboards quando não há sensorId ou sensorTags
     const hasConfiguration = widget.config?.sensorId || (widget.config?.sensorTags && widget.config.sensorTags.length > 0);
-    const requiresSensor = widget.type !== 'text-display' && widget.type !== 'iframe-embed' && widget.type !== 'table-alerts';
+    const requiresSensor = widget.type !== 'text-display' && widget.type !== 'table-alerts' && widget.type !== 'photo-upload';
     
     if (!isOverview && !hasConfiguration && requiresSensor) {
       return (
