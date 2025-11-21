@@ -89,8 +89,8 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
   const [selectedDeviceName, setSelectedDeviceName] = useState<string | null>(config.deviceName || null);
   const [selectedMetricType, setSelectedMetricType] = useState<string | null>(config.metricType || null);
   
-  // 🔥 NOVO: Múltiplas variáveis para gráficos de linha/área/barras
-  const isMultiVariableChart = widget.type === 'chart-line' || widget.type === 'chart-area' || widget.type === 'chart-bar' || widget.type === 'chart-bar-horizontal';
+  // 🔥 NOVO: Múltiplas variáveis para gráficos de linha/área/barras/pizza/radial
+  const isMultiVariableChart = widget.type === 'chart-line' || widget.type === 'chart-area' || widget.type === 'chart-bar' || widget.type === 'chart-bar-horizontal' || widget.type === 'chart-pie' || widget.type === 'chart-donut' || widget.type === 'chart-radial';
   const [selectedVariables, setSelectedVariables] = useState<string[]>(
     config.sensorTags || (config.sensorTag ? [config.sensorTag] : [])
   );

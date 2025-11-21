@@ -12,6 +12,8 @@ import { LineChartTemp } from '../charts/LineChartTemp';
 import { LineChartGeneric } from '../charts/LineChartGeneric';
 import { BarChartEnergy } from '../charts/BarChartEnergy';
 import { BarChartGeneric } from '../charts/BarChartGeneric';
+import { PieChartGeneric } from '../charts/PieChartGeneric';
+import { RadialChartGeneric } from '../charts/RadialChartGeneric';
 import { GaugeFilterHealth } from '../charts/GaugeFilterHealth';
 import { HeatmapAlarms } from '../charts/HeatmapAlarms';
 import { ChartWrapper } from '../charts/ChartWrapper';
@@ -1165,8 +1167,8 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         const barHistoryData = barHasMultipleSeries ? multiSensorHistory : sensorHistory;
         const barLoading = barHistoryData.loading;
         const barHasData = barHasMultipleSeries 
-          ? (barHistoryData.series && barHistoryData.series.length > 0)
-          : (barHistoryData.data && barHistoryData.data.length > 0);
+          ? ((barHistoryData as any).series && (barHistoryData as any).series.length > 0)
+          : ((barHistoryData as any).data && (barHistoryData as any).data.length > 0);
         const isBarHorizontal = widget.type === 'chart-bar-horizontal';
         
         return (
@@ -1202,8 +1204,8 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
             {/* 📊 CHART SEMPRE RENDERIZADO */}
             <div className="flex-1 relative">
               <BarChartGeneric
-                data={barHasMultipleSeries ? undefined : barHistoryData.data}
-                series={barHasMultipleSeries ? barHistoryData.series : undefined}
+                data={barHasMultipleSeries ? undefined : (barHistoryData as any).data}
+                series={barHasMultipleSeries ? (barHistoryData as any).series : undefined}
                 horizontal={isBarHorizontal}
               />
               
@@ -1234,7 +1236,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       // ============ GRÁFICOS CIRCULARES ============
       case 'chart-pie':
       case 'chart-donut':
-      case 'chart-radial':
         // Se for overview e widget de distribuição de consumo com dados reais
         if (isOverview && widget.id === 'overview-consumption-distribution' && data?.assets && data.assets.length > 0) {
           // Agrupar consumo por tipo de equipamento
@@ -1346,39 +1347,157 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
             </div>
           );
         }
+        
+        // 📊 GRÁFICO DE PIZZA/DONUT COM DADOS REAIS E MÚLTIPLAS VARIÁVEIS
+        const pieHasMultipleSeries = sensorTags && sensorTags.length > 0;
+        const pieHistoryData = pieHasMultipleSeries ? multiSensorHistory : sensorHistory;
+        const pieLoading = pieHistoryData.loading;
+        const pieHasData = pieHasMultipleSeries 
+          ? ((pieHistoryData as any).series && (pieHistoryData as any).series.length > 0)
+          : ((pieHistoryData as any).data && (pieHistoryData as any).data.length > 0);
+        const pieType = widget.type === 'chart-donut' ? 'donut' : 'pie';
+        
         return (
-          <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
-            <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
-            <div className="flex-1 flex items-center justify-center">
-              <div className="relative w-48 h-48">
-                <svg className="w-full h-full transform -rotate-90">
-                  <circle cx="96" cy="96" r="80" stroke="#e5e7eb" strokeWidth="32" fill="none" />
-                  <circle 
-                    cx="96" 
-                    cy="96" 
-                    r="80" 
-                    stroke={widget.config?.color || '#3b82f6'}
-                    strokeWidth="32" 
-                    fill="none"
-                    strokeDasharray="314 188"
-                  />
-                  <circle 
-                    cx="96" 
-                    cy="96" 
-                    r="80" 
-                    stroke="#10b981"
-                    strokeWidth="32" 
-                    fill="none"
-                    strokeDasharray="125 377"
-                    strokeDashoffset="-314"
-                  />
-                </svg>
-                {widget.type === 'chart-donut' && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-bold">{widget.config?.label}</span>
-                  </div>
-                )}
+          <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col relative min-h-[250px]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">{widget.title}</h3>
+              
+              {/* ⏱️ BOTÕES DE SELEÇÃO DE PERÍODO */}
+              <div className="flex gap-1">
+                {[
+                  { label: '1h', value: 1 },
+                  { label: '6h', value: 6 },
+                  { label: '24h', value: 24 },
+                  { label: '7d', value: 168 },
+                  { label: '30d', value: 720 }
+                ].map(period => (
+                  <button
+                    key={period.value}
+                    onClick={() => setChartTimeRange(period.value)}
+                    className={cn(
+                      "px-2 py-1 text-xs rounded transition-colors",
+                      chartTimeRange === period.value
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    )}
+                  >
+                    {period.label}
+                  </button>
+                ))}
               </div>
+            </div>
+            
+            {/* 📊 CHART SEMPRE RENDERIZADO */}
+            <div className="flex-1 relative">
+              <PieChartGeneric
+                data={pieHasMultipleSeries ? undefined : (pieHistoryData as any).data}
+                series={pieHasMultipleSeries ? (pieHistoryData as any).series : undefined}
+                type={pieType}
+              />
+              
+              {/* 🔄 OVERLAY DE LOADING */}
+              {pieLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-card/80 backdrop-blur-sm z-10 rounded-lg">
+                  <div className="text-center">
+                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Carregando dados...</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* ⚠️ OVERLAY DE SEM DADOS */}
+              {!pieLoading && !pieHasData && (
+                <div className="absolute inset-0 flex items-center justify-center bg-card/80 backdrop-blur-sm z-10 rounded-lg">
+                  <div className="text-center text-muted-foreground">
+                    <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Nenhum dado disponível</p>
+                    <p className="text-xs mt-1">Configure o widget ou aguarde dados</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      // ============ GRÁFICO RADIAL ============
+      case 'chart-radial':
+        // Se for overview, usar dados mockados
+        if (isOverview) {
+          return (
+            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
+              <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
+              <div className="flex-1 flex items-center justify-center">
+                <p className="text-muted-foreground">Gráfico Radial (Overview)</p>
+              </div>
+            </div>
+          );
+        }
+        
+        // 📊 GRÁFICO RADIAL COM DADOS REAIS E MÚLTIPLAS VARIÁVEIS
+        const radialHasMultipleSeries = sensorTags && sensorTags.length > 0;
+        const radialHistoryData = radialHasMultipleSeries ? multiSensorHistory : sensorHistory;
+        const radialLoading = radialHistoryData.loading;
+        const radialHasData = radialHasMultipleSeries 
+          ? ((radialHistoryData as any).series && (radialHistoryData as any).series.length > 0)
+          : ((radialHistoryData as any).data && (radialHistoryData as any).data.length > 0);
+        
+        return (
+          <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col relative min-h-[250px]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">{widget.title}</h3>
+              
+              {/* ⏱️ BOTÕES DE SELEÇÃO DE PERÍODO */}
+              <div className="flex gap-1">
+                {[
+                  { label: '1h', value: 1 },
+                  { label: '6h', value: 6 },
+                  { label: '24h', value: 24 },
+                  { label: '7d', value: 168 },
+                  { label: '30d', value: 720 }
+                ].map(period => (
+                  <button
+                    key={period.value}
+                    onClick={() => setChartTimeRange(period.value)}
+                    className={cn(
+                      "px-2 py-1 text-xs rounded transition-colors",
+                      chartTimeRange === period.value
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    )}
+                  >
+                    {period.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* 📊 CHART SEMPRE RENDERIZADO */}
+            <div className="flex-1 relative">
+              <RadialChartGeneric
+                data={radialHasMultipleSeries ? undefined : (radialHistoryData as any).data}
+                series={radialHasMultipleSeries ? (radialHistoryData as any).series : undefined}
+              />
+              
+              {/* 🔄 OVERLAY DE LOADING */}
+              {radialLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-card/80 backdrop-blur-sm z-10 rounded-lg">
+                  <div className="text-center">
+                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Carregando dados...</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* ⚠️ OVERLAY DE SEM DADOS */}
+              {!radialLoading && !radialHasData && (
+                <div className="absolute inset-0 flex items-center justify-center bg-card/80 backdrop-blur-sm z-10 rounded-lg">
+                  <div className="text-center text-muted-foreground">
+                    <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Nenhum dado disponível</p>
+                    <p className="text-xs mt-1">Configure o widget ou aguarde dados</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -1913,7 +2032,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       {...(editMode ? attributes : {})}
     >
       {editMode && (
-        <div className="absolute -top-2 -right-2 z-10 flex gap-1">
+        <div className="absolute -top-6 -right-2 z-10 flex gap-1">
           <button
             onClick={handleRemove}
             className="bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
