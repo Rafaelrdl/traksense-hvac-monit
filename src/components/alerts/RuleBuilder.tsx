@@ -251,7 +251,7 @@ export const RuleBuilder: React.FC = () => {
                 <div className="flex items-center gap-2 ml-4">
                   <Switch
                     checked={rule.enabled}
-                    onCheckedChange={() => handleToggleRule(rule.id)}
+                    onCheckedChange={() => handleToggleRule(Number(rule.id))}
                   />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -265,7 +265,7 @@ export const RuleBuilder: React.FC = () => {
                         Editar
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => handleDeleteRule(rule.id)}
+                        onClick={() => handleDeleteRule(Number(rule.id))}
                         className="gap-2 text-destructive focus:text-destructive"
                       >
                         <Trash2 className="w-4 h-4" />
