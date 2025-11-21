@@ -90,7 +90,7 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
   const [selectedMetricType, setSelectedMetricType] = useState<string | null>(config.metricType || null);
   
   // 🔥 NOVO: Múltiplas variáveis para gráficos de linha/área/barras/pizza/radial/tabelas
-  const isMultiVariableChart = widget.type === 'chart-line' || widget.type === 'chart-area' || widget.type === 'chart-bar' || widget.type === 'chart-bar-horizontal' || widget.type === 'chart-pie' || widget.type === 'chart-donut' || widget.type === 'chart-radial' || widget.type === 'table-data' || widget.type === 'table-realtime';
+  const isMultiVariableChart = widget.type === 'chart-line' || widget.type === 'chart-area' || widget.type === 'chart-bar' || widget.type === 'chart-bar-horizontal' || widget.type === 'chart-pie' || widget.type === 'chart-donut' || widget.type === 'chart-radial' || widget.type === 'table-data';
   const [selectedVariables, setSelectedVariables] = useState<string[]>(
     config.sensorTags || (config.sensorTag ? [config.sensorTag] : [])
   );
@@ -710,7 +710,7 @@ Exemplo: $VALUE$ == true ? &quot;Ligado&quot; : &quot;Desligado&quot;"
             </div>
 
             {/* Limites e Alertas - NÃO mostrar para tabelas */}
-            {widget.type !== 'table-data' && widget.type !== 'table-realtime' && widget.type !== 'table-alerts' && (
+            {widget.type !== 'table-data' && widget.type !== 'table-alerts' && (
               <div className="space-y-4">
                 <h3 className="font-semibold text-base text-foreground flex items-center gap-2 pb-3 border-b">
                   <div className="w-1 h-5 bg-orange-500 rounded-full"></div>

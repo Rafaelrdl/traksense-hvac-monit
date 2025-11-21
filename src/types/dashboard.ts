@@ -73,7 +73,6 @@ export type WidgetType =
   
   // Tabelas
   | 'table-data'           // Tabela de dados simples
-  | 'table-realtime'       // Tabela com dados em tempo real
   | 'table-alerts'         // Tabela de alertas
   
   // Mapas de calor

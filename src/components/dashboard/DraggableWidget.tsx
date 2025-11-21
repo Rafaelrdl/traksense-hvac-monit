@@ -134,8 +134,8 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
   
   // 📊 BUSCAR HISTÓRICO PARA TABELAS - últimas 24h com resolução de 1 minuto
   const tableMultiSensorHistory = useMultipleSensorHistory(
-    widget.type === 'table-data' || widget.type === 'table-realtime' ? (sensorTags || []) : [],
-    widget.type === 'table-data' || widget.type === 'table-realtime' ? assetTag : undefined,
+    widget.type === 'table-data' ? (sensorTags || []) : [],
+    widget.type === 'table-data' ? assetTag : undefined,
     24, // 24 horas (será forçado para 1m de intervalo)
     60000,
     true // forTable=true para usar alta resolução
@@ -151,7 +151,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
 
   // 📊 PREPARAR DADOS DA TABELA - Mover useMemo para o topo para evitar erro de hooks
   const tableData = React.useMemo(() => {
-    if (widget.type !== 'table-data' && widget.type !== 'table-realtime') {
+    if (widget.type !== 'table-data') {
       return [];
     }
     
@@ -1865,7 +1865,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
 
       // ============ TABELAS ============
       case 'table-data':
-      case 'table-realtime':
       case 'table-alerts':
         // 🔥 Usar o hook multiSensorHistory que já existe no topo do componente
         const tableVariables = widget.config?.sensorTags || (widget.config?.sensorTag ? [widget.config.sensorTag] : []);

@@ -266,16 +266,6 @@ const widgetDefinitions: WidgetDefinition[] = [
     requiresSensor: false,
   },
   {
-    id: 'table-realtime' as WidgetType,
-    name: 'Tabela Tempo Real',
-    description: 'Atualização em tempo real',
-    category: 'tables',
-    defaultSize: 'large',
-    icon: 'Activity',
-    configurable: true,
-    requiresSensor: true,
-  },
-  {
     id: 'table-alerts' as WidgetType,
     name: 'Tabela de Alertas',
     description: 'Lista de alertas ativos',
