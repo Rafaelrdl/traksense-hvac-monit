@@ -227,7 +227,10 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
             Configurar Widget
           </DialogTitle>
           <p className="text-sm text-muted-foreground mt-2">
-            Configure o widget e vincule um sensor para exibir dados em tempo real
+            {widget.type === 'table-alerts' 
+              ? 'Configure o título para a tabela de alertas'
+              : 'Configure o widget e vincule um sensor para exibir dados em tempo real'
+            }
           </p>
         </DialogHeader>
         
@@ -254,7 +257,8 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
               </div>
             </div>
 
-            {/* Vinculação de Sensor */}
+            {/* Vinculação de Sensor - NÃO mostrar para table-alerts */}
+            {widget.type !== 'table-alerts' && (
             <div className="space-y-4">
               <h3 className="font-semibold text-base text-foreground flex items-center gap-2 pb-3 border-b">
                 <div className="p-1.5 bg-yellow-500 text-white rounded-md">
@@ -680,8 +684,10 @@ Exemplo: $VALUE$ == true ? &quot;Ligado&quot; : &quot;Desligado&quot;"
                 </div>
               </div>
             </div>
+            )}
 
-            {/* Aparência */}
+            {/* Aparência - NÃO mostrar para table-alerts */}
+            {widget.type !== 'table-alerts' && (
             <div className="space-y-4">
               <h3 className="font-semibold text-base text-foreground flex items-center gap-2 pb-3 border-b">
                 <div className="w-1 h-5 bg-purple-500 rounded-full"></div>
@@ -708,6 +714,7 @@ Exemplo: $VALUE$ == true ? &quot;Ligado&quot; : &quot;Desligado&quot;"
                 </div>
               </div>
             </div>
+            )}
 
             {/* Limites e Alertas - NÃO mostrar para tabelas */}
             {widget.type !== 'table-data' && widget.type !== 'table-alerts' && (
@@ -796,7 +803,12 @@ Exemplo: $VALUE$ == true ? &quot;Ligado&quot; : &quot;Desligado&quot;"
         {/* Ações */}
         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 border-t px-6 py-4">
           <div className="text-sm text-muted-foreground">
-            {selectedSensor ? (
+            {widget.type === 'table-alerts' ? (
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                Configuração da tabela de alertas
+              </span>
+            ) : selectedSensor ? (
               <span className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                 Configuração completa: <span className="font-medium">

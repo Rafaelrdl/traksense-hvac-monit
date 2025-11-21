@@ -35,6 +35,7 @@ import { useSensorData } from '../../hooks/useSensorData';
 import { useSensorTrend } from '../../hooks/useSensorTrend';
 import { useSensorHistory } from '../../hooks/useSensorHistory';
 import { useMultipleSensorHistory } from '../../hooks/useMultipleSensorHistory';
+import { alertsApi, Alert } from '../../services/api/alerts';
 
 /**
  * Calcula a cor baseado nos limites de aviso e crítico
@@ -210,6 +211,47 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
     // Reverter para mostrar mais recentes primeiro
     return rows.reverse();
   }, [widget.type, tableMultiSensorHistory.series]);
+
+  // 🚨 BUSCAR ALERTAS PARA TABLE-ALERTS
+  const [alertsData, setAlertsData] = React.useState<Alert[]>([]);
+  const [loadingAlerts, setLoadingAlerts] = React.useState(false);
+
+  React.useEffect(() => {
+    if (widget.type !== 'table-alerts') return;
+
+    let isMounted = true;
+
+    const fetchAlerts = async () => {
+      setLoadingAlerts(true);
+      try {
+        const response = await alertsApi.list({
+          page_size: 50, // Buscar últimos 50 alertas
+          ordering: '-triggered_at' // Mais recentes primeiro
+        });
+        
+        if (isMounted) {
+          setAlertsData(response.results);
+        }
+      } catch (error) {
+        console.error('❌ Erro ao buscar alertas:', error);
+      } finally {
+        if (isMounted) {
+          setLoadingAlerts(false);
+        }
+      }
+    };
+
+    // Buscar imediatamente
+    fetchAlerts();
+
+    // Atualizar a cada 30 segundos
+    const interval = setInterval(fetchAlerts, 30000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [widget.type]);
 
   // Helper para aplicar transformação de fórmula nos valores do widget
   const applyFormulaTransform = (value: any): any => {
@@ -458,9 +500,12 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
 
   const renderContent = () => {
     // IMPORTANTE: No Overview, widgets não precisam de sensorId (usam dados agregados)
+    // Alguns widgets não precisam de sensor: text-display, iframe-embed, table-alerts
     // Apenas mostrar placeholder de configuração em Dashboards quando não há sensorId ou sensorTags
     const hasConfiguration = widget.config?.sensorId || (widget.config?.sensorTags && widget.config.sensorTags.length > 0);
-    if (!isOverview && !hasConfiguration && widget.type !== 'text-display' && widget.type !== 'iframe-embed') {
+    const requiresSensor = widget.type !== 'text-display' && widget.type !== 'iframe-embed' && widget.type !== 'table-alerts';
+    
+    if (!isOverview && !hasConfiguration && requiresSensor) {
       return (
         <div className="bg-card rounded-xl p-6 border-2 border-dashed border-muted-foreground/20 h-full flex flex-col items-center justify-center gap-3">
           <Settings className="w-12 h-12 text-muted-foreground/50" />
@@ -1864,140 +1909,98 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         );
 
       // ============ TABELAS ============
-      case 'table-data':
       case 'table-alerts':
-        // 🔥 Usar o hook multiSensorHistory que já existe no topo do componente
-        const tableVariables = widget.config?.sensorTags || (widget.config?.sensorTag ? [widget.config.sensorTag] : []);
-        
-        // Calcular status com base em thresholds
-        const getVariableStatus = (value: number, varTag: string) => {
-          const criticalThreshold = widget.config?.criticalThreshold;
-          const warningThreshold = widget.config?.warningThreshold;
-          
-          if (criticalThreshold && (value >= criticalThreshold || value <= criticalThreshold)) {
-            return { label: 'CRÍTICO', color: 'bg-red-100 text-red-800' };
+        // 🚨 Tabela de alertas - busca dados da API
+        const getSeverityColor = (severity: string) => {
+          const severityUpper = severity.toUpperCase();
+          switch (severityUpper) {
+            case 'CRITICAL': return 'bg-red-100 text-red-800';
+            case 'HIGH': return 'bg-orange-100 text-orange-800';
+            case 'MEDIUM': return 'bg-yellow-100 text-yellow-800';
+            case 'LOW': return 'bg-blue-100 text-blue-800';
+            default: return 'bg-gray-100 text-gray-800';
           }
-          if (warningThreshold && (value >= warningThreshold || value <= warningThreshold)) {
-            return { label: 'AVISO', color: 'bg-yellow-100 text-yellow-800' };
-          }
-          return { label: 'OK', color: 'bg-green-100 text-green-800' };
         };
-        
-        // Se for overview e widget de últimos alertas com dados reais
-        if (isOverview && widget.id === 'overview-alerts-table' && data?.topAlerts && data.topAlerts.length > 0) {
-          const getSeverityColor = (severity: string) => {
-            switch (severity) {
-              case 'Critical': return 'bg-red-100 text-red-800';
-              case 'High': return 'bg-orange-100 text-orange-800';
-              case 'Medium': return 'bg-yellow-100 text-yellow-800';
-              case 'Low': return 'bg-blue-100 text-blue-800';
-              default: return 'bg-gray-100 text-gray-800';
-            }
-          };
 
-          const getTimeAgo = (date: Date | string | number) => {
-            const now = new Date();
-            const timestamp = date instanceof Date ? date : new Date(date);
-            const diffMs = now.getTime() - timestamp.getTime();
-            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-            const diffDays = Math.floor(diffHours / 24);
-            if (diffDays > 0) return `${diffDays}d atrás`;
-            if (diffHours > 0) return `${diffHours}h atrás`;
-            return 'Agora mesmo';
-          };
+        const getTimeAgo = (dateString: string) => {
+          const now = new Date();
+          const timestamp = new Date(dateString);
+          const diffMs = now.getTime() - timestamp.getTime();
+          const diffMinutes = Math.floor(diffMs / (1000 * 60));
+          const diffHours = Math.floor(diffMinutes / 60);
+          const diffDays = Math.floor(diffHours / 24);
+          
+          if (diffDays > 0) return `${diffDays}d atrás`;
+          if (diffHours > 0) return `${diffHours}h atrás`;
+          if (diffMinutes > 0) return `${diffMinutes}m atrás`;
+          return 'Agora mesmo';
+        };
 
-          return (
-            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
-              <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
-              {data.topAlerts.length === 0 ? (
-                <div className="flex-1 flex items-center justify-center text-center text-muted-foreground">
-                  <div>
-                    <AlertTriangle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>Nenhum alerta ativo no momento</p>
-                  </div>
+        const getStatusBadge = (alert: Alert) => {
+          if (alert.resolved) {
+            return <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Resolvido</span>;
+          }
+          if (alert.acknowledged) {
+            return <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Reconhecido</span>;
+          }
+          return <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Ativo</span>;
+        };
+
+        return (
+          <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
+            <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
+            {loadingAlerts ? (
+              <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <Activity className="w-12 h-12 mx-auto mb-4 opacity-50 animate-pulse" />
+                  <p>Carregando alertas...</p>
                 </div>
-              ) : (
-                <div className="flex-1 overflow-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Severidade</th>
-                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Ativo</th>
-                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Mensagem</th>
-                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Há quanto tempo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.topAlerts.map((alert: any) => (
-                        <tr key={alert.id} className="border-b last:border-b-0 hover:bg-muted/50">
-                          <td className="py-3 px-4">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(alert.severity)}`}>
-                              {alert.severity}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 font-medium">{alert.assetTag}</td>
-                          <td className="py-3 px-4 text-sm">{alert.message}</td>
-                          <td className="py-3 px-4 text-sm text-muted-foreground">{getTimeAgo(alert.timestamp)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              </div>
+            ) : alertsData.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center text-center text-muted-foreground">
+                <div>
+                  <AlertTriangle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Nenhum alerta encontrado</p>
                 </div>
-              )}
-            </div>
-          );
-        }
-        
-        // Se for overview, gerar alertas mockados
-        if (isOverview) {
-          const mockAlerts = [
-            { severity: 'High', asset: 'AHU-002', message: 'Filter replacement critical - Pressure drop: 350.0 Pa (Limit: 300 Pa)', time: 'Agora mesmo' },
-            { severity: 'High', asset: 'AHU-001', message: 'Filter replacement critical - Pressure drop: 350.0 Pa (Limit: 300 Pa)', time: 'Agora mesmo' },
-            { severity: 'High', asset: 'AHU-003', message: 'Filter nearly critical - Pressure drop: 287.5 Pa (Limit: 280 Pa)', time: '2d atrás' },
-            { severity: 'High', asset: 'CHILL-001', message: 'Superheat elevated - Possible refrigerant leak: 13.8 K (Normal: 4-8 K)', time: '6h atrás' },
-            { severity: 'Medium', asset: 'BOIL-001', message: 'Scheduled maintenance overdue by 437 days', time: 'Agora mesmo' }
-          ];
-          
-          const getSeverityColor = (severity: string) => {
-            switch (severity) {
-              case 'High': return 'bg-orange-100 text-orange-800';
-              case 'Medium': return 'bg-yellow-100 text-yellow-800';
-              default: return 'bg-gray-100 text-gray-800';
-            }
-          };
-          
-          return (
-            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
-              <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
+              </div>
+            ) : (
               <div className="flex-1 overflow-auto">
                 <table className="w-full">
-                  <thead>
+                  <thead className="sticky top-0 bg-background">
                     <tr className="border-b">
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground">Severidade</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Ativo</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Equipamento</th>
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground">Mensagem</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Há quanto tempo</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Quando</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {mockAlerts.map((alert, i) => (
-                      <tr key={i} className="border-b last:border-b-0 hover:bg-muted/50">
+                    {alertsData.map((alert) => (
+                      <tr key={alert.id} className="border-b last:border-b-0 hover:bg-muted/50">
+                        <td className="py-3 px-4">
+                          {getStatusBadge(alert)}
+                        </td>
                         <td className="py-3 px-4">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(alert.severity)}`}>
                             {alert.severity}
                           </span>
                         </td>
-                        <td className="py-3 px-4 font-medium">{alert.asset}</td>
+                        <td className="py-3 px-4 font-medium">{alert.asset_tag}</td>
                         <td className="py-3 px-4 text-sm">{alert.message}</td>
-                        <td className="py-3 px-4 text-sm text-muted-foreground">{alert.time}</td>
+                        <td className="py-3 px-4 text-sm text-muted-foreground">{getTimeAgo(alert.triggered_at)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </div>
-          );
-        }
+            )}
+          </div>
+        );
+
+      case 'table-data':
+        // 🔥 Usar o hook multiSensorHistory que já existe no topo do componente
+        const tableVariables = widget.config?.sensorTags || (widget.config?.sensorTag ? [widget.config.sensorTag] : []);
         
         // Widget de tabela normal com dados reais
         // Usar o estado de paginação do topo do componente
