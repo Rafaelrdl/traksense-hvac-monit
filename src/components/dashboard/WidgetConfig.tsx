@@ -709,84 +709,86 @@ Exemplo: $VALUE$ == true ? &quot;Ligado&quot; : &quot;Desligado&quot;"
               </div>
             </div>
 
-            {/* Limites e Alertas */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-base text-foreground flex items-center gap-2 pb-3 border-b">
-                <div className="w-1 h-5 bg-orange-500 rounded-full"></div>
-                Limites e Alertas
-              </h3>
-              
-              {/* Valor Mínimo e Máximo - NÃO mostrar para card-value, card-stat e tabelas */}
-              {widget.type !== 'card-value' && widget.type !== 'card-stat' && widget.type !== 'table-data' && widget.type !== 'table-realtime' && widget.type !== 'table-alerts' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Limites e Alertas - NÃO mostrar para tabelas */}
+            {widget.type !== 'table-data' && widget.type !== 'table-realtime' && widget.type !== 'table-alerts' && (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-base text-foreground flex items-center gap-2 pb-3 border-b">
+                  <div className="w-1 h-5 bg-orange-500 rounded-full"></div>
+                  Limites e Alertas
+                </h3>
+                
+                {/* Valor Mínimo e Máximo - NÃO mostrar para card-value, card-stat */}
+                {widget.type !== 'card-value' && widget.type !== 'card-stat' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="minValue" className="text-sm font-medium flex items-center gap-2">
+                        <span className="text-blue-600">📉</span>
+                        Valor Mínimo
+                      </Label>
+                      <Input
+                        id="minValue"
+                        type="number"
+                        value={config.minValue || ''}
+                        onChange={(e) => setConfig({ ...config, minValue: parseFloat(e.target.value) || undefined })}
+                        placeholder="0"
+                        className="h-10"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="maxValue" className="text-sm font-medium flex items-center gap-2">
+                        <span className="text-blue-600">📈</span>
+                        Valor Máximo
+                      </Label>
+                      <Input
+                        id="maxValue"
+                        type="number"
+                        value={config.maxValue || ''}
+                        onChange={(e) => setConfig({ ...config, maxValue: parseFloat(e.target.value) || undefined })}
+                        placeholder="100"
+                        className="h-10"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${widget.type !== 'card-value' && widget.type !== 'card-stat' ? 'pt-2' : ''}`}>
                   <div className="space-y-2">
-                    <Label htmlFor="minValue" className="text-sm font-medium flex items-center gap-2">
-                      <span className="text-blue-600">📉</span>
-                      Valor Mínimo
+                    <Label htmlFor="warningThreshold" className="text-sm font-medium flex items-center gap-2">
+                      <span className="text-yellow-600 text-lg">⚠️</span>
+                      Limite de Aviso
                     </Label>
                     <Input
-                      id="minValue"
+                      id="warningThreshold"
                       type="number"
-                      value={config.minValue || ''}
-                      onChange={(e) => setConfig({ ...config, minValue: parseFloat(e.target.value) || undefined })}
-                      placeholder="0"
-                      className="h-10"
+                      value={config.warningThreshold || ''}
+                      onChange={(e) => setConfig({ ...config, warningThreshold: parseFloat(e.target.value) || undefined })}
+                      placeholder="80"
+                      className="h-10 border-yellow-300 focus:border-yellow-500"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Widget ficará amarelo ao atingir este valor
+                    </p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="maxValue" className="text-sm font-medium flex items-center gap-2">
-                      <span className="text-blue-600">📈</span>
-                      Valor Máximo
+                    <Label htmlFor="criticalThreshold" className="text-sm font-medium flex items-center gap-2">
+                      <span className="text-red-600 text-lg">🚨</span>
+                      Limite Crítico
                     </Label>
                     <Input
-                      id="maxValue"
+                      id="criticalThreshold"
                       type="number"
-                      value={config.maxValue || ''}
-                      onChange={(e) => setConfig({ ...config, maxValue: parseFloat(e.target.value) || undefined })}
-                      placeholder="100"
-                      className="h-10"
+                      value={config.criticalThreshold || ''}
+                      onChange={(e) => setConfig({ ...config, criticalThreshold: parseFloat(e.target.value) || undefined })}
+                      placeholder="90"
+                      className="h-10 border-red-300 focus:border-red-500"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Widget ficará vermelho ao atingir este valor
+                    </p>
                   </div>
-                </div>
-              )}
-              
-              <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${widget.type !== 'card-value' && widget.type !== 'card-stat' ? 'pt-2' : ''}`}>
-                <div className="space-y-2">
-                  <Label htmlFor="warningThreshold" className="text-sm font-medium flex items-center gap-2">
-                    <span className="text-yellow-600 text-lg">⚠️</span>
-                    Limite de Aviso
-                  </Label>
-                  <Input
-                    id="warningThreshold"
-                    type="number"
-                    value={config.warningThreshold || ''}
-                    onChange={(e) => setConfig({ ...config, warningThreshold: parseFloat(e.target.value) || undefined })}
-                    placeholder="80"
-                    className="h-10 border-yellow-300 focus:border-yellow-500"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Widget ficará amarelo ao atingir este valor
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="criticalThreshold" className="text-sm font-medium flex items-center gap-2">
-                    <span className="text-red-600 text-lg">🚨</span>
-                    Limite Crítico
-                  </Label>
-                  <Input
-                    id="criticalThreshold"
-                    type="number"
-                    value={config.criticalThreshold || ''}
-                    onChange={(e) => setConfig({ ...config, criticalThreshold: parseFloat(e.target.value) || undefined })}
-                    placeholder="90"
-                    className="h-10 border-red-300 focus:border-red-500"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Widget ficará vermelho ao atingir este valor
-                  </p>
                 </div>
               </div>
-            </div>
+            )}
 
           </div>
         </ScrollArea>

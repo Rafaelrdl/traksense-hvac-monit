@@ -27,12 +27,14 @@ interface UseMultipleSensorHistoryResult {
  * @param assetTag - Tag do asset
  * @param hours - Número de horas de histórico (padrão: 24)
  * @param refreshInterval - Intervalo de atualização em ms (padrão: 60000 = 1 min)
+ * @param forTable - Se true, busca dados com alta resolução (1m) para tabelas
  */
 export function useMultipleSensorHistory(
   sensorTags: string[],
   assetTag?: string,
   hours: number = 24,
-  refreshInterval: number = 60000
+  refreshInterval: number = 60000,
+  forTable: boolean = false
 ): UseMultipleSensorHistoryResult {
   const [result, setResult] = useState<UseMultipleSensorHistoryResult>({
     series: [],
@@ -60,14 +62,12 @@ export function useMultipleSensorHistory(
       }
 
       try {
-        console.log(`📊 Buscando histórico múltiplo: assetTag=${assetTag}, sensors=${sensorTags.length}, hours=${hours}`);
+        console.log(`📊 Buscando histórico múltiplo: assetTag=${assetTag}, sensors=${sensorTags.length}, hours=${hours}, forTable=${forTable}`);
 
-        // Buscar histórico usando assetTag para todos os sensores
-        const response = await telemetryService.getHistoryByAsset(
-          assetTag,
-          hours,
-          sensorTags
-        );
+        // Buscar histórico - se for tabela, usar método especial com alta resolução
+        const response = forTable 
+          ? await telemetryService.getLatestRecordsForTable(assetTag, sensorTags)
+          : await telemetryService.getHistoryByAsset(assetTag, hours, sensorTags);
 
         console.log('📊 Resposta da API (múltiplas séries):', response);
 
@@ -145,7 +145,7 @@ export function useMultipleSensorHistory(
       isMounted = false;
       clearInterval(interval);
     };
-  }, [JSON.stringify(sensorTags), assetTag, hours, refreshInterval]);
+  }, [JSON.stringify(sensorTags), assetTag, hours, refreshInterval, forTable]);
 
   return result;
 }

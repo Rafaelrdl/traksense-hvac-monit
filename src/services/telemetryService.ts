@@ -174,19 +174,23 @@ class TelemetryService {
    * @param assetTag - Tag do asset (ex: CHILLER-001)
    * @param hours - Número de horas de histórico
    * @param sensorIds - (Opcional) Array de sensor IDs para filtrar
+   * @param forceInterval - (Opcional) Forçar intervalo específico ('raw', '1m', '5m', '15m', '1h')
    * @returns Histórico temporal
    */
   async getHistoryByAsset(
     assetTag: string,
     hours: number = 24,
-    sensorIds?: string[]
+    sensorIds?: string[],
+    forceInterval?: string
   ): Promise<DeviceHistoryResponse> {
     const end = new Date();
     const start = new Date(end.getTime() - hours * 60 * 60 * 1000);
     
-    // Determinar intervalo de agregação baseado no período
+    // Determinar intervalo de agregação baseado no período (ou usar forçado)
     let interval: string;
-    if (hours < 1) {
+    if (forceInterval) {
+      interval = forceInterval;
+    } else if (hours < 1) {
       interval = 'raw';
     } else if (hours <= 6) {
       interval = '1m';
@@ -211,6 +215,22 @@ class TelemetryService {
     const url = `${this.baseUrl}/assets/${assetTag}/history/?${queryParams.toString()}`;
     const response = await api.get<any>(url);
     return mapApiDeviceHistoryToFrontend(response.data);
+  }
+
+  /**
+   * Buscar últimos registros para tabelas com alta resolução (1 minuto)
+   * Busca últimas 24h com intervalo de 1 minuto para capturar dados recentes
+   * 
+   * @param assetTag - Tag do asset
+   * @param sensorIds - Array de sensor IDs
+   * @returns Histórico com dados de alta resolução (até 1440 pontos)
+   */
+  async getLatestRecordsForTable(
+    assetTag: string,
+    sensorIds: string[]
+  ): Promise<DeviceHistoryResponse> {
+    // Buscar últimas 24h com intervalo de 1 minuto
+    return this.getHistoryByAsset(assetTag, 24, sensorIds, '1m');
   }
 
   /**

@@ -109,6 +109,9 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
   
   // 📅 ESTADO LOCAL PARA PERÍODO DE TEMPO DO GRÁFICO
   const [chartTimeRange, setChartTimeRange] = useState<number>(24); // Sempre iniciar com 24h
+  
+  // 📄 ESTADO DE PAGINAÇÃO PARA TABELAS
+  const [tablePage, setTablePage] = useState(1);
 
   // 🔥 BUSCAR DADOS REAIS DO SENSOR
   const sensorTag = widget.config?.sensorTag;
@@ -129,6 +132,15 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
     60000
   ); // Para gráficos multi-série
   
+  // 📊 BUSCAR HISTÓRICO PARA TABELAS - últimas 24h com resolução de 1 minuto
+  const tableMultiSensorHistory = useMultipleSensorHistory(
+    widget.type === 'table-data' || widget.type === 'table-realtime' ? (sensorTags || []) : [],
+    widget.type === 'table-data' || widget.type === 'table-realtime' ? assetTag : undefined,
+    24, // 24 horas (será forçado para 1m de intervalo)
+    60000,
+    true // forTable=true para usar alta resolução
+  );
+  
   // 📊 CALCULAR TENDÊNCIA REAL (apenas para card-stat)
   const trendData = useSensorTrend(
     widget.type === 'card-stat' ? sensorTag : undefined,
@@ -136,6 +148,68 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
     widget.type === 'card-stat' ? sensorData.value : null,
     24 // Comparar com últimas 24 horas
   );
+
+  // 📊 PREPARAR DADOS DA TABELA - Mover useMemo para o topo para evitar erro de hooks
+  const tableData = React.useMemo(() => {
+    if (widget.type !== 'table-data' && widget.type !== 'table-realtime') {
+      return [];
+    }
+    
+    if (!tableMultiSensorHistory.series || tableMultiSensorHistory.series.length === 0) {
+      return [];
+    }
+    
+    // Normalizar timestamps para string no formato ISO (sem ms) para garantir comparação correta
+    const normalizeTimestamp = (ts: string | Date): string => {
+      const date = new Date(ts);
+      // Formatar como YYYY-MM-DD HH:mm:ss (sem milissegundos)
+      return date.toISOString().split('.')[0].replace('T', ' ');
+    };
+    
+    // Coletar TODOS os timestamps únicos de TODAS as séries (normalizados)
+    const allTimestampsSet = new Set<string>();
+    tableMultiSensorHistory.series.forEach(serie => {
+      if (serie.data) {
+        serie.data.forEach(point => {
+          allTimestampsSet.add(normalizeTimestamp(point.timestamp));
+        });
+      }
+    });
+    
+    // Converter para array e ordenar cronologicamente
+    const allTimestamps = Array.from(allTimestampsSet).sort();
+    
+    // Pegar últimos 100 timestamps
+    const last100Timestamps = allTimestamps.slice(-100);
+    
+    // Para cada timestamp, buscar valores de todas as variáveis
+    const rows = last100Timestamps.map((timestamp) => {
+      const values = tableMultiSensorHistory.series.map(serie => {
+        // Buscar o valor para este timestamp específico (comparando timestamps normalizados)
+        const matchingData = serie.data?.find(d => normalizeTimestamp(d.timestamp) === timestamp);
+        
+        // Extrair nome da variável
+        const variableName = serie.sensorTag.includes('_') 
+          ? serie.sensorTag.split('_').slice(1).join('_')
+              .split('_')
+              .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+              .join(' ')
+          : serie.sensorTag;
+        
+        return {
+          sensorTag: serie.sensorTag,
+          value: matchingData?.value ?? null,
+          unit: serie.unit || '',
+          name: variableName
+        };
+      });
+      
+      return { timestamp, values };
+    });
+    
+    // Reverter para mostrar mais recentes primeiro
+    return rows.reverse();
+  }, [widget.type, tableMultiSensorHistory.series]);
 
   // Helper para aplicar transformação de fórmula nos valores do widget
   const applyFormulaTransform = (value: any): any => {
@@ -1927,60 +2001,13 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         }
         
         // Widget de tabela normal com dados reais
-        // Estado para paginação
-        const [currentPage, setCurrentPage] = React.useState(1);
+        // Usar o estado de paginação do topo do componente
         const itemsPerPage = 15;
         
-        // Preparar dados da tabela: últimos 100 registros de cada variável
-        const tableData = React.useMemo(() => {
-          if (!multiSensorHistory.series || multiSensorHistory.series.length === 0) {
-            return [];
-          }
-          
-          const rows: Array<{
-            timestamp: string;
-            values: Array<{ sensorTag: string; value: number | null; unit: string; name: string }>;
-          }> = [];
-          
-          // Pegar a primeira série como referência de timestamps
-          const referenceSerie = multiSensorHistory.series[0];
-          if (!referenceSerie || !referenceSerie.data) return [];
-          
-          // Pegar últimos 100 registros
-          const last100Data = referenceSerie.data.slice(-100);
-          
-          // Para cada timestamp, buscar valores de todas as variáveis
-          last100Data.forEach((dataPoint) => {
-            const timestamp = dataPoint.timestamp;
-            const values = multiSensorHistory.series.map(serie => {
-              const matchingData = serie.data.find(d => d.timestamp === timestamp);
-              
-              // Extrair nome da variável
-              const variableName = serie.sensorTag.includes('_') 
-                ? serie.sensorTag.split('_').slice(1).join('_')
-                    .split('_')
-                    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-                    .join(' ')
-                : serie.sensorTag;
-              
-              return {
-                sensorTag: serie.sensorTag,
-                value: matchingData?.value ?? null,
-                unit: serie.unit,
-                name: variableName
-              };
-            });
-            
-            rows.push({ timestamp, values });
-          });
-          
-          // Reverter para mostrar mais recentes primeiro
-          return rows.reverse();
-        }, [multiSensorHistory.series]);
-        
+        // tableData já está calculado no topo do componente via useMemo
         // Calcular dados da página atual
         const totalPages = Math.ceil(tableData.length / itemsPerPage);
-        const startIndex = (currentPage - 1) * itemsPerPage;
+        const startIndex = (tablePage - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
         const currentPageData = tableData.slice(startIndex, endIndex);
         
@@ -2001,7 +2028,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col overflow-hidden">
             <h3 className="text-lg font-semibold mb-3 truncate">{widget.title}</h3>
             <div className="flex-1 overflow-auto min-h-0">
-              {multiSensorHistory.loading ? (
+              {tableMultiSensorHistory.loading ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
                   <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
@@ -2067,18 +2094,18 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
                     </div>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                        disabled={currentPage === 1}
+                        onClick={() => setTablePage(prev => Math.max(1, prev - 1))}
+                        disabled={tablePage === 1}
                         className="px-3 py-1 text-xs border rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Anterior
                       </button>
                       <span className="text-xs text-muted-foreground">
-                        Página {currentPage} de {totalPages}
+                        Página {tablePage} de {totalPages}
                       </span>
                       <button
-                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                        disabled={currentPage === totalPages}
+                        onClick={() => setTablePage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={tablePage === totalPages}
                         className="px-3 py-1 text-xs border rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Próxima
