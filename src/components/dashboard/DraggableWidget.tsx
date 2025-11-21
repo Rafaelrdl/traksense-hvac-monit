@@ -15,6 +15,7 @@ import { BarChartGeneric } from '../charts/BarChartGeneric';
 import { GaugeFilterHealth } from '../charts/GaugeFilterHealth';
 import { HeatmapAlarms } from '../charts/HeatmapAlarms';
 import { ChartWrapper } from '../charts/ChartWrapper';
+import { ResizableWidget } from './ResizableWidget';
 import { 
   GripVertical, 
   X, 
@@ -99,6 +100,10 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
   
   const [configOpen, setConfigOpen] = useState(false);
   const [toggleState, setToggleState] = useState(false);
+  
+  // 📐 DIMENSÕES PERSONALIZADAS DO WIDGET
+  const [customWidth, setCustomWidth] = useState<number | undefined>(widget.position.w);
+  const [customHeight, setCustomHeight] = useState<number | undefined>(widget.position.h);
   
   // 📅 ESTADO LOCAL PARA PERÍODO DE TEMPO DO GRÁFICO
   const [chartTimeRange, setChartTimeRange] = useState<number>(24); // Sempre iniciar com 24h
@@ -313,6 +318,28 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
     } else {
       useDashboardStore.getState().removeWidget(layoutId, widget.id);
     }
+  };
+
+  const handleResizeEnd = (width: number, height: number) => {
+    setCustomWidth(width);
+    setCustomHeight(height);
+    
+    // Persistir dimensões no widget
+    if (isOverview) {
+      useOverviewStore.getState().updateWidget(widget.id, {
+        position: { ...widget.position, w: width, h: height }
+      });
+    } else {
+      useDashboardStore.getState().updateWidget(layoutId, widget.id, {
+        position: { ...widget.position, w: width, h: height }
+      });
+    }
+  };
+
+  const handleResize = (width: number, height: number) => {
+    // Atualizar durante o redimensionamento para feedback visual imediato
+    setCustomWidth(width);
+    setCustomHeight(height);
   };
 
   const renderContent = () => {
@@ -1872,9 +1899,13 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        ...(customWidth && { width: `${customWidth}px` }),
+        ...(customHeight && { height: `${customHeight}px` }),
+      }}
       className={cn(
-        getSizeClasses(widget.size),
+        !customWidth && !customHeight && getSizeClasses(widget.size), // Só usa grid classes se não tiver tamanho custom
         editMode && "relative group",
         isDragging && "opacity-50 z-50",
         editMode && "border-2 border-dashed border-primary/20 rounded-xl"
@@ -1904,7 +1935,16 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         </div>
       )}
       
-      {renderContent()}
+      <ResizableWidget
+        width={customWidth}
+        height={customHeight}
+        onResize={handleResize}
+        onResizeEnd={handleResizeEnd}
+        enabled={editMode}
+        className="h-full w-full"
+      >
+        {renderContent()}
+      </ResizableWidget>
       
       {/* Modal de configuração condicional baseado no contexto */}
       {isOverview ? (

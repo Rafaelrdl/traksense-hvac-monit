@@ -55,59 +55,6 @@ export const OverviewWidgetConfig = ({
             </div>
           </div>
 
-          {/* Tamanho */}
-          <div className="space-y-2">
-            <Label htmlFor="size" className="text-sm font-medium">
-              Tamanho (Largura em Colunas)
-            </Label>
-            <Select name="size" defaultValue={widget.size}>
-              <SelectTrigger id="size">
-                <SelectValue placeholder="Selecione o tamanho" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="col-1">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-4 bg-primary rounded" />
-                    <span>1 Coluna (Mínimo)</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="col-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-primary rounded" />
-                    <span>2 Colunas (Pequeno)</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="col-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-4 bg-primary rounded" />
-                    <span>3 Colunas (Médio)</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="col-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-4 bg-primary rounded" />
-                    <span>4 Colunas</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="col-5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-4 bg-primary rounded" />
-                    <span>5 Colunas</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="col-6">
-                  <div className="flex items-center gap-2">
-                    <div className="w-12 h-4 bg-primary rounded" />
-                    <span>6 Colunas (Largura Total)</span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              O layout usa um grid de 6 colunas. Escolha a largura ideal para o widget.
-            </p>
-          </div>
-
           {/* Limites e Alertas */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
