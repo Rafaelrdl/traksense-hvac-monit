@@ -68,7 +68,6 @@ export type WidgetType =
   
   // Indicadores
   | 'indicator-led'        // LED indicador
-  | 'indicator-traffic'    // Semáforo (vermelho/amarelo/verde)
   | 'indicator-battery'    // Indicador de bateria
   | 'indicator-signal'     // Indicador de sinal
   

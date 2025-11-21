@@ -397,11 +397,6 @@ function getWidgetDefaultConfig(widgetType: WidgetType): Record<string, any> {
       onValue: 'Online',
       offValue: 'Offline'
     },
-    'indicator-traffic': {
-      label: 'Semáforo',
-      greenThreshold: 80,
-      yellowThreshold: 50
-    },
     'indicator-battery': {
       label: 'Bateria',
       unit: '%',

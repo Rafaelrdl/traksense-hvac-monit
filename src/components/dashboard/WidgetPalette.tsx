@@ -234,16 +234,6 @@ const widgetDefinitions: WidgetDefinition[] = [
     requiresSensor: true,
   },
   {
-    id: 'indicator-traffic' as WidgetType,
-    name: 'Semáforo',
-    description: 'Verde, amarelo, vermelho',
-    category: 'indicators',
-    defaultSize: 'small',
-    icon: 'Lightbulb',
-    configurable: true,
-    requiresSensor: true,
-  },
-  {
     id: 'indicator-battery' as WidgetType,
     name: 'Indicador Bateria',
     description: 'Nível de bateria',

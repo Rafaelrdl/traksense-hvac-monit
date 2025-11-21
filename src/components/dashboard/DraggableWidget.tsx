@@ -1572,47 +1572,153 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         );
 
       case 'gauge-tank':
-        // 🔥 USAR DADOS REAIS DO SENSOR
-        const tankLevel = sensorData.value ?? 0;
+        // 🔥 USAR DADOS REAIS DO SENSOR COM ESCALA MIN/MAX
+        const tankValue = sensorData.value ?? 0;
+        const tankMin = widget.config?.minValue ?? 0;
+        const tankMax = widget.config?.maxValue ?? 100;
+        const tankRange = tankMax - tankMin;
+        const tankPercentage = tankRange > 0 ? Math.min(Math.max(((tankValue - tankMin) / tankRange) * 100, 0), 100) : 0;
+        
+        // Determinar cor com base em thresholds
+        let tankColor = widget.config?.color || '#3b82f6';
+        if (widget.config?.criticalThreshold && tankPercentage <= widget.config.criticalThreshold) {
+          tankColor = '#ef4444'; // vermelho
+        } else if (widget.config?.warningThreshold && tankPercentage <= widget.config.warningThreshold) {
+          tankColor = '#f59e0b'; // amarelo
+        }
+        
         return (
           <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col items-center justify-center gap-4">
             <h3 className="text-sm font-medium text-muted-foreground">{widget.title}</h3>
-            <div className="relative w-24 h-48 border-2 border-gray-300 rounded-lg overflow-hidden">
-              <div 
-                className="absolute bottom-0 left-0 right-0 transition-all duration-500"
-                style={{ 
-                  height: `${tankLevel}%`,
-                  backgroundColor: widget.config?.color || '#3b82f6',
-                  opacity: 0.7
-                }}
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xl font-bold text-foreground z-10">
-                  {sensorData.isLoading ? '...' : `${Number(tankLevel).toFixed(0)}%`}
-                </span>
+            <div className="flex items-center gap-2">
+              {/* Escala lateral esquerda com traços e números */}
+              <div className="flex flex-col justify-between h-56 py-2">
+                {[
+                  { value: tankMax, percent: 100 },
+                  { value: tankMin + (tankRange * 0.75), percent: 75 },
+                  { value: tankMin + (tankRange * 0.5), percent: 50 },
+                  { value: tankMin + (tankRange * 0.25), percent: 25 },
+                  { value: tankMin, percent: 0 }
+                ].map((mark, idx) => (
+                  <div key={idx} className="flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground w-8 text-right">
+                      {Number(mark.value).toFixed(0)}
+                    </span>
+                    <span className="text-gray-400">—</span>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Tanque */}
+              <div className="relative w-28 h-56">
+                {/* Container do tanque */}
+                <div className="absolute inset-0 border-3 border-gray-400 rounded-lg overflow-hidden bg-gray-50">
+                  {/* Nível do tanque */}
+                  <div 
+                    className="absolute bottom-0 left-0 right-0 transition-all duration-500"
+                    style={{ 
+                      height: `${tankPercentage}%`,
+                      backgroundColor: tankColor,
+                      opacity: 0.8
+                    }}
+                  />
+                  {/* Valor central */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-2xl font-bold text-foreground drop-shadow-md z-10">
+                      {sensorData.isLoading ? '...' : Number(tankValue).toFixed(widget.config?.decimals || 1)}
+                    </span>
+                    <span className="text-xs text-foreground drop-shadow-md">{sensorData.unit || widget.config?.unit || '%'}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         );
 
       case 'gauge-thermometer':
-        // 🔥 USAR DADOS REAIS DO SENSOR
-        const tempValue = sensorData.value ?? 0;
+        // 🔥 USAR DADOS REAIS DO SENSOR COM ESCALA MIN/MAX
+        const thermValue = sensorData.value ?? 0;
+        const thermMin = widget.config?.minValue ?? 0;
+        const thermMax = widget.config?.maxValue ?? 100;
+        const thermRange = thermMax - thermMin;
+        const thermPercentage = thermRange > 0 ? Math.min(Math.max(((thermValue - thermMin) / thermRange) * 100, 0), 100) : 0;
+        
+        // Determinar cor com base em thresholds ou temperatura
+        let thermColor = widget.config?.color || '#ef4444';
+        if (widget.config?.criticalThreshold && thermPercentage >= widget.config.criticalThreshold) {
+          thermColor = '#ef4444'; // vermelho crítico
+        } else if (widget.config?.warningThreshold && thermPercentage >= widget.config.warningThreshold) {
+          thermColor = '#f59e0b'; // amarelo aviso
+        } else if (thermPercentage < 50) {
+          thermColor = '#3b82f6'; // azul frio
+        }
+        
         return (
-          <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col items-center justify-center gap-4">
-            <h3 className="text-sm font-medium text-muted-foreground">{widget.title}</h3>
-            <div className="relative flex items-end gap-2">
-              <div className="w-8 h-48 bg-gray-200 rounded-full overflow-hidden relative">
-                <div 
-                  className="absolute bottom-0 left-0 right-0 rounded-full transition-all duration-500"
-                  style={{ 
-                    height: `${Math.min((tempValue / 35) * 100, 100)}%`,
-                    backgroundColor: widget.config?.color || '#ef4444'
-                  }}
-                />
+          <div className="bg-card rounded-xl p-6 border shadow-sm h-full w-full flex flex-col items-center justify-center overflow-hidden">
+            <h3 className="text-sm font-medium text-muted-foreground mb-2 truncate w-full text-center">{widget.title}</h3>
+            <div className="flex items-center gap-2 justify-center flex-shrink-0">
+              {/* Escala lateral esquerda */}
+              <div className="flex flex-col justify-between h-48 py-2 flex-shrink-0">
+                {[
+                  { value: thermMax },
+                  { value: thermMin + (thermRange * 0.75) },
+                  { value: thermMin + (thermRange * 0.5) },
+                  { value: thermMin + (thermRange * 0.25) },
+                  { value: thermMin }
+                ].map((mark, idx) => (
+                  <div key={idx} className="flex items-center gap-1">
+                    <span className="text-[10px] text-muted-foreground w-7 text-right">
+                      {Number(mark.value).toFixed(0)}
+                    </span>
+                    <span className="text-gray-400 text-[10px]">—</span>
+                  </div>
+                ))}
               </div>
-              <div className="text-2xl font-bold" style={{ color: widget.config?.color || '#ef4444' }}>
-                {sensorData.isLoading ? '...' : `${Number(tempValue).toFixed(1)}${sensorData.unit || '°C'}`}
+              
+              {/* Termômetro */}
+              <div className="relative flex flex-col items-center flex-shrink-0">
+                {/* Bulbo superior */}
+                <div className="w-5 h-5 rounded-full bg-gray-200 mb-1 border-2 border-gray-300" />
+                
+                {/* Tubo do termômetro */}
+                <div className="relative w-5 h-40 bg-gray-200 rounded-full overflow-hidden border-2 border-gray-300">
+                  {/* Mercúrio/Líquido */}
+                  <div 
+                    className="absolute bottom-0 left-0 right-0 transition-all duration-500 rounded-full"
+                    style={{ 
+                      height: `${thermPercentage}%`,
+                      backgroundColor: thermColor,
+                      boxShadow: `0 0 8px ${thermColor}40`
+                    }}
+                  />
+                  
+                  {/* Marcações internas */}
+                  <div className="absolute inset-0 flex flex-col justify-between py-2 px-0.5">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <div key={i} className="w-full h-px bg-gray-400/30" />
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Bulbo inferior */}
+                <div 
+                  className="w-7 h-7 rounded-full -mt-1 border-2 border-gray-300 relative overflow-hidden flex-shrink-0"
+                  style={{ backgroundColor: thermColor }}
+                >
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-3 h-3 rounded-full bg-white/20" />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Valor e unidade */}
+              <div className="flex flex-col items-start flex-shrink-0 min-w-0">
+                <span className="text-2xl font-bold truncate" style={{ color: thermColor }}>
+                  {sensorData.isLoading ? '...' : Number(thermValue).toFixed(widget.config?.decimals || 1)}
+                </span>
+                <span className="text-xs text-muted-foreground truncate">
+                  {sensorData.unit || widget.config?.unit || '°C'}
+                </span>
               </div>
             </div>
           </div>
@@ -1633,22 +1739,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
               }}
             />
             <span className="text-sm font-medium">{ledOn ? 'ATIVO' : 'INATIVO'}</span>
-          </div>
-        );
-
-      case 'indicator-traffic':
-        // 🔥 USAR DADOS REAIS DO SENSOR
-        // Valor de 0-33 = verde, 34-66 = amarelo, 67-100 = vermelho
-        const trafficStatus = (sensorData.value ?? 50) / 100; // Normalizar para 0-1
-        const trafficColor = trafficStatus > 0.66 ? '#10b981' : trafficStatus > 0.33 ? '#f59e0b' : '#ef4444';
-        return (
-          <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col items-center justify-center gap-3">
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">{widget.title}</h3>
-            <div className="flex flex-col gap-2">
-              <div className={`w-12 h-12 rounded-full ${trafficStatus > 0.66 ? 'bg-red-500 opacity-30' : 'bg-gray-200'}`} />
-              <div className={`w-12 h-12 rounded-full ${trafficStatus > 0.33 && trafficStatus <= 0.66 ? 'bg-yellow-500' : 'bg-gray-200 opacity-30'}`} />
-              <div className={`w-12 h-12 rounded-full ${trafficStatus <= 0.33 ? 'bg-green-500' : 'bg-gray-200 opacity-30'}`} />
-            </div>
           </div>
         );
 
@@ -1703,6 +1793,23 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       case 'table-data':
       case 'table-realtime':
       case 'table-alerts':
+        // 🔥 Usar o hook multiSensorHistory que já existe no topo do componente
+        const tableVariables = widget.config?.sensorTags || (widget.config?.sensorTag ? [widget.config.sensorTag] : []);
+        
+        // Calcular status com base em thresholds
+        const getVariableStatus = (value: number, varTag: string) => {
+          const criticalThreshold = widget.config?.criticalThreshold;
+          const warningThreshold = widget.config?.warningThreshold;
+          
+          if (criticalThreshold && (value >= criticalThreshold || value <= criticalThreshold)) {
+            return { label: 'CRÍTICO', color: 'bg-red-100 text-red-800' };
+          }
+          if (warningThreshold && (value >= warningThreshold || value <= warningThreshold)) {
+            return { label: 'AVISO', color: 'bg-yellow-100 text-yellow-800' };
+          }
+          return { label: 'OK', color: 'bg-green-100 text-green-800' };
+        };
+        
         // Se for overview e widget de últimos alertas com dados reais
         if (isOverview && widget.id === 'overview-alerts-table' && data?.topAlerts && data.topAlerts.length > 0) {
           const getSeverityColor = (severity: string) => {
@@ -1819,30 +1926,167 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
           );
         }
         
+        // Widget de tabela normal com dados reais
+        // Estado para paginação
+        const [currentPage, setCurrentPage] = React.useState(1);
+        const itemsPerPage = 15;
+        
+        // Preparar dados da tabela: últimos 100 registros de cada variável
+        const tableData = React.useMemo(() => {
+          if (!multiSensorHistory.series || multiSensorHistory.series.length === 0) {
+            return [];
+          }
+          
+          const rows: Array<{
+            timestamp: string;
+            values: Array<{ sensorTag: string; value: number | null; unit: string; name: string }>;
+          }> = [];
+          
+          // Pegar a primeira série como referência de timestamps
+          const referenceSerie = multiSensorHistory.series[0];
+          if (!referenceSerie || !referenceSerie.data) return [];
+          
+          // Pegar últimos 100 registros
+          const last100Data = referenceSerie.data.slice(-100);
+          
+          // Para cada timestamp, buscar valores de todas as variáveis
+          last100Data.forEach((dataPoint) => {
+            const timestamp = dataPoint.timestamp;
+            const values = multiSensorHistory.series.map(serie => {
+              const matchingData = serie.data.find(d => d.timestamp === timestamp);
+              
+              // Extrair nome da variável
+              const variableName = serie.sensorTag.includes('_') 
+                ? serie.sensorTag.split('_').slice(1).join('_')
+                    .split('_')
+                    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                    .join(' ')
+                : serie.sensorTag;
+              
+              return {
+                sensorTag: serie.sensorTag,
+                value: matchingData?.value ?? null,
+                unit: serie.unit,
+                name: variableName
+              };
+            });
+            
+            rows.push({ timestamp, values });
+          });
+          
+          // Reverter para mostrar mais recentes primeiro
+          return rows.reverse();
+        }, [multiSensorHistory.series]);
+        
+        // Calcular dados da página atual
+        const totalPages = Math.ceil(tableData.length / itemsPerPage);
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const currentPageData = tableData.slice(startIndex, endIndex);
+        
+        // Formatar timestamp
+        const formatTimestamp = (timestamp: string) => {
+          const date = new Date(timestamp);
+          return date.toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          });
+        };
+        
         return (
-          <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
-            <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
-            <div className="flex-1 overflow-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2 px-4 text-sm font-medium text-muted-foreground">Sensor</th>
-                    <th className="text-left py-2 px-4 text-sm font-medium text-muted-foreground">Valor</th>
-                    <th className="text-left py-2 px-4 text-sm font-medium text-muted-foreground">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...Array(3)].map((_, i) => (
-                    <tr key={i} className="border-b last:border-0">
-                      <td className="py-2 px-4 text-sm">Sensor {i + 1}</td>
-                      <td className="py-2 px-4 text-sm font-medium">{(70 + Math.random() * 30).toFixed(1)}</td>
-                      <td className="py-2 px-4">
-                        <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">OK</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col overflow-hidden">
+            <h3 className="text-lg font-semibold mb-3 truncate">{widget.title}</h3>
+            <div className="flex-1 overflow-auto min-h-0">
+              {multiSensorHistory.loading ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                    <p className="text-sm">Carregando dados...</p>
+                  </div>
+                </div>
+              ) : tableVariables.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <p className="text-sm">Configure as variáveis para exibir dados</p>
+                </div>
+              ) : tableData.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <div className="text-center">
+                    <p className="text-sm mb-2">Nenhum dado disponível</p>
+                    <p className="text-xs">Verifique se as variáveis estão configuradas corretamente</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-full flex flex-col">
+                  <div className="flex-1 overflow-auto">
+                    <table className="w-full">
+                      <thead className="sticky top-0 bg-card z-10">
+                        <tr className="border-b">
+                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground bg-card">Data/Hora</th>
+                          {currentPageData[0]?.values.map((val) => (
+                            <th key={val.sensorTag} className="text-right py-3 px-4 text-sm font-medium text-muted-foreground bg-card">
+                              {val.name}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {currentPageData.map((row, rowIdx) => (
+                          <tr key={`${row.timestamp}-${rowIdx}`} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                            <td className="py-2 px-4 text-xs text-muted-foreground whitespace-nowrap">
+                              {formatTimestamp(row.timestamp)}
+                            </td>
+                            {row.values.map((val) => {
+                              const status = val.value !== null ? getVariableStatus(val.value, val.sensorTag) : null;
+                              return (
+                                <td key={val.sensorTag} className="py-2 px-4 text-sm font-mono text-right">
+                                  {val.value !== null ? (
+                                    <span className={status?.label !== 'OK' ? `font-bold text-${status?.color.includes('red') ? 'red' : status?.color.includes('yellow') ? 'yellow' : 'gray'}-700` : ''}>
+                                      {Number(val.value).toFixed(widget.config?.decimals ?? 1)}
+                                      <span className="text-muted-foreground ml-1 text-xs font-normal">{val.unit}</span>
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted-foreground">--</span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  {/* Paginação */}
+                  <div className="flex items-center justify-between pt-3 border-t mt-2 flex-shrink-0">
+                    <div className="text-xs text-muted-foreground">
+                      Mostrando {startIndex + 1}-{Math.min(endIndex, tableData.length)} de {tableData.length} registros
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 text-xs border rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Anterior
+                      </button>
+                      <span className="text-xs text-muted-foreground">
+                        Página {currentPage} de {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-1 text-xs border rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Próxima
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         );

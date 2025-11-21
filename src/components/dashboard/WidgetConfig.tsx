@@ -89,8 +89,8 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
   const [selectedDeviceName, setSelectedDeviceName] = useState<string | null>(config.deviceName || null);
   const [selectedMetricType, setSelectedMetricType] = useState<string | null>(config.metricType || null);
   
-  // 🔥 NOVO: Múltiplas variáveis para gráficos de linha/área/barras/pizza/radial
-  const isMultiVariableChart = widget.type === 'chart-line' || widget.type === 'chart-area' || widget.type === 'chart-bar' || widget.type === 'chart-bar-horizontal' || widget.type === 'chart-pie' || widget.type === 'chart-donut' || widget.type === 'chart-radial';
+  // 🔥 NOVO: Múltiplas variáveis para gráficos de linha/área/barras/pizza/radial/tabelas
+  const isMultiVariableChart = widget.type === 'chart-line' || widget.type === 'chart-area' || widget.type === 'chart-bar' || widget.type === 'chart-bar-horizontal' || widget.type === 'chart-pie' || widget.type === 'chart-donut' || widget.type === 'chart-radial' || widget.type === 'table-data' || widget.type === 'table-realtime';
   const [selectedVariables, setSelectedVariables] = useState<string[]>(
     config.sensorTags || (config.sensorTag ? [config.sensorTag] : [])
   );
@@ -716,8 +716,8 @@ Exemplo: $VALUE$ == true ? &quot;Ligado&quot; : &quot;Desligado&quot;"
                 Limites e Alertas
               </h3>
               
-              {/* Valor Mínimo e Máximo - NÃO mostrar para card-value e card-stat */}
-              {widget.type !== 'card-value' && widget.type !== 'card-stat' && (
+              {/* Valor Mínimo e Máximo - NÃO mostrar para card-value, card-stat e tabelas */}
+              {widget.type !== 'card-value' && widget.type !== 'card-stat' && widget.type !== 'table-data' && widget.type !== 'table-realtime' && widget.type !== 'table-alerts' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="minValue" className="text-sm font-medium flex items-center gap-2">
