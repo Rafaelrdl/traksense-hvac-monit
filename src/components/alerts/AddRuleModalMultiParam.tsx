@@ -78,52 +78,103 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
   // Estado dos parâmetros (múltiplos)
   const [parameters, setParameters] = useState<RuleParameter[]>([]);
 
-  // Estados para parâmetros disponíveis do equipamento
-  const [availableParameters, setAvailableParameters] = useState<Array<{
+  // Estados para devices e sensores disponíveis
+  const [availableDevices, setAvailableDevices] = useState<Array<{
+    id: number;
+    name: string;
+    displayName: string; // Sufixo do serial (ex: C857, C873, 08B2)
+    mqtt_client_id: string;
+  }>>([]);
+  const [availableSensorsByDevice, setAvailableSensorsByDevice] = useState<Record<number, Array<{
     key: string; 
     label: string; 
     type: string;
     sensorId: number;
     sensorTag: string;
-  }>>([]);
-  const [loadingParams, setLoadingParams] = useState(false);
+    deviceId: number;
+  }>>>({});
+  const [loadingDevices, setLoadingDevices] = useState(false);
+  const [loadingSensors, setLoadingSensors] = useState<Record<number, boolean>>({});
 
   // Flag de inicialização
   const [isInitializing, setIsInitializing] = useState(false);
 
-  // Buscar sensores quando equipamento for selecionado
+  // Buscar devices quando equipamento for selecionado
   useEffect(() => {
-    const loadSensors = async () => {
+    const loadDevices = async () => {
       if (!equipmentId) {
-        setAvailableParameters([]);
+        setAvailableDevices([]);
+        setAvailableSensorsByDevice({});
         return;
       }
 
-      setLoadingParams(true);
+      setLoadingDevices(true);
       try {
         const { assetsService } = await import('@/services/assetsService');
-        const sensors = await assetsService.getSensors(parseInt(equipmentId));
+        const devices = await assetsService.getDevices(parseInt(equipmentId));
         
-        const params = sensors.map(sensor => ({
-          key: `sensor_${sensor.id}`,
-          label: `${sensor.tag} - ${sensor.metric_type}`,
-          type: sensor.metric_type,
-          sensorId: sensor.id,
-          sensorTag: sensor.tag,
-        }));
+        // Extrair sufixo do serial_number (últimos 4 caracteres ou nome curto)
+        const devicesWithDisplay = devices.map(device => {
+          // Tentar extrair sufixo do serial_number (ex: "IOT-DEV-C857" -> "C857")
+          let displayName = device.name;
+          if (device.serial_number) {
+            const parts = device.serial_number.split('-');
+            displayName = parts[parts.length - 1] || device.serial_number.slice(-4);
+          }
+          
+          return {
+            id: device.id,
+            name: device.name,
+            displayName: `Device ${displayName}`,
+            mqtt_client_id: device.mqtt_client_id,
+          };
+        });
         
-        setAvailableParameters(params);
+        setAvailableDevices(devicesWithDisplay);
       } catch (error) {
-        console.error('Erro ao carregar sensores:', error);
-        toast.error('Erro ao carregar parâmetros do equipamento');
-        setAvailableParameters([]);
+        console.error('Erro ao carregar devices:', error);
+        toast.error('Erro ao carregar dispositivos do equipamento');
+        setAvailableDevices([]);
       } finally {
-        setLoadingParams(false);
+        setLoadingDevices(false);
       }
     };
 
-    loadSensors();
+    loadDevices();
   }, [equipmentId]);
+
+  // Função para carregar sensores de um device específico
+  const loadSensorsForDevice = async (deviceId: number) => {
+    if (availableSensorsByDevice[deviceId]) {
+      return; // Já carregado
+    }
+
+    setLoadingSensors(prev => ({ ...prev, [deviceId]: true }));
+    try {
+      const { api } = await import('@/lib/api');
+      const response = await api.get<any[]>(`/devices/${deviceId}/sensors/`);
+      const sensors = response.data;
+      
+      const sensorsList = sensors.map(sensor => ({
+        key: `sensor_${sensor.id}`,
+        label: `${sensor.tag} - ${sensor.metric_type}`,
+        type: sensor.metric_type,
+        sensorId: sensor.id,
+        sensorTag: sensor.tag,
+        deviceId: deviceId,
+      }));
+      
+      setAvailableSensorsByDevice(prev => ({
+        ...prev,
+        [deviceId]: sensorsList,
+      }));
+    } catch (error) {
+      console.error('Erro ao carregar sensores do device:', error);
+      toast.error('Erro ao carregar sensores do dispositivo');
+    } finally {
+      setLoadingSensors(prev => ({ ...prev, [deviceId]: false }));
+    }
+  };
 
   // Preencher formulário quando editando
   useEffect(() => {
@@ -180,7 +231,7 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
 
   // Adicionar novo parâmetro
   const addParameter = () => {
-    const newParam: RuleParameter = {
+    const newParam: RuleParameter & { device_id?: number } = {
       parameter_key: '',
       variable_key: '',
       operator: '>',
@@ -188,8 +239,9 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
       duration: 5,
       severity: 'MEDIUM',
       message_template: DEFAULT_MESSAGE_TEMPLATE,
+      device_id: undefined, // Device será selecionado depois
     };
-    setParameters([...parameters, newParam]);
+    setParameters([...parameters, newParam as RuleParameter]);
   };
 
   // Remover parâmetro
@@ -198,13 +250,25 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
   };
 
   // Atualizar parâmetro específico
-  const updateParameter = (index: number, field: keyof RuleParameter, value: any) => {
+  const updateParameter = (index: number, field: keyof RuleParameter | 'device_id', value: any) => {
     const updated = [...parameters];
     updated[index] = { ...updated[index], [field]: value };
     
+    // Se estamos selecionando um device, carregar seus sensores
+    if (field === 'device_id') {
+      const deviceId = parseInt(value);
+      if (!isNaN(deviceId)) {
+        loadSensorsForDevice(deviceId);
+        // Resetar parameter_key pois mudou o device
+        updated[index].parameter_key = '';
+      }
+    }
+    
     // Se estamos atualizando o parameter_key, também atualizar o variable_key com o tipo do sensor
     if (field === 'parameter_key') {
-      const selectedParam = availableParameters.find(p => p.key === value);
+      const deviceId = (updated[index] as any).device_id;
+      const deviceSensors = deviceId ? availableSensorsByDevice[deviceId] : [];
+      const selectedParam = deviceSensors?.find(p => p.key === value);
       if (selectedParam) {
         updated[index].variable_key = selectedParam.type; // Ex: "temperature", "humidity"
         updated[index].unit = selectedParam.type === 'temperature' ? '°C' : 
@@ -235,10 +299,15 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
 
     // Validar cada parâmetro
     for (let i = 0; i < parameters.length; i++) {
-      const param = parameters[i];
+      const param = parameters[i] as any;
+      
+      if (!param.device_id) {
+        toast.error(`Parâmetro ${i + 1}: Selecione um dispositivo`);
+        return;
+      }
       
       if (!param.parameter_key) {
-        toast.error(`Parâmetro ${i + 1}: Selecione um sensor`);
+        toast.error(`Parâmetro ${i + 1}: Selecione uma variável`);
         return;
       }
       
@@ -322,9 +391,17 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
     return OPERATORS.find(o => o.value === op)?.label || op;
   };
 
-  const getSensorLabel = (paramKey: string) => {
-    const param = availableParameters.find(p => p.key === paramKey);
+  const getSensorLabel = (paramKey: string, deviceId?: number) => {
+    if (!deviceId) return paramKey;
+    const deviceSensors = availableSensorsByDevice[deviceId] || [];
+    const param = deviceSensors.find(p => p.key === paramKey);
     return param?.label || paramKey;
+  };
+
+  const getDeviceLabel = (deviceId?: number) => {
+    if (!deviceId) return 'Nenhum dispositivo';
+    const device = availableDevices.find(d => d.id === deviceId);
+    return device?.displayName || `Device ${deviceId}`;
   };
 
   return (
@@ -411,7 +488,7 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
                 <Button
                   type="button"
                   onClick={addParameter}
-                  disabled={!equipmentId || loadingParams}
+                  disabled={!equipmentId || loadingDevices}
                   size="sm"
                   className="h-9 px-3 ml-4 shrink-0"
                 >
@@ -479,39 +556,85 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
                     </CardHeader>
                     <CardContent className="space-y-4 px-4 pb-4 pt-4">
                       
-                      {/* Seletor de Sensor */}
-                      <div className="space-y-1.5">
-                        <Label className="text-xs font-medium flex items-center gap-1">
-                          <span>Sensor a Monitorar</span>
-                          <span className="text-destructive">*</span>
-                        </Label>
-                        <Select
-                          value={param.parameter_key}
-                          onValueChange={(value) => updateParameter(index, 'parameter_key', value)}
-                          disabled={loadingParams}
-                        >
-                          <SelectTrigger className="h-9 bg-white/80">
-                            <SelectValue placeholder="Selecione um sensor para monitorar" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {loadingParams ? (
-                              <div className="p-3 text-center">
-                                <Loader2 className="w-4 h-4 animate-spin mx-auto mb-2" />
-                                <p className="text-xs text-muted-foreground">Carregando sensores...</p>
-                              </div>
-                            ) : availableParameters.length === 0 ? (
-                              <div className="p-3 text-center">
-                                <p className="text-xs text-muted-foreground">Nenhum sensor disponível</p>
-                              </div>
-                            ) : (
-                              availableParameters.map((p) => (
-                                <SelectItem key={p.key} value={p.key}>
-                                  {p.label}
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
+                      {/* Seletor de Dispositivo */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium flex items-center gap-1">
+                            <span>Dispositivo</span>
+                            <span className="text-destructive">*</span>
+                          </Label>
+                          <Select
+                            value={(param as any).device_id ? String((param as any).device_id) : ''}
+                            onValueChange={(value) => updateParameter(index, 'device_id', value)}
+                            disabled={loadingDevices}
+                          >
+                            <SelectTrigger className="h-9 bg-white/80">
+                              <SelectValue placeholder="Selecione o dispositivo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {loadingDevices ? (
+                                <div className="p-3 text-center">
+                                  <Loader2 className="w-4 h-4 animate-spin mx-auto mb-2" />
+                                  <p className="text-xs text-muted-foreground">Carregando dispositivos...</p>
+                                </div>
+                              ) : availableDevices.length === 0 ? (
+                                <div className="p-3 text-center">
+                                  <p className="text-xs text-muted-foreground">Nenhum dispositivo disponível</p>
+                                </div>
+                              ) : (
+                                availableDevices.map((device) => (
+                                  <SelectItem key={device.id} value={String(device.id)}>
+                                    {device.displayName}
+                                  </SelectItem>
+                                ))
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Seletor de Variável do Dispositivo */}
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium flex items-center gap-1">
+                            <span>Variável do Dispositivo</span>
+                            <span className="text-destructive">*</span>
+                          </Label>
+                          <Select
+                            value={param.parameter_key}
+                            onValueChange={(value) => updateParameter(index, 'parameter_key', value)}
+                            disabled={!(param as any).device_id || loadingSensors[(param as any).device_id]}
+                          >
+                            <SelectTrigger className="h-9 bg-white/80">
+                              <SelectValue placeholder="Selecione a variável" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {!(param as any).device_id ? (
+                                <div className="p-3 text-center">
+                                  <p className="text-xs text-muted-foreground">Selecione um dispositivo primeiro</p>
+                                </div>
+                              ) : loadingSensors[(param as any).device_id] ? (
+                                <div className="p-3 text-center">
+                                  <Loader2 className="w-4 h-4 animate-spin mx-auto mb-2" />
+                                  <p className="text-xs text-muted-foreground">Carregando variáveis...</p>
+                                </div>
+                              ) : (
+                                (() => {
+                                  const deviceSensors = availableSensorsByDevice[(param as any).device_id] || [];
+                                  return deviceSensors.length === 0 ? (
+                                    <div className="p-3 text-center">
+                                      <p className="text-xs text-muted-foreground">Nenhuma variável disponível</p>
+                                    </div>
+                                  ) : (
+                                    deviceSensors.map((sensor) => (
+                                      <SelectItem key={sensor.key} value={sensor.key}>
+                                        {sensor.label}
+                                      </SelectItem>
+                                    ))
+                                  );
+                                })()
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
 
                       {/* Condição e Valor */}
