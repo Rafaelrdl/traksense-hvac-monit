@@ -391,14 +391,6 @@ function getWidgetDefaultConfig(widgetType: WidgetType): Record<string, any> {
       minValue: 0,
       maxValue: 100
     },
-    'gauge-semi': {
-      label: 'Performance',
-      unit: '%',
-      color: '#10b981',
-      decimals: 1,
-      minValue: 0,
-      maxValue: 100
-    },
     'indicator-led': {
       label: 'Status',
       color: '#10b981',

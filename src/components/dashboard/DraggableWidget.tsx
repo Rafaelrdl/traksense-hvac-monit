@@ -337,7 +337,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       
       // Medidores e gauges
       case 'gauge-circular':
-      case 'gauge-semi':
       case 'card-gauge':
         return { minWidth: 250, minHeight: 250 };
       
@@ -1543,7 +1542,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
 
       // ============ MEDIDORES ============
       case 'gauge-circular':
-      case 'gauge-semi':
         // 🔥 USAR DADOS REAIS DO SENSOR
         const meterValue = sensorData.value ?? 0;
         return (

@@ -63,7 +63,6 @@ export type WidgetType =
   
   // Medidores
   | 'gauge-circular'       // Medidor circular
-  | 'gauge-semi'           // Medidor semicircular
   | 'gauge-tank'           // Medidor de tanque
   | 'gauge-thermometer'    // Termômetro
   

@@ -202,16 +202,6 @@ const widgetDefinitions: WidgetDefinition[] = [
     requiresSensor: true,
   },
   {
-    id: 'gauge-semi' as WidgetType,
-    name: 'Medidor Semicircular',
-    description: 'Medidor meio círculo',
-    category: 'gauges',
-    defaultSize: 'medium',
-    icon: 'Activity',
-    configurable: true,
-    requiresSensor: true,
-  },
-  {
     id: 'gauge-tank' as WidgetType,
     name: 'Medidor de Tanque',
     description: 'Visualização de nível',
