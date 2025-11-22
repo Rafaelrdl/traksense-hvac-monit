@@ -36,8 +36,10 @@ export const CustomDashboard: React.FC = () => {
   const [newLayoutName, setNewLayoutName] = useState('');
   const [editingLayoutId, setEditingLayoutId] = useState<string | null>(null);
   const [editingLayoutName, setEditingLayoutName] = useState('');
+  const [activeId, setActiveId] = useState<string | null>(null);
   
   const currentLayout = layouts.find(l => l.id === currentLayoutId);
+  const activeWidget = currentLayout?.widgets.find(w => w.id === activeId);
   
   const sensors_dnd = useSensors(
     useSensor(PointerSensor, {
@@ -172,11 +174,12 @@ export const CustomDashboard: React.FC = () => {
   }, [assets, sensors, alerts, timeRange]);
 
   function handleDragStart(event: DragStartEvent) {
-    // Could add preview or other drag start logic here
+    setActiveId(event.active.id as string);
   }
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
+    setActiveId(null);
 
     // Se não há destino ou é o mesmo widget, não faz nada
     if (!over || active.id === over.id) {
@@ -432,8 +435,18 @@ export const CustomDashboard: React.FC = () => {
           </div>
         </SortableContext>
         
-        <DragOverlay>
-          {/* Could add drag overlay content here */}
+        <DragOverlay dropAnimation={null}>
+          {activeWidget ? (
+            <div className="bg-primary/10 backdrop-blur-sm rounded-xl border-2 border-primary shadow-2xl p-6 cursor-grabbing" style={{ width: '240px', height: '160px' }}>
+              <div className="flex flex-col items-center justify-center h-full gap-3">
+                <Layout className="w-12 h-12 text-primary" />
+                <div className="text-center">
+                  <div className="text-sm font-semibold text-foreground">{activeWidget.title}</div>
+                  <div className="text-xs text-muted-foreground mt-1 capitalize">{activeWidget.type.replace(/-/g, ' ')}</div>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </DragOverlay>
       </DndContext>
 

@@ -2599,14 +2599,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       ref={setNodeRef}
       style={{
         ...style,
-        // Durante o drag, forçar max-content para não expandir
-        ...(isDragging && { 
-          gridColumn: 'auto',
-          width: 'max-content',
-          height: 'max-content',
-          maxWidth: '400px',
-          maxHeight: '300px',
-        }),
         // Aplicar width e height customizados quando existem, MAS NÃO durante o drag
         ...(!isDragging && customWidth && { width: `${customWidth}px` }),
         ...(!isDragging && customHeight && { height: `${customHeight}px` }),
@@ -2615,7 +2607,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         // Se não há tamanho custom, usa as classes de grid
         !customWidth && !isDragging && getSizeClasses(widget.size),
         editMode && "relative group",
-        isDragging && "opacity-50 z-50",
+        isDragging && "opacity-0", // Esconder completamente durante o drag (DragOverlay mostrará)
         editMode && "border-2 border-dashed border-primary/20 rounded-xl",
         isResizing && "ring-2 ring-primary ring-offset-2"
       )}
