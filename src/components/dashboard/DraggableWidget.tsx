@@ -107,6 +107,8 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
   // 📐 DIMENSÕES PERSONALIZADAS DO WIDGET
   const [customWidth, setCustomWidth] = useState<number | undefined>(widget.position.w);
   const [customHeight, setCustomHeight] = useState<number | undefined>(widget.position.h);
+  const [isResizing, setIsResizing] = useState(false);
+  const [previewCols, setPreviewCols] = useState<number | null>(null);
   
   // 📅 ESTADO LOCAL PARA PERÍODO DE TEMPO DO GRÁFICO
   const [chartTimeRange, setChartTimeRange] = useState<number>(24); // Sempre iniciar com 24h
@@ -458,24 +460,57 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       case 'chart-pie':
       case 'chart-donut':
       case 'chart-radial':
+        return { minWidth: 400, minHeight: 400 }; // Aumentado para gráficos
+      
+      // Tabelas - precisam de altura generosa
+      case 'table-data':
+      case 'table-alerts':
+        return { minWidth: 400, minHeight: 400 };
+      
+      // Mapas de calor
+      case 'heatmap-time':
+      case 'heatmap-matrix':
         return { minWidth: 400, minHeight: 350 };
       
-      // Medidores e gauges
+      // Medidores e gauges - precisam manter proporção
       case 'gauge-circular':
       case 'card-gauge':
-        return { minWidth: 250, minHeight: 250 };
+        return { minWidth: 220, minHeight: 250 };
       
-      // Cards menores
+      // Cards com conteúdo (valor + texto + tendência)
       case 'card-kpi':
       case 'card-stat':
+        return { minWidth: 200, minHeight: 160 }; // Aumentado para evitar quebra de texto
+      
+      // Cards simples (valor + unidade)
       case 'card-value':
       case 'card-progress':
-        return { minWidth: 200, minHeight: 120 };
+        return { minWidth: 200, minHeight: 140 }; // Aumentado para garantir que texto não saia
+      
+      // Cards de ação
+      case 'card-button':
+      case 'card-toggle':
+      case 'card-status':
+        return { minWidth: 180, minHeight: 140 };
+      
+      // Indicadores compactos
+      case 'indicator-led':
+      case 'indicator-battery':
+      case 'indicator-signal':
+        return { minWidth: 120, minHeight: 120 };
+      
+      // Medidores menores
+      case 'gauge-tank':
+      case 'gauge-thermometer':
+        return { minWidth: 180, minHeight: 220 };
       
       // Widgets de texto e outros
       case 'text-display':
-      case 'iframe-embed':
         return { minWidth: 200, minHeight: 150 };
+      
+      case 'photo-upload':
+      case 'iframe-embed':
+        return { minWidth: 250, minHeight: 250 };
       
       // Padrão para outros tipos
       default:
@@ -486,17 +521,48 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
   const { minWidth, minHeight } = getMinDimensions();
 
   const handleResizeEnd = (width: number, height: number) => {
-    setCustomWidth(width);
+    setIsResizing(false);
+    setPreviewCols(null);
+    
+    // Calcular a classe de grid mais próxima baseado na largura
+    const parentElement = document.querySelector('.grid.grid-cols-1.lg\\:grid-cols-6');
+    const parentWidth = parentElement?.clientWidth || 1200;
+    const gap = 24; // 24px = gap-6 do Tailwind
+    const totalGaps = 5 * gap; // 5 gaps entre 6 colunas
+    const availableWidth = parentWidth - totalGaps;
+    const colWidth = availableWidth / 6;
+    
+    // Calcular número de colunas baseado na largura do widget
+    const numCols = Math.round(width / (colWidth + gap));
+    const clampedCols = Math.max(1, Math.min(6, numCols)); // Entre 1 e 6
+    const newSize = `col-${clampedCols}` as DashboardWidget['size'];
+    
+    // Calcular largura "snapped" para alinhar ao grid
+    const snappedWidth = (colWidth * clampedCols) + (gap * (clampedCols - 1));
+    
+    console.log('📏 Resize End:', { 
+      originalWidth: width,
+      snappedWidth,
+      height,
+      numCols,
+      clampedCols, 
+      newSize 
+    });
+    
+    // Aplicar largura ajustada ao grid
+    setCustomWidth(snappedWidth);
     setCustomHeight(height);
     
-    // Persistir dimensões no widget
+    // Persistir no store
     if (isOverview) {
       useOverviewStore.getState().updateWidget(widget.id, {
-        position: { ...widget.position, w: width, h: height }
+        size: newSize,
+        position: { ...widget.position, w: snappedWidth, h: height }
       });
     } else {
       useDashboardStore.getState().updateWidget(layoutId, widget.id, {
-        position: { ...widget.position, w: width, h: height }
+        size: newSize,
+        position: { ...widget.position, w: snappedWidth, h: height }
       });
     }
   };
@@ -505,6 +571,19 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
     // Atualizar durante o redimensionamento para feedback visual imediato
     setCustomWidth(width);
     setCustomHeight(height);
+    setIsResizing(true);
+    
+    // Calcular preview de colunas durante o resize
+    const parentElement = document.querySelector('.grid.grid-cols-1.lg\\:grid-cols-6');
+    const parentWidth = parentElement?.clientWidth || 1200;
+    const gap = 24;
+    const totalGaps = 5 * gap;
+    const availableWidth = parentWidth - totalGaps;
+    const colWidth = availableWidth / 6;
+    const numCols = Math.round(width / (colWidth + gap));
+    const clampedCols = Math.max(1, Math.min(6, numCols));
+    
+    setPreviewCols(clampedCols);
   };
 
   const renderContent = () => {
@@ -2520,17 +2599,35 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       ref={setNodeRef}
       style={{
         ...style,
-        // Usar height fixo apenas, largura controlada pelo grid
-        ...(customHeight && { height: `${customHeight}px` }),
+        // Durante o drag, forçar max-content para não expandir
+        ...(isDragging && { 
+          gridColumn: 'auto',
+          width: 'max-content',
+          height: 'max-content',
+          maxWidth: '400px',
+          maxHeight: '300px',
+        }),
+        // Aplicar width e height customizados quando existem, MAS NÃO durante o drag
+        ...(!isDragging && customWidth && { width: `${customWidth}px` }),
+        ...(!isDragging && customHeight && { height: `${customHeight}px` }),
       }}
       className={cn(
-        getSizeClasses(widget.size), // Sempre usa grid classes para controlar largura
+        // Se não há tamanho custom, usa as classes de grid
+        !customWidth && !isDragging && getSizeClasses(widget.size),
         editMode && "relative group",
         isDragging && "opacity-50 z-50",
-        editMode && "border-2 border-dashed border-primary/20 rounded-xl"
+        editMode && "border-2 border-dashed border-primary/20 rounded-xl",
+        isResizing && "ring-2 ring-primary ring-offset-2"
       )}
       {...(editMode ? attributes : {})}
     >
+      {/* Indicador de tamanho durante resize */}
+      {isResizing && previewCols && (
+        <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-20 bg-primary text-primary-foreground px-3 py-1 rounded-md text-xs font-medium shadow-lg whitespace-nowrap">
+          {previewCols}/6 colunas
+        </div>
+      )}
+      
       {editMode && (
         <div className="absolute -top-6 -right-2 z-10 flex gap-1">
           <button
@@ -2563,6 +2660,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         onResizeEnd={handleResizeEnd}
         enabled={editMode}
         className="h-full w-full"
+        isDragging={isDragging}
       >
         {renderContent()}
       </ResizableWidget>

@@ -182,17 +182,53 @@ function getWidgetTitle(widgetType: WidgetType): string {
 }
 
 function getWidgetDefaultSize(widgetType: WidgetType): DashboardWidget['size'] {
-  // Cards são pequenos
-  if (widgetType.startsWith('card-')) return 'small';
+  // 📏 TAMANHOS ESPECÍFICOS POR TIPO DE WIDGET
   
-  // Tabelas e alguns charts são grandes
-  if (widgetType.startsWith('table-')) return 'large';
-  if (widgetType === 'heatmap-time' || widgetType === 'heatmap-matrix') return 'large';
-  if (widgetType === 'timeline') return 'large';
+  // CARDS PEQUENOS (1-2 colunas)
+  if (widgetType === 'card-value') return 'col-2';        // Valor simples
+  if (widgetType === 'card-stat') return 'col-2';         // Estatística com tendência
+  if (widgetType === 'card-progress') return 'col-2';     // Barra de progresso
+  if (widgetType === 'card-gauge') return 'col-2';        // Medidor compacto
+  if (widgetType === 'card-kpi') return 'col-2';          // KPI estilo overview
   
-  // Indicadores simples são pequenos
-  if (widgetType.startsWith('indicator-')) return 'small';
+  // CARDS DE AÇÃO (1-2 colunas)
+  if (widgetType === 'card-button') return 'col-2';       // Botão de ação
+  if (widgetType === 'card-toggle') return 'col-2';       // Switch/Toggle
+  if (widgetType === 'card-status') return 'col-2';       // Status ligado/desligado
   
-  // Resto é médio (charts, gauges, etc)
-  return 'medium';
+  // INDICADORES COMPACTOS (1 coluna)
+  if (widgetType === 'indicator-led') return 'col-1';     // LED simples
+  if (widgetType === 'indicator-battery') return 'col-1'; // Bateria
+  if (widgetType === 'indicator-signal') return 'col-1';  // Sinal
+  
+  // GRÁFICOS DE LINHA (4 colunas - médio/grande)
+  if (widgetType === 'chart-line') return 'col-4';        // Linha temporal
+  if (widgetType === 'chart-area') return 'col-4';        // Área temporal
+  
+  // GRÁFICOS DE BARRA (4 colunas)
+  if (widgetType === 'chart-bar') return 'col-4';         // Barras verticais
+  if (widgetType === 'chart-bar-horizontal') return 'col-4'; // Barras horizontais
+  
+  // GRÁFICOS CIRCULARES (3 colunas - médio)
+  if (widgetType === 'chart-pie') return 'col-3';         // Pizza
+  if (widgetType === 'chart-donut') return 'col-3';       // Rosca
+  if (widgetType === 'chart-radial') return 'col-3';      // Radial
+  
+  // MEDIDORES (2-3 colunas)
+  if (widgetType === 'gauge-circular') return 'col-3';    // Medidor circular
+  if (widgetType === 'gauge-tank') return 'col-2';        // Tanque
+  if (widgetType === 'gauge-thermometer') return 'col-2'; // Termômetro
+  
+  // TABELAS E MAPAS DE CALOR (6 colunas - largura total)
+  if (widgetType === 'table-data') return 'col-6';        // Tabela de dados
+  if (widgetType === 'table-alerts') return 'col-6';      // Tabela de alertas
+  if (widgetType === 'heatmap-time') return 'col-6';      // Mapa temporal
+  if (widgetType === 'heatmap-matrix') return 'col-6';    // Matriz de calor
+  
+  // OUTROS (2-3 colunas)
+  if (widgetType === 'text-display') return 'col-2';      // Texto
+  if (widgetType === 'photo-upload') return 'col-3';      // Foto
+  
+  // FALLBACK - médio (3 colunas)
+  return 'col-3';
 }

@@ -8,12 +8,16 @@ interface ResizeHandle {
 }
 
 const RESIZE_HANDLES: ResizeHandle[] = [
-  // Apenas handles verticais para não quebrar o grid horizontal
+  // Handles verticais e horizontais
+  { position: 'e', cursor: 'ew-resize', className: 'right-0 top-0 h-full w-2 cursor-ew-resize' },
+  { position: 'w', cursor: 'ew-resize', className: 'left-0 top-0 h-full w-2 cursor-ew-resize' },
   { position: 's', cursor: 'ns-resize', className: 'bottom-0 left-0 w-full h-2 cursor-ns-resize' },
   { position: 'n', cursor: 'ns-resize', className: 'top-0 left-0 w-full h-2 cursor-ns-resize' },
-  // Handles de canto também funcionam apenas na vertical
-  { position: 'se', cursor: 'ns-resize', className: 'bottom-0 right-0 w-3 h-3 cursor-ns-resize' },
-  { position: 'sw', cursor: 'ns-resize', className: 'bottom-0 left-0 w-3 h-3 cursor-ns-resize' },
+  // Handles de canto para redimensionar ambos
+  { position: 'se', cursor: 'nwse-resize', className: 'bottom-0 right-0 w-3 h-3 cursor-nwse-resize' },
+  { position: 'sw', cursor: 'nesw-resize', className: 'bottom-0 left-0 w-3 h-3 cursor-nesw-resize' },
+  { position: 'ne', cursor: 'nesw-resize', className: 'top-0 right-0 w-3 h-3 cursor-nesw-resize' },
+  { position: 'nw', cursor: 'nwse-resize', className: 'top-0 left-0 w-3 h-3 cursor-nwse-resize' },
 ];
 
 interface ResizableWidgetProps {
@@ -26,6 +30,7 @@ interface ResizableWidgetProps {
   onResizeEnd?: (width: number, height: number) => void;
   enabled?: boolean;
   className?: string;
+  isDragging?: boolean;
 }
 
 export const ResizableWidget: React.FC<ResizableWidgetProps> = ({
@@ -38,6 +43,7 @@ export const ResizableWidget: React.FC<ResizableWidgetProps> = ({
   onResizeEnd,
   enabled = true,
   className,
+  isDragging = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const resizeStateRef = useRef<{
@@ -81,11 +87,19 @@ export const ResizableWidget: React.FC<ResizableWidgetProps> = ({
     if (!resizeStateRef.current.isResizing || !containerRef.current) return;
 
     const { startX, startY, startWidth, startHeight, handle } = resizeStateRef.current;
+    let deltaX = e.clientX - startX;
     let deltaY = e.clientY - startY;
 
+    let newWidth = startWidth;
     let newHeight = startHeight;
 
-    // Apenas redimensionamento vertical (não mexe na largura do grid)
+    // Calcular nova largura e altura baseado no handle
+    if (handle?.includes('e')) {
+      newWidth = startWidth + deltaX;
+    }
+    if (handle?.includes('w')) {
+      newWidth = startWidth - deltaX;
+    }
     if (handle?.includes('s')) {
       newHeight = startHeight + deltaY;
     }
@@ -94,10 +108,11 @@ export const ResizableWidget: React.FC<ResizableWidgetProps> = ({
     }
 
     // Aplicar limites - garantir que não ultrapasse mínimos
+    const finalWidth = Math.max(minWidth, newWidth);
     const finalHeight = Math.max(minHeight, newHeight);
     
-    // Chamar callback de resize apenas com altura (largura mantém do grid)
-    onResize?.(startWidth, finalHeight);
+    // Chamar callback de resize com ambas as dimensões
+    onResize?.(finalWidth, finalHeight);
   };
 
   const handleMouseUp = () => {
@@ -124,8 +139,10 @@ export const ResizableWidget: React.FC<ResizableWidgetProps> = ({
       ref={containerRef}
       className={cn('relative w-full h-full', className)}
       style={{
-        // Apenas altura customizada (largura vem do grid)
-        height: height ? `${height}px` : undefined,
+        // Aplicar dimensões customizadas apenas quando NÃO está arrastando
+        width: (!isDragging && width) ? `${width}px` : undefined,
+        height: (!isDragging && height) ? `${height}px` : undefined,
+        minWidth: minWidth ? `${minWidth}px` : undefined,
         minHeight: minHeight ? `${minHeight}px` : undefined,
       }}
     >

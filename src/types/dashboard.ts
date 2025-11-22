@@ -98,7 +98,7 @@ export interface WidgetDefinition {
   name: string;
   description: string;
   category: 'cards' | 'actions' | 'charts-line' | 'charts-bar' | 'charts-circular' | 'gauges' | 'indicators' | 'tables' | 'heatmaps' | 'others';
-  defaultSize: 'small' | 'medium' | 'large';
+  defaultSize: 'col-1' | 'col-2' | 'col-3' | 'col-4' | 'col-5' | 'col-6' | 'small' | 'medium' | 'large'; // Mantém compatibilidade
   icon: string;
   preview?: string;
   configurable: boolean;

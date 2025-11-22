@@ -12,7 +12,7 @@ interface OverviewWidgetDefinition {
   description: string;
   category: 'reliability' | 'operations' | 'energy' | 'management' | 'analytics';
   icon: React.ReactNode;
-  defaultSize: 'small' | 'medium' | 'large';
+  defaultSize: 'col-1' | 'col-2' | 'col-3' | 'col-4' | 'col-5' | 'col-6' | 'small' | 'medium' | 'large';
 }
 
 // Widgets focados em gestão executiva e monitoramento estratégico
@@ -24,7 +24,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Percentual de disponibilidade com tendência',
     category: 'reliability',
     icon: <Activity className="w-5 h-5 text-green-600" />,
-    defaultSize: 'small'
+    defaultSize: 'col-2'
   },
   {
     id: 'card-kpi',
@@ -32,7 +32,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Quantidade de alertas ativos no momento',
     category: 'reliability',
     icon: <AlertTriangle className="w-5 h-5 text-red-600" />,
-    defaultSize: 'small'
+    defaultSize: 'col-2'
   },
   {
     id: 'card-kpi',
@@ -40,7 +40,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Consumo energético do dia com variação',
     category: 'energy',
     icon: <Zap className="w-5 h-5 text-green-600" />,
-    defaultSize: 'small'
+    defaultSize: 'col-2'
   },
   {
     id: 'card-kpi',
@@ -48,7 +48,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Score consolidado de health com tendência',
     category: 'reliability',
     icon: <Heart className="w-5 h-5 text-yellow-600" />,
-    defaultSize: 'small'
+    defaultSize: 'col-2'
   },
   {
     id: 'card-kpi',
@@ -56,7 +56,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Mean Time Between Failures com melhoria',
     category: 'reliability',
     icon: <Clock className="w-5 h-5 text-green-600" />,
-    defaultSize: 'small'
+    defaultSize: 'col-2'
   },
   {
     id: 'card-kpi',
@@ -64,7 +64,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Mean Time To Repair com redução',
     category: 'operations',
     icon: <Wrench className="w-5 h-5 text-red-600" />,
-    defaultSize: 'small'
+    defaultSize: 'col-2'
   },
   
   // ============ KPIs de Confiabilidade (Antigos) ============
@@ -74,7 +74,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Tempo médio entre falhas dos equipamentos',
     category: 'reliability',
     icon: <Clock className="w-5 h-5" />,
-    defaultSize: 'small'
+    defaultSize: 'col-2'
   },
   {
     id: 'card-progress',
@@ -82,7 +82,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Percentual de uptime dos ativos críticos',
     category: 'reliability',
     icon: <Heart className="w-5 h-5" />,
-    defaultSize: 'small'
+    defaultSize: 'col-2'
   },
   {
     id: 'card-value',
@@ -90,7 +90,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Quantidade de alertas pendentes no momento',
     category: 'reliability',
     icon: <AlertTriangle className="w-5 h-5" />,
-    defaultSize: 'small'
+    defaultSize: 'col-2'
   },
   {
     id: 'card-gauge',
@@ -98,7 +98,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Score de saúde consolidado de todos os ativos',
     category: 'reliability',
     icon: <Heart className="w-5 h-5" />,
-    defaultSize: 'small'
+    defaultSize: 'col-2'
   },
   
   // ============ KPIs Operacionais ============
@@ -108,7 +108,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Percentual de sensores online e funcionando',
     category: 'operations',
     icon: <Activity className="w-5 h-5" />,
-    defaultSize: 'small'
+    defaultSize: 'col-2'
   },
   {
     id: 'card-value',
@@ -116,7 +116,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Total de equipamentos ativos no momento',
     category: 'operations',
     icon: <Zap className="w-5 h-5" />,
-    defaultSize: 'small'
+    defaultSize: 'col-2'
   },
   {
     id: 'card-progress',
@@ -124,7 +124,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Cumprimento do plano de manutenção',
     category: 'operations',
     icon: <Wrench className="w-5 h-5" />,
-    defaultSize: 'small'
+    defaultSize: 'col-2'
   },
   
   // ============ Consumo e Eficiência ============
@@ -134,7 +134,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Comparativo de consumo energético (kWh)',
     category: 'energy',
     icon: <BarChart3 className="w-5 h-5" />,
-    defaultSize: 'medium'
+    defaultSize: 'col-4'
   },
   {
     id: 'chart-line',
@@ -142,7 +142,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Tendência de consumo ao longo do tempo',
     category: 'energy',
     icon: <TrendingUp className="w-5 h-5" />,
-    defaultSize: 'medium'
+    defaultSize: 'col-4'
   },
   {
     id: 'chart-pie',
@@ -150,7 +150,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Proporção de consumo por tipo de ativo',
     category: 'energy',
     icon: <PieChart className="w-5 h-5" />,
-    defaultSize: 'medium'
+    defaultSize: 'col-3'
   },
   {
     id: 'gauge-circular',
@@ -158,7 +158,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Indicador de eficiência operacional (COP/EER)',
     category: 'energy',
     icon: <Gauge className="w-5 h-5" />,
-    defaultSize: 'small'
+    defaultSize: 'col-3'
   },
   
   // ============ Alertas e Gestão ============
@@ -168,7 +168,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Tabela com alertas mais recentes e prioritários',
     category: 'management',
     icon: <AlertTriangle className="w-5 h-5" />,
-    defaultSize: 'large'
+    defaultSize: 'col-6'
   },
   {
     id: 'heatmap-time',
@@ -176,7 +176,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Densidade de alertas por horário e dia',
     category: 'management',
     icon: <LayoutGrid className="w-5 h-5" />,
-    defaultSize: 'large'
+    defaultSize: 'col-6'
   },
   {
     id: 'timeline',
@@ -184,7 +184,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Cronologia de manutenções realizadas e programadas',
     category: 'management',
     icon: <Clock className="w-5 h-5" />,
-    defaultSize: 'large'
+    defaultSize: 'col-6'
   },
   {
     id: 'chart-bar-horizontal',
@@ -192,7 +192,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Distribuição de alertas (Crítico, Alto, Médio, Baixo)',
     category: 'management',
     icon: <BarChart3 className="w-5 h-5" />,
-    defaultSize: 'medium'
+    defaultSize: 'col-4'
   },
   
   // ============ Análise e Tendências ============
@@ -202,7 +202,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Evolução da disponibilidade dos equipamentos',
     category: 'analytics',
     icon: <TrendingUp className="w-5 h-5" />,
-    defaultSize: 'medium'
+    defaultSize: 'col-4'
   },
   {
     id: 'chart-donut',
@@ -210,7 +210,7 @@ const overviewWidgetDefinitions: OverviewWidgetDefinition[] = [
     description: 'Distribuição: OK, Alerta, Manutenção, Parado',
     category: 'analytics',
     icon: <PieChart className="w-5 h-5" />,
-    defaultSize: 'medium'
+    defaultSize: 'col-3'
   }
 ];
 
@@ -371,9 +371,17 @@ export const OverviewWidgetPalette: React.FC<OverviewWidgetPaletteProps> = ({ on
                       {/* Badges */}
                       <div className="flex gap-1 flex-wrap">
                         <span className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full">
-                          {widget.defaultSize === 'small' && 'Pequeno (1/6)'}
-                          {widget.defaultSize === 'medium' && 'Médio (1/3)'}
-                          {widget.defaultSize === 'large' && 'Grande (2/3)'}
+                          {(() => {
+                            // Mostrar largura em colunas
+                            if (widget.defaultSize.startsWith('col-')) {
+                              const cols = widget.defaultSize.replace('col-', '');
+                              return `${cols}/6 colunas`;
+                            }
+                            // Fallback para tamanhos antigos
+                            return widget.defaultSize === 'small' ? 'Pequeno (2/6)' : 
+                                   widget.defaultSize === 'medium' ? 'Médio (3/6)' : 
+                                   'Grande (6/6)';
+                          })()}
                         </span>
                       </div>
                     </button>
