@@ -2520,11 +2520,11 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       ref={setNodeRef}
       style={{
         ...style,
-        ...(customWidth && { width: `${customWidth}px` }),
+        // Usar height fixo apenas, largura controlada pelo grid
         ...(customHeight && { height: `${customHeight}px` }),
       }}
       className={cn(
-        !customWidth && !customHeight && getSizeClasses(widget.size), // Só usa grid classes se não tiver tamanho custom
+        getSizeClasses(widget.size), // Sempre usa grid classes para controlar largura
         editMode && "relative group",
         isDragging && "opacity-50 z-50",
         editMode && "border-2 border-dashed border-primary/20 rounded-xl"

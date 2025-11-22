@@ -229,7 +229,7 @@ export const EditableOverviewPage: React.FC = () => {
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={widgets.map(w => w.id)} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 auto-rows-min">
+          <div className="grid grid-cols-1 lg:grid-cols-6 gap-6" style={{ gridAutoRows: 'minmax(200px, auto)' }}>
             {widgets.map(widget => (
               <DraggableWidget
                 key={widget.id}
