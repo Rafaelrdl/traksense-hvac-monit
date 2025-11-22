@@ -1,7 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   DndContext,
   DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
@@ -18,13 +20,16 @@ import { DraggableWidget } from '../dashboard/DraggableWidget';
 import { OverviewWidgetPalette } from '../dashboard/OverviewWidgetPalette';
 import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
-import { Edit3, RotateCcw } from 'lucide-react';
+import { Edit3, RotateCcw, Layout } from 'lucide-react';
 import { WidgetType } from '../../types/dashboard';
 
 export const EditableOverviewPage: React.FC = () => {
   const { assets, sensors, alerts } = useAppStore();
-  const { widgets, editMode, addWidget, reorderWidgets, setEditMode, resetToDefault } = useOverviewStore();
+  const { widgets, editMode, addWidget, reorderWidgets, setEditMode, resetToDefault, resetWidgetSizes } = useOverviewStore();
   const timeRange = useTimeRangeMs();
+  const [activeId, setActiveId] = useState<string | null>(null);
+  
+  const activeWidget = widgets.find(w => w.id === activeId);
 
   const sensors_dnd = useSensors(
     useSensor(PointerSensor, {
@@ -133,8 +138,13 @@ export const EditableOverviewPage: React.FC = () => {
     };
   }, [assets, sensors, alerts, timeRange]);
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    setActiveId(null);
     
     if (over && active.id !== over.id) {
       const oldIndex = widgets.findIndex((w) => w.id === active.id);
@@ -156,6 +166,12 @@ export const EditableOverviewPage: React.FC = () => {
   const handleResetToDefault = () => {
     if (confirm('Tem certeza que deseja restaurar os widgets padrão? Esta ação não pode ser desfeita.')) {
       resetToDefault();
+    }
+  };
+  
+  const handleResetSizes = () => {
+    if (confirm('Tem certeza que deseja resetar todos os tamanhos dos widgets para o padrão?')) {
+      resetWidgetSizes();
     }
   };
 
@@ -212,6 +228,15 @@ export const EditableOverviewPage: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
+              onClick={handleResetSizes}
+              className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-100"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Resetar Tamanhos
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleResetToDefault}
               className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-100"
             >
@@ -226,10 +251,11 @@ export const EditableOverviewPage: React.FC = () => {
       <DndContext
         sensors={sensors_dnd}
         collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={widgets.map(w => w.id)} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-1 lg:grid-cols-6 gap-6" style={{ gridAutoRows: 'minmax(200px, auto)' }}>
+          <div className="grid grid-cols-1 lg:grid-cols-6 gap-6" style={{ gridAutoRows: 'minmax(200px, auto)', gridAutoFlow: 'dense' }}>
             {widgets.map(widget => (
               <DraggableWidget
                 key={widget.id}
@@ -240,6 +266,20 @@ export const EditableOverviewPage: React.FC = () => {
             ))}
           </div>
         </SortableContext>
+        
+        <DragOverlay dropAnimation={null}>
+          {activeWidget ? (
+            <div className="bg-primary/10 backdrop-blur-sm rounded-xl border-2 border-primary shadow-2xl p-6 cursor-grabbing" style={{ width: '240px', height: '160px' }}>
+              <div className="flex flex-col items-center justify-center h-full gap-3">
+                <Layout className="w-12 h-12 text-primary" />
+                <div className="text-center">
+                  <div className="text-sm font-semibold text-foreground">{activeWidget.title}</div>
+                  <div className="text-xs text-muted-foreground mt-1 capitalize">{activeWidget.type.replace(/-/g, ' ')}</div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </DragOverlay>
       </DndContext>
 
       {/* Empty State */}

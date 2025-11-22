@@ -13,6 +13,7 @@ interface OverviewState {
   reorderWidgets: (widgets: DashboardWidget[]) => void;
   setEditMode: (editMode: boolean) => void;
   resetToDefault: () => void;
+  resetWidgetSizes: () => void;
 }
 
 // Widgets padrão para Visão Geral - Foco em gestão executiva e KPIs estratégicos
@@ -225,7 +226,14 @@ export const useOverviewStore = create<OverviewState>()(
 
       resetToDefault: () => {
         set({ widgets: defaultWidgets, editMode: false });
-      }
+      },
+      
+      resetWidgetSizes: () => set((state) => ({
+        widgets: state.widgets.map(widget => ({
+          ...widget,
+          position: { ...widget.position, w: undefined, h: undefined }
+        }))
+      })),
     }),
     {
       name: 'traksense-overview-storage',

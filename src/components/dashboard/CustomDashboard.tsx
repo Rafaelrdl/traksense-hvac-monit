@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 
 export const CustomDashboard: React.FC = () => {
-  const { layouts, currentLayoutId, editMode, setEditMode, setCurrentLayout, createLayout, deleteLayout, updateLayout, reorderWidgets } = useDashboardStore();
+  const { layouts, currentLayoutId, editMode, setEditMode, setCurrentLayout, createLayout, deleteLayout, updateLayout, reorderWidgets, resetWidgetSizes } = useDashboardStore();
   const { assets, sensors, alerts } = useAppStore();
   const timeRange = useTimeRangeMs();
   const [showNewLayoutDialog, setShowNewLayoutDialog] = useState(false);
@@ -259,6 +259,12 @@ export const CustomDashboard: React.FC = () => {
     setEditingLayoutId(null);
     setEditingLayoutName('');
   };
+  
+  const handleResetSizes = () => {
+    if (confirm('Tem certeza que deseja resetar todos os tamanhos dos widgets para o padrão?')) {
+      resetWidgetSizes(currentLayoutId);
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -396,6 +402,15 @@ export const CustomDashboard: React.FC = () => {
               <Edit3 className="w-4 h-4" />
               Renomear Tela
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResetSizes}
+              className="gap-2"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Resetar Tamanhos
+            </Button>
             <WidgetPalette layoutId={currentLayoutId} />
             {!currentLayout?.isDefault && layouts.length > 1 && (
               <Button
@@ -423,7 +438,7 @@ export const CustomDashboard: React.FC = () => {
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={currentLayout.widgets.map(w => w.id)} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-1 lg:grid-cols-6 gap-6" style={{ gridAutoRows: 'minmax(200px, auto)' }}>
+          <div className="grid grid-cols-1 lg:grid-cols-6 gap-6" style={{ gridAutoRows: 'minmax(200px, auto)', gridAutoFlow: 'dense' }}>
             {currentLayout.widgets.map(widget => (
               <DraggableWidget
                 key={widget.id}

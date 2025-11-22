@@ -18,6 +18,7 @@ interface DashboardState {
   removeWidget: (layoutId: string, widgetId: string) => void;
   moveWidget: (layoutId: string, widgetId: string, position: { x: number; y: number }) => void;
   reorderWidgets: (layoutId: string, widgetIds: string[]) => void;  // 🔥 NOVO: Reordenar widgets
+  resetWidgetSizes: (layoutId: string) => void;  // 🔥 NOVO: Resetar tamanhos dos widgets
   
   setEditMode: (editMode: boolean) => void;
 }
@@ -162,6 +163,22 @@ export const useDashboardStore = create<DashboardState>()(
 
       setEditMode: (editMode: boolean) => {
         set({ editMode });
+      },
+      
+      resetWidgetSizes: (layoutId: string) => {
+        set(state => ({
+          layouts: state.layouts.map(layout => 
+            layout.id === layoutId
+              ? {
+                  ...layout,
+                  widgets: layout.widgets.map(widget => ({
+                    ...widget,
+                    position: { ...widget.position, w: undefined, h: undefined }
+                  }))
+                }
+              : layout
+          )
+        }));
       }
     }),
     {

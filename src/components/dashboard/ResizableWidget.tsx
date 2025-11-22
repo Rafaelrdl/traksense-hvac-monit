@@ -139,8 +139,7 @@ export const ResizableWidget: React.FC<ResizableWidgetProps> = ({
       ref={containerRef}
       className={cn('relative w-full h-full', className)}
       style={{
-        // Aplicar dimensões customizadas apenas quando NÃO está arrastando
-        width: (!isDragging && width) ? `${width}px` : undefined,
+        // Aplicar APENAS altura customizada (largura é controlada pelo grid do pai)
         height: (!isDragging && height) ? `${height}px` : undefined,
         minWidth: minWidth ? `${minWidth}px` : undefined,
         minHeight: minHeight ? `${minHeight}px` : undefined,

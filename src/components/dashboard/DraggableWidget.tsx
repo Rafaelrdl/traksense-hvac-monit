@@ -110,6 +110,12 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
   const [isResizing, setIsResizing] = useState(false);
   const [previewCols, setPreviewCols] = useState<number | null>(null);
   
+  // 🔄 SINCRONIZAR DIMENSÕES QUANDO O WIDGET FOR ATUALIZADO (ex: reset)
+  React.useEffect(() => {
+    setCustomWidth(widget.position.w);
+    setCustomHeight(widget.position.h);
+  }, [widget.position.w, widget.position.h]);
+  
   // 📅 ESTADO LOCAL PARA PERÍODO DE TEMPO DO GRÁFICO
   const [chartTimeRange, setChartTimeRange] = useState<number>(24); // Sempre iniciar com 24h
   
@@ -2597,20 +2603,21 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
   return (
     <div
       ref={setNodeRef}
-      style={{
-        ...style,
-        // Aplicar width e height customizados quando existem, MAS NÃO durante o drag
-        ...(!isDragging && customWidth && { width: `${customWidth}px` }),
-        ...(!isDragging && customHeight && { height: `${customHeight}px` }),
-      }}
+      style={style}
       className={cn(
-        // Se não há tamanho custom, usa as classes de grid
-        !customWidth && !isDragging && getSizeClasses(widget.size),
+        // Sempre usa as classes de grid baseado no size do widget
+        !isDragging && getSizeClasses(widget.size),
+        // Aplicar altura customizada apenas se existir
         editMode && "relative group",
         isDragging && "opacity-0", // Esconder completamente durante o drag (DragOverlay mostrará)
         editMode && "border-2 border-dashed border-primary/20 rounded-xl",
         isResizing && "ring-2 ring-primary ring-offset-2"
       )}
+      style={{
+        ...style,
+        // Aplicar APENAS altura customizada (largura é controlada pelo grid)
+        ...(!isDragging && customHeight && { height: `${customHeight}px` }),
+      }}
       {...(editMode ? attributes : {})}
     >
       {/* Indicador de tamanho durante resize */}
