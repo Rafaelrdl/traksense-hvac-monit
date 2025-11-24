@@ -82,14 +82,10 @@ export const AssetDetailPage: React.FC = () => {
   // Decide if Performance tab should be shown
   const showPerformanceTab = !hidePerformanceWhenNoSensors || hasPerf;
 
-  // Get telemetry data for selected metrics
+  // Telemetry data removed - system uses real API data only
+  // Charts should fetch data via useSensorHistory or API calls
   const telemetryData = useMemo(() => {
-    const data: { [key: string]: any[] } = {};
-    selectedMetrics.forEach(metric => {
-      const sensorId = `${selectedAsset.id}-${metric}`;
-      data[metric] = simEngine.getTelemetryData(sensorId, timeRange);
-    });
-    return data;
+    return {}; // Empty - no mock data
   }, [selectedAsset.id, selectedMetrics, timeRange]);
 
   // Calculate asset KPIs

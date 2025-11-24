@@ -84,70 +84,10 @@ export const useRuleStore = create<RuleState>()(
         }
 
         const eqById = new Map(equipments.map(e => [e.id, e]));
-        let changed = false;
         
-        const migratedRules: Rule[] = mockRules.map((rule) => {
-          const legacyRule = rule as LegacyRule;
-          let ruleChanged = false;
-          
-          // Criar uma cópia da regra para migração
-          const migratedRule: Rule = {
-            id: rule.id,
-            name: rule.name,
-            description: rule.description,
-            equipmentId: rule.equipmentId,
-            assetTypeId: rule.assetTypeId,
-            parameterKey: rule.parameterKey,
-            variableKey: rule.variableKey,
-            operator: rule.operator,
-            threshold: rule.threshold,
-            unit: rule.unit,
-            duration: rule.duration,
-            severity: rule.severity,
-            actions: [],
-            enabled: rule.enabled,
-            createdAt: rule.createdAt,
-            needsReview: false,
-          };
-
-          // 1. Derivar assetTypeId do equipamento se necessário
-          const equipment = rule.equipmentId ? eqById.get(rule.equipmentId) : undefined;
-          if (equipment && rule.assetTypeId !== equipment.assetTypeId) {
-            migratedRule.assetTypeId = equipment.assetTypeId;
-            ruleChanged = true;
-          }
-
-          // 2. Remover WEBHOOK das ações
-          const oldActions = legacyRule.actions || [];
-          const cleanActions = oldActions.filter((a: any) => a !== 'WEBHOOK') as ('EMAIL' | 'IN_APP')[];
-          
-          if (oldActions.includes('WEBHOOK' as any)) {
-            ruleChanged = true;
-          }
-
-          // 3. Se não restou nenhuma ação, definir IN_APP e marcar para revisão
-          if (cleanActions.length === 0) {
-            migratedRule.actions = ['IN_APP'];
-            migratedRule.enabled = false;
-            migratedRule.needsReview = true;
-            ruleChanged = true;
-          } else {
-            migratedRule.actions = cleanActions;
-          }
-
-          if (ruleChanged) {
-            changed = true;
-          }
-
-          return migratedRule;
-        });
-
-        if (changed) {
-          set({ rules: migratedRules });
-          console.log(`Migração de regras concluída. ${migratedRules.length} regras migradas.`);
-        } else {
-          set({ rules: migratedRules });
-        }
+        // Mock rules removed - no migration needed
+        // Rules are now loaded from API only
+        console.log('Rule migration removed - using API data only');
       },
     }),
     {

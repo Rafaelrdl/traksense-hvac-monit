@@ -51,19 +51,13 @@ interface AppState {
   selectedTimeRange: '1h' | '6h' | '24h' | '7d' | '30d';
   sidebarCollapsed: boolean;
   
-  // Real-time simulation
-  isSimulationRunning: boolean;
+  // Real-time data (no simulation)
   lastUpdateTime: Date | null;
-  refreshInterval: ReturnType<typeof setInterval> | null;
   
   // Actions
   setSelectedAsset: (assetId: string | null) => void;
   setTimeRange: (range: AppState['selectedTimeRange']) => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
-  
-  startSimulation: () => void;
-  stopSimulation: () => void;
-  setScenario: (scenarioId: string) => void;
   
   refreshData: () => void;
   acknowledgeAlert: (alertId: string) => void;
@@ -303,34 +297,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  // Maintenance actions
+  // Maintenance actions (removed mock implementation)
+  // TODO: Implement with real API calls when maintenance module is ready
   addMaintenanceTask: (task) => {
-    const newTask = simEngine.addMaintenanceTask(task);
-    if (newTask) {
-      const currentTasks = get().maintenanceTasks;
-      set({ maintenanceTasks: [...currentTasks, newTask] });
-    }
+    console.warn('addMaintenanceTask: API integration pending');
   },
 
   updateMaintenanceTask: (taskId, updates) => {
-    const updatedTask = simEngine.updateMaintenanceTask(taskId, updates);
-    if (updatedTask) {
-      const currentTasks = get().maintenanceTasks;
-      const newTasks = currentTasks.map(task => 
-        task.id === taskId ? updatedTask : task
-      );
-      set({ maintenanceTasks: newTasks });
-    }
+    console.warn('updateMaintenanceTask: API integration pending');
   },
 
   completeMaintenanceTask: (taskId, notes, cost) => {
-    const completedTask = simEngine.completeMaintenanceTask(taskId, notes, cost);
-    if (completedTask) {
-      set({
-        maintenanceTasks: simEngine.getMaintenanceTasks(),
-        maintenanceHistory: simEngine.getMaintenanceHistory()
-      });
-    }
+    console.warn('completeMaintenanceTask: API integration pending');
   },
 
   addMaintenanceSchedule: (schedule) => {
@@ -355,7 +333,6 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   /**
    * Carrega assets da API REST Django
-   * Esta função substitui o uso do simEngine quando useApiData = true
    * 🔒 FIX #12: Now checks tenantStorage instead of localStorage
    * 🔧 FIX #19: Use authentication state instead of token check
    * Audit finding: "Cancela carregamentos quando não há token, mas o novo login 
