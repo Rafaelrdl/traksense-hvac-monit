@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { useAppStore, useTimeRangeMs } from '../../store/app';
-import { simEngine } from '../../lib/simulation';
 import { KPICard } from '../ui/KPICard';
 import { LineChartTemp } from '../charts/LineChartTemp';
 import { BarChartEnergy } from '../charts/BarChartEnergy';
@@ -20,115 +19,57 @@ export const OverviewPage: React.FC = () => {
   const { assets, sensors, alerts } = useAppStore();
   const timeRange = useTimeRangeMs();
 
-  // Calculate KPIs
+  // Calculate KPIs from real data only
   const kpis = useMemo(() => {
     const onlineSensors = sensors.filter(s => s.online).length;
     const totalSensors = sensors.length;
-    const uptime = ((onlineSensors / totalSensors) * 100).toFixed(1);
+    const uptime = totalSensors > 0 ? ((onlineSensors / totalSensors) * 100).toFixed(1) : '0';
 
     const activeAlerts = alerts.filter(a => !a.resolved && !a.acknowledged).length;
 
     const totalConsumption = assets.reduce((sum, asset) => sum + asset.powerConsumption, 0);
 
-    const avgHealth = assets.reduce((sum, asset) => sum + asset.healthScore, 0) / assets.length;
+    const avgHealth = assets.length > 0 
+      ? assets.reduce((sum, asset) => sum + asset.healthScore, 0) / assets.length 
+      : 0;
 
     return {
       uptime: parseFloat(uptime),
       activeAlerts,
       consumption: totalConsumption.toFixed(0),
       avgHealth: avgHealth.toFixed(1),
-      mtbf: '168', // Mock MTBF
-      mttr: '2.5'  // Mock MTTR
+      mtbf: '0', // Real data from API needed
+      mttr: '0'  // Real data from API needed
     };
   }, [assets, sensors, alerts]);
 
-  // Get temperature data for the main chart
+  // Temperature data - use real API data
   const temperatureData = useMemo(() => {
-    try {
-      const ahuSensor = sensors.find(s => s.assetId === 'ahu-001');
-      if (!ahuSensor) return { supply: [], return: [], setpoint: [] };
-
-      const supplyData = simEngine.getTelemetryData(`ahu-001-temp_supply`, timeRange) || [];
-      const returnData = simEngine.getTelemetryData(`ahu-001-temp_return`, timeRange) || [];
-      const setpointData = simEngine.getTelemetryData(`ahu-001-temp_setpoint`, timeRange) || [];
-
-      return {
-        supply: supplyData,
-        return: returnData,
-        setpoint: setpointData
-      };
-    } catch (error) {
-      console.error('Error loading temperature data:', error);
-      return { supply: [], return: [], setpoint: [] };
-    }
+    // TODO: Fetch from telemetry API
+    return { supply: [], return: [], setpoint: [] };
   }, [sensors, timeRange]);
 
-  // Get energy consumption data
+  // Energy consumption data - use real API data
   const energyData = useMemo(() => {
-    try {
-      return simEngine.getTelemetryData('ahu-001-power_kw', {
-        start: new Date(new Date().setHours(0, 0, 0, 0)),
-        end: new Date()
-      }) || [];
-    } catch (error) {
-      console.error('Error loading energy data:', error);
-      return [];
-    }
+    // TODO: Fetch from telemetry API
+    return [];
   }, []);
 
-  // Get filter health data
+  // Filter health data - use real API data
   const filterData = useMemo(() => {
-    try {
-      const dpFilterData = simEngine.getTelemetryData('ahu-001-dp_filter', timeRange) || [];
-      const currentDp = dpFilterData.length > 0 ? dpFilterData[dpFilterData.length - 1].value : 0;
-      const healthScore = Math.max(0, Math.min(100, 100 - (currentDp / 400) * 100));
-      const daysUntilChange = Math.max(1, Math.floor((400 - currentDp) / 5)); // Rough estimate
-
-      return {
-        healthScore: isNaN(healthScore) ? 85 : healthScore,
-        dpFilter: isNaN(currentDp) ? 150 : currentDp,
-        daysUntilChange: isNaN(daysUntilChange) ? 30 : daysUntilChange
-      };
-    } catch (error) {
-      console.error('Error loading filter data:', error);
-      return {
-        healthScore: 85,
-        dpFilter: 150,
-        daysUntilChange: 30
-      };
-    }
+    // TODO: Fetch from telemetry API
+    return {
+      healthScore: 0,
+      dpFilter: 0,
+      daysUntilChange: 0
+    };
   }, [timeRange]);
 
-  // Generate heatmap data for alerts
+  // Alert heatmap data - use real API data
   const alertHeatmapData = useMemo(() => {
-    const data: Array<{ day: number; hour: number; count: number; date: Date }> = [];
-    const now = new Date();
-    
-    for (let day = 6; day >= 0; day--) {
-      for (let hour = 0; hour < 24; hour++) {
-        const date = new Date(now);
-        date.setDate(date.getDate() - day);
-        date.setHours(hour, 0, 0, 0);
-        
-        // Simulate alert density based on time patterns
-        let count = 0;
-        if (hour >= 8 && hour <= 18) { // Business hours
-          count = Math.floor(Math.random() * 3);
-        } else {
-          count = Math.floor(Math.random() * 2);
-        }
-        
-        data.push({
-          day: date.getDay(),
-          hour,
-          count,
-          date
-        });
-      }
-    }
-    
-    return data;
-  }, []);
+    // TODO: Fetch from alerts API
+    return [];
+  }, [alerts]);
 
   // Top active alerts for table
   const topAlerts = alerts

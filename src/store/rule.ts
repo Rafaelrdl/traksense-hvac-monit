@@ -19,78 +19,7 @@ interface RuleState {
   migrateRules: (equipments: Equipment[]) => void;
 }
 
-// Mock data das regras existentes (algumas com formato antigo)
-const mockRules: (Rule | LegacyRule)[] = [
-  {
-    id: 'rule-001',
-    name: 'Alta Pressão Chiller Principal',
-    description: 'Alerta quando pressão de descarga excede limite crítico',
-    equipmentId: 'eq-002', // Chiller Central Torre A
-    assetTypeId: 'Chiller', // será derivado automaticamente
-    parameterKey: 'pressure_discharge',
-    variableKey: 'current',
-    operator: '>',
-    threshold: 300,
-    unit: 'psi',
-    duration: 5,
-    severity: 'Critical',
-    actions: ['EMAIL', 'IN_APP'] as any,
-    enabled: true,
-    createdAt: new Date('2024-09-15').getTime(),
-  },
-  {
-    id: 'rule-002',
-    name: 'ΔP Filtro AHU Principal',
-    description: 'Necessidade de troca de filtro detectada',
-    equipmentId: 'eq-001', // AHU Principal Ala Norte
-    assetTypeId: 'AHU',
-    parameterKey: 'dp_filter',
-    variableKey: 'current',
-    operator: '>',
-    threshold: 250,
-    unit: 'Pa',
-    duration: 10,
-    severity: 'High',
-    actions: ['EMAIL', 'WEBHOOK'] as any, // tem WEBHOOK - precisa migrar
-    enabled: true,
-    createdAt: new Date('2024-09-20').getTime(),
-  },
-  {
-    id: 'rule-003',
-    name: 'Baixa Temperatura VRF Cirurgia',
-    description: 'Temperatura abaixo do setpoint crítico',
-    equipmentId: 'eq-003', // VRF Sala de Cirurgia 01
-    assetTypeId: 'VRF',
-    parameterKey: 'temp_supply',
-    variableKey: 'current',
-    operator: '<',
-    threshold: 18,
-    unit: '°C',
-    duration: 15,
-    severity: 'Medium',
-    actions: ['WEBHOOK'] as any, // só tem WEBHOOK - precisa migrar
-    enabled: false,
-    createdAt: new Date('2024-10-01').getTime(),
-  },
-  {
-    id: 'rule-004',
-    name: 'COP Baixo Chiller Backup',
-    description: 'Eficiência energética abaixo do esperado',
-    equipmentId: 'eq-005', // Chiller Backup Torre B
-    assetTypeId: 'Chiller',
-    parameterKey: 'cop',
-    variableKey: 'avg',
-    operator: '<',
-    threshold: 3.5,
-    unit: '-',
-    duration: 30,
-    severity: 'Low',
-    actions: ['EMAIL', 'IN_APP'] as any,
-    enabled: true,
-    createdAt: new Date('2024-10-05').getTime(),
-  },
-];
-
+// No mock data - use real API data only
 export const useRuleStore = create<RuleState>()(
   persist(
     (set, get) => ({

@@ -15,7 +15,6 @@ import {
 } from '@dnd-kit/sortable';
 import { useAppStore, useTimeRangeMs } from '../../store/app';
 import { useOverviewStore } from '../../store/overview';
-import { simEngine } from '../../lib/simulation';
 import { DraggableWidget } from '../dashboard/DraggableWidget';
 import { OverviewWidgetPalette } from '../dashboard/OverviewWidgetPalette';
 import { Button } from '../ui/button';
@@ -95,67 +94,17 @@ export const EditableOverviewPage: React.FC = () => {
       alertsInStore: alerts.length
     });
 
-    // Temperature data
-    const temperatureData = (() => {
-      try {
-        const supplyData = simEngine.getTelemetryData(`ahu-001-temp_supply`, timeRange) || [];
-        const returnData = simEngine.getTelemetryData(`ahu-001-temp_return`, timeRange) || [];
-        const setpointData = simEngine.getTelemetryData(`ahu-001-temp_setpoint`, timeRange) || [];
-        return { supply: supplyData, return: returnData, setpoint: setpointData };
-      } catch (error) {
-        return { supply: [], return: [], setpoint: [] };
-      }
-    })();
+    // Temperature data - use real API
+    const temperatureData = { supply: [], return: [], setpoint: [] };
 
-    // Energy data
-    const energyData = (() => {
-      try {
-        return simEngine.getTelemetryData('ahu-001-power_kw', {
-          start: new Date(new Date().setHours(0, 0, 0, 0)),
-          end: new Date()
-        }) || [];
-      } catch (error) {
-        return [];
-      }
-    })();
+    // Energy data - use real API
+    const energyData: any[] = [];
 
-    // Filter health data
-    const filterData = (() => {
-      try {
-        const dpFilterData = simEngine.getTelemetryData('ahu-001-dp_filter', timeRange) || [];
-        const currentDp = dpFilterData.length > 0 ? dpFilterData[dpFilterData.length - 1].value : 0;
-        const healthScore = Math.max(0, Math.min(100, 100 - (currentDp / 400) * 100));
-        const daysUntilChange = Math.max(1, Math.floor((400 - currentDp) / 5));
-        return {
-          healthScore: isNaN(healthScore) ? 85 : healthScore,
-          dpFilter: isNaN(currentDp) ? 150 : currentDp,
-          daysUntilChange: isNaN(daysUntilChange) ? 30 : daysUntilChange
-        };
-      } catch (error) {
-        return { healthScore: 85, dpFilter: 150, daysUntilChange: 30 };
-      }
-    })();
+    // Filter health data - use real API
+    const filterData = { healthScore: 0, dpFilter: 0, daysUntilChange: 0 };
 
-    // Alert heatmap
-    const alertHeatmapData = (() => {
-      const data: Array<{ day: number; hour: number; count: number; date: Date }> = [];
-      const now = new Date();
-      for (let day = 6; day >= 0; day--) {
-        for (let hour = 0; hour < 24; hour++) {
-          const date = new Date(now);
-          date.setDate(date.getDate() - day);
-          date.setHours(hour, 0, 0, 0);
-          let count = 0;
-          if (hour >= 8 && hour <= 18) {
-            count = Math.floor(Math.random() * 3);
-          } else {
-            count = Math.floor(Math.random() * 2);
-          }
-          data.push({ day: date.getDay(), hour, count, date });
-        }
-      }
-      return data;
-    })();
+    // Alert heatmap - use real API
+    const alertHeatmapData: any[] = [];
 
     return {
       kpis,

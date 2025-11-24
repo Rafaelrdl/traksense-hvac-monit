@@ -285,24 +285,19 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
     }
   };
 
-  // Helper function to get real or mocked data for overview widgets based on widget ID or type
+  // Helper function to get real data for overview widgets based on widget ID
   const getWidgetData = () => {
     if (!isOverview) return null;
 
-    // Get assets from data if available
-    const assets = data?.assets || [];
-    const onlineAssets = assets.filter((a: any) => a.status === 'OK').length;
-    const totalAssets = assets.length;
-
-    // Map widget IDs to their corresponding data (real or mocked)
+    // Map widget IDs to their corresponding data (real only - no mocks)
     switch (widget.id) {
       case 'overview-uptime':
         return { 
           value: data?.kpis?.uptime ?? 0, 
           unit: '%', 
-          trendValue: 2.1,
-          trend: 'up',
-          trendLabel: 'vs ontem',
+          trendValue: null,
+          trend: 'neutral',
+          trendLabel: '',
           color: '#10b981' 
         };
       case 'overview-active-alerts':
@@ -316,87 +311,43 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         };
       case 'overview-consumption':
         return { 
-          value: data?.kpis?.consumption || '955', 
+          value: data?.kpis?.consumption ?? 0, 
           unit: 'kWh', 
-          trendValue: -3.2,
-          trend: 'down',
-          trendLabel: 'vs ontem',
+          trendValue: null,
+          trend: 'neutral',
+          trendLabel: '',
           color: '#10b981' 
         };
       case 'overview-health-score':
         return { 
-          value: data?.kpis?.avgHealth || '69,9', 
+          value: data?.kpis?.avgHealth ?? 0, 
           unit: '%', 
-          trendValue: 2.1,
-          trend: 'up',
-          trendLabel: 'última semana',
+          trendValue: null,
+          trend: 'neutral',
+          trendLabel: '',
           color: '#f59e0b' 
         };
       case 'overview-mttf':
       case 'overview-mtbf':
         return { 
-          value: data?.kpis?.mtbf || '168', 
+          value: data?.kpis?.mtbf ?? 0, 
           unit: 'h', 
-          trendValue: 5.3,
-          trend: 'up',
-          trendLabel: 'melhoria',
+          trendValue: null,
+          trend: 'neutral',
+          trendLabel: '',
           color: '#10b981' 
         };
       case 'overview-mttr':
         return { 
-          value: data?.kpis?.mttr || '2,5', 
+          value: data?.kpis?.mttr ?? 0, 
           unit: 'h', 
-          trendValue: -12.1,
-          trend: 'down',
-          trendLabel: 'redução',
+          trendValue: null,
+          trend: 'neutral',
+          trendLabel: '',
           color: '#ef4444' 
         };
       default:
-        // Generate mocked data based on widget type for newly added widgets
-        return getDefaultDataByType(widget.type);
-    }
-  };
-
-  // Generate realistic mocked data based on widget type
-  const getDefaultDataByType = (type: string) => {
-    switch (type) {
-      case 'card-kpi':
-        const trendVal = (Math.random() * 10 - 5).toFixed(1);
-        return { 
-          value: (85 + Math.random() * 15).toFixed(1), 
-          unit: '%', 
-          trendValue: parseFloat(trendVal),
-          trend: parseFloat(trendVal) >= 0 ? 'up' : 'down',
-          trendLabel: 'vs ontem',
-          color: '#3b82f6' 
-        };
-      case 'card-stat':
-        return { 
-          value: (85 + Math.random() * 15).toFixed(1), 
-          unit: '%', 
-          trend: (Math.random() * 10 - 2).toFixed(1), 
-          color: '#3b82f6' 
-        };
-      case 'card-value':
-        return { 
-          value: Math.floor(Math.random() * 20 + 5), 
-          unit: '', 
-          color: '#10b981' 
-        };
-      case 'card-progress':
-        return { 
-          value: (80 + Math.random() * 20).toFixed(1), 
-          unit: '%', 
-          target: 95, 
-          color: '#10b981' 
-        };
-      case 'card-gauge':
-        return { 
-          value: (75 + Math.random() * 25).toFixed(1), 
-          unit: '%', 
-          color: '#8b5cf6' 
-        };
-      default:
+        // Return null for newly added widgets - no mocks
         return null;
     }
   };
@@ -1034,108 +985,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
           );
         }
         
-        // Se for overview e widget de histórico de consumo, gerar dados mockados de barras (como na imagem)
-        if (isOverview && widget.id === 'overview-consumption-trend') {
-          // Gerar 24 horas de dados mockados realistas que variam ao longo do tempo
-          const now = new Date();
-          const currentHour = now.getHours();
-          const currentMinute = now.getMinutes();
-          
-          // Padrão de consumo: mais alto durante horário comercial (8h-18h)
-          const generateHourlyConsumption = (hour: number) => {
-            const baseConsumption = 300;
-            let multiplier = 1.0;
-            
-            // Horário comercial: 8h-18h (consumo alto)
-            if (hour >= 8 && hour < 18) {
-              multiplier = 1.4 + (Math.sin((hour - 8) / 10 * Math.PI) * 0.3);
-            } 
-            // Madrugada: 0h-6h (consumo baixo)
-            else if (hour >= 0 && hour < 6) {
-              multiplier = 0.8 + (Math.random() * 0.1);
-            }
-            // Noite: 18h-24h (consumo médio decrescente)
-            else {
-              multiplier = 1.2 - ((hour - 18) / 6 * 0.3);
-            }
-            
-            // Adicionar variação aleatória realista
-            const randomVariation = (Math.random() - 0.5) * 0.2;
-            return Math.round(baseConsumption * (multiplier + randomVariation));
-          };
-          
-          // Criar array de 24 horas começando da hora atual e voltando
-          const hourlyData = Array.from({ length: 24 }, (_, i) => {
-            const hour = (currentHour - (23 - i) + 24) % 24;
-            const timestamp = new Date(now);
-            timestamp.setHours(hour, 0, 0, 0);
-            
-            return {
-              timestamp,
-              value: generateHourlyConsumption(hour),
-              sensorId: 'mock-energy-sensor',
-              quality: 'good' as const
-            };
-          });
-          
-          // Calcular total
-          const total = hourlyData.reduce((sum, d) => sum + d.value, 0);
-          const totalFormatted = (total / 1000).toFixed(1); // Converter para MWh
-          const percentageOfGoal = ((total / 6000) * 100).toFixed(1); // Meta fictícia de 6000 kWh
-          
-          return (
-            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold">{widget.title}</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Energia (kWh)</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-orange-600">
-                    Total Hoje: {totalFormatted} MWh ({percentageOfGoal}% da meta)
-                  </p>
-                </div>
-              </div>
-              <ChartWrapper title="" height={250}>
-                <BarChartEnergy data={hourlyData} height={250} />
-              </ChartWrapper>
-            </div>
-          );
-        }
-        
-        // Se for overview mas não for o widget específico, gerar linha mockada genérica
-        if (isOverview) {
-          const hours = Array.from({ length: 24 }, (_, i) => i);
-          return (
-            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
-              <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
-              <div className="flex-1 relative">
-                <svg className="w-full h-full" viewBox="0 0 400 200">
-                  {/* Grid lines */}
-                  {[0, 50, 100, 150, 200].map(y => (
-                    <line key={y} x1="40" y1={y} x2="390" y2={y} stroke="#e5e7eb" strokeWidth="1" />
-                  ))}
-                  {/* Line chart */}
-                  <polyline
-                    fill="none"
-                    stroke="#3b82f6"
-                    strokeWidth="2"
-                    points={hours.map((h, i) => {
-                      const x = 40 + (i * 350 / 23);
-                      const y = 150 - (Math.sin(h / 3) * 40 + Math.random() * 30 + 50);
-                      return `${x},${y}`;
-                    }).join(' ')}
-                  />
-                  {/* Axis labels */}
-                  <text x="10" y="30" fontSize="10" fill="#9ca3af">Alta</text>
-                  <text x="10" y="180" fontSize="10" fill="#9ca3af">Baixa</text>
-                </svg>
-              </div>
-            </div>
-          );
-        }
-        
-        // 🔥 DASHBOARD NORMAL: USAR DADOS REAIS DO SENSOR
+        // 🔥 DASHBOARD: USAR DADOS REAIS DO SENSOR
         // Verificar se tem múltiplas variáveis
         const hasMultipleVariables = sensorTags && sensorTags.length > 1;
         
@@ -1314,110 +1164,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       // ============ GRÁFICOS DE BARRA ============
       case 'chart-bar':
       case 'chart-bar-horizontal':
-        // Se for overview e widget de consumo por equipamento, gerar dados mockados que variam
-        if (isOverview && widget.id === 'overview-consumption-bar') {
-          const now = new Date();
-          const seed = Math.floor(now.getTime() / 60000); // Atualiza a cada minuto
-          
-          // Equipamentos com consumo base diferente
-          const mockEquipments = [
-            { tag: 'AHU-001', baseConsumption: 1200 },
-            { tag: 'Chiller-01', baseConsumption: 900 },
-            { tag: 'VRF-002', baseConsumption: 550 },
-            { tag: 'RTU-001', baseConsumption: 430 },
-            { tag: 'Boiler-01', baseConsumption: 310 },
-            { tag: 'CT-001', baseConsumption: 270 }
-          ];
-          
-          // Gerar valores que variam de forma realista baseado no tempo
-          const generateRealisticValue = (base: number, index: number) => {
-            const hour = now.getHours();
-            const minute = now.getMinutes();
-            
-            // Variação horária (mais consumo durante horário comercial)
-            let hourMultiplier = 1.0;
-            if (hour >= 8 && hour < 18) {
-              hourMultiplier = 1.2 + (Math.sin((hour - 8) / 10 * Math.PI) * 0.2);
-            } else if (hour >= 0 && hour < 6) {
-              hourMultiplier = 0.7;
-            } else {
-              hourMultiplier = 0.9;
-            }
-            
-            // Variação por minuto (simulando flutuações)
-            const minuteVariation = Math.sin((minute + index * 10) / 60 * Math.PI * 2) * 0.1;
-            
-            // Variação aleatória suave (muda a cada minuto)
-            const randomSeed = (seed + index) % 100;
-            const randomVariation = (Math.sin(randomSeed) * 0.15);
-            
-            return Math.round(base * (hourMultiplier + minuteVariation + randomVariation));
-          };
-          
-          const mockData = mockEquipments.map((equipment, i) => ({
-            tag: equipment.tag,
-            consumption: generateRealisticValue(equipment.baseConsumption, i)
-          }));
-          
-          const maxValue = Math.max(...mockData.map(d => d.consumption));
-          
-          return (
-            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
-              <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
-              <div className="flex-1 flex items-end justify-between gap-2 px-4" style={{ minHeight: '200px' }}>
-                {mockData.map((item, i) => {
-                  const height = (item.consumption / maxValue) * 100;
-                  return (
-                    <div key={i} className="flex flex-col items-center justify-end gap-1 flex-1 h-full">
-                      <div className="text-xs font-medium text-center">{item.consumption}kWh</div>
-                      <div 
-                        className="w-full rounded-t-md transition-all bg-blue-500"
-                        style={{ 
-                          height: `${height}%`,
-                          minHeight: '4px',
-                          backgroundColor: widget.config?.color || '#3b82f6'
-                        }}
-                      />
-                      <span className="text-xs text-muted-foreground truncate w-full text-center mt-1">{item.tag}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        }
-        
-        // Se for overview mas não for o widget específico, gerar dados estáticos genéricos
-        if (isOverview) {
-          const mockEquipments = ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5', 'Item 6'];
-          const mockValues = [1250, 920, 580, 450, 320, 280];
-          const maxValue = Math.max(...mockValues);
-          
-          return (
-            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
-              <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
-              <div className="flex-1 flex items-end justify-between gap-2 px-4" style={{ minHeight: '200px' }}>
-                {mockEquipments.map((equipment, i) => {
-                  const height = (mockValues[i] / maxValue) * 100;
-                  return (
-                    <div key={i} className="flex flex-col items-center justify-end gap-1 flex-1 h-full">
-                      <div className="text-xs font-medium text-center">{mockValues[i]}</div>
-                      <div 
-                        className="w-full rounded-t-md transition-all bg-blue-500"
-                        style={{ 
-                          height: `${height}%`,
-                          minHeight: '4px',
-                          backgroundColor: widget.config?.color || '#3b82f6'
-                        }}
-                      />
-                      <span className="text-xs text-muted-foreground truncate w-full text-center mt-1">{equipment}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        }
         
         // 📊 GRÁFICO DE BARRAS COM DADOS REAIS E MÚLTIPLAS VARIÁVEIS
         const barHasMultipleSeries = sensorTags && sensorTags.length > 0;

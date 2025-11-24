@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { useMemo } from 'react';
 import { HVACAsset, Sensor, Alert, SimulationScenario, TelemetryPoint, MaintenanceTask, MaintenanceSchedule, MaintenanceHistory } from '../types/hvac';
-import { simEngine } from '../lib/simulation';
 import { assetsService } from '@/services/assetsService';
 import { sitesService } from '@/services/sitesService';
 import { mapApiAssetsToHVACAssets, mapHVACAssetToApiAsset, mapApiAssetToHVACAsset } from '@/lib/mappers/assetMapper';
@@ -101,12 +100,12 @@ interface AppState {
 export const useAppStore = create<AppState>((set, get) => ({
   // Initial state - vazio, será carregado da API
   assets: [],
-  sensors: simEngine.getSensors(),
-  alerts: simEngine.getAlerts(),
-  scenarios: simEngine.getScenarios(),
-  maintenanceTasks: simEngine.getMaintenanceTasks(),
-  maintenanceSchedules: simEngine.getMaintenanceSchedules(),
-  maintenanceHistory: simEngine.getMaintenanceHistory(),
+  sensors: [],
+  alerts: [],
+  scenarios: [],
+  maintenanceTasks: [],
+  maintenanceSchedules: [],
+  maintenanceHistory: [],
   
   // Site initial state
   availableSites: [],
@@ -170,37 +169,15 @@ export const useAppStore = create<AppState>((set, get) => ({
         clearInterval(state.refreshInterval);
       }
       
-      simEngine.startRealTimeSimulation(300000); // 5 minute intervals
-      
-      // Set up periodic data refresh
-      const refreshInterval = setInterval(() => {
-        const currentState = get();
-        if (!currentState.isSimulationRunning) {
-          clearInterval(refreshInterval);
-          return;
-        }
-        
-        set({
-          assets: simEngine.getAssets(),
-          sensors: simEngine.getSensors(),
-          alerts: simEngine.getAlerts(),
-          maintenanceTasks: simEngine.getMaintenanceTasks(),
-          maintenanceSchedules: simEngine.getMaintenanceSchedules(),
-          maintenanceHistory: simEngine.getMaintenanceHistory(),
-          lastUpdateTime: new Date()
-        });
-      }, 300000);
-      
       set({ 
         isSimulationRunning: true,
-        refreshInterval
+        refreshInterval: null
       });
     }
   },
   
   stopSimulation: () => {
     const state = get();
-    simEngine.stop();
     
     // Clear the refresh interval
     if (state.refreshInterval) {
@@ -214,22 +191,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   
   setScenario: (scenarioId) => {
-    simEngine.setScenario(scenarioId);
-    const updatedScenarios = simEngine.getScenarios();
-    set({ scenarios: updatedScenarios });
+    // Scenario logic removed - no more mock scenarios
+    console.log('setScenario called but simulation removed:', scenarioId);
   },
   
   refreshData: () => {
-    set({
-      assets: simEngine.getAssets(),
-      sensors: simEngine.getSensors(),
-      alerts: simEngine.getAlerts(),
-      scenarios: simEngine.getScenarios(),
-      maintenanceTasks: simEngine.getMaintenanceTasks(),
-      maintenanceSchedules: simEngine.getMaintenanceSchedules(),
-      maintenanceHistory: simEngine.getMaintenanceHistory(),
-      lastUpdateTime: new Date()
-    });
+    // Refresh apenas dados reais da API, não simula mais
+    get().loadAssetsFromApi();
   },
   
   acknowledgeAlert: (alertId) => {

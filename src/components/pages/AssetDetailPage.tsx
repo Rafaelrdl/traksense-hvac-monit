@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useAppStore, useSelectedAsset, useTimeRangeMs } from '../../store/app';
 import { useAlertsStore } from '../../store/alertsStore';
 import { useFeaturesStore } from '../../store/features';
-import { simEngine } from '../../lib/simulation';
 import { hasPerformanceTelemetry, reasonMissingTelemetry } from '../../lib/hasPerformanceTelemetry';
 import { MultiSeriesTelemetryChart } from '../charts/TelemetryChart';
 import { ScatterPerformance } from '../charts/ScatterPerformance';
@@ -102,7 +101,7 @@ export const AssetDetailPage: React.FC = () => {
     const currentPower = powerSensor?.lastReading?.value || 0;
 
     const vibrationSensor = assetSensors.find(s => s.type === 'vibration');
-    const compressorState = Math.random() > 0.3 ? 'ON' : 'OFF'; // Mock
+    const compressorState = 'OFF'; // Use real sensor data from API
 
     return {
       health: selectedAsset.healthScore,
@@ -120,8 +119,8 @@ export const AssetDetailPage: React.FC = () => {
     if (powerData.length === 0) return [];
 
     const avgPower = powerData.reduce((sum, p) => sum + p.value, 0) / powerData.length;
-    const estimatedLoad = avgPower * 0.8; // Mock thermal load calculation
-    const eer = (estimatedLoad / avgPower) * 3.412; // Convert to EER
+    const estimatedLoad = 0; // Use real thermal load sensor data from API
+    const eer = estimatedLoad > 0 ? (estimatedLoad / avgPower) * 3.412 : 0;
 
     return [{
       assetId: selectedAsset.id,
