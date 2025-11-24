@@ -256,22 +256,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.log('✅ Asset criado com sucesso na API:', createdHVACAsset.tag);
     } catch (error) {
       console.error('❌ Erro ao criar asset na API:', error);
-      
-      // Fallback: adicionar localmente se API falhar
-      const newAsset: HVACAsset = {
-        ...assetData,
-        id: `asset-${Date.now()}-${Math.random().toString(36).substring(7)}`,
-        healthScore: 100,
-        powerConsumption: 0,
-        status: 'OK',
-        operatingHours: 0,
-        lastMaintenance: new Date(),
-      };
-      
-      const currentAssets = get().assets;
-      set({ assets: [...currentAssets, newAsset] });
-      
-      // Re-throw para exibir erro ao usuário
+      // Re-throw error - no fallback mock asset creation
       throw error;
     }
   },

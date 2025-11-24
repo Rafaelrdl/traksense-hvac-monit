@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react';
 import type { IoTParameter } from '@/types/equipment';
 
-// Mock dos parâmetros IoT por tipo de dispositivo
+/**
+ * Catálogo de parâmetros IoT por tipo de dispositivo
+ * 
+ * Este dicionário contém METADADOS (labels, unidades, variáveis) para UI,
+ * não valores mockados. Os valores reais vêm da API/MQTT.
+ * 
+ * TODO: Migrar para API backend quando endpoint de metadados estiver disponível
+ */
 const IoT_PARAMETERS_DB: Record<string, IoTParameter[]> = {
   // AHU Parameters
   'iot-ahu-001': [
