@@ -35,12 +35,13 @@ export function useSensorData(
 
   useEffect(() => {
     if (!sensorTag || !assetId) {
+      // Para widgets sem sensor configurado (ex: overview KPIs), retornar estado vazio sem erro
       setData({
         value: null,
         unit: '',
         isOnline: false,
         isLoading: false,
-        error: sensorTag ? 'Asset não configurado' : 'Sensor não configurado',
+        error: null, // Não é erro, apenas não tem sensor configurado
         sensor: null,
       });
       return;

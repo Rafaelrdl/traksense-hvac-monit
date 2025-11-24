@@ -566,8 +566,11 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
     switch (widget.type) {
       // ============ CARDS KPI (Estilo Overview) ============
       case 'card-kpi':
-        // 🔥 USAR DADOS REAIS DO SENSOR
-        const kpiRawValue = sensorData.value ?? widgetData?.value ?? 0;
+        // 🔥 Para widgets de overview, usar apenas widgetData (dados do dashboard)
+        // Para widgets normais, priorizar dados do sensor
+        const kpiRawValue = isOverview 
+          ? (widgetData?.value ?? 0) 
+          : (sensorData.value ?? widgetData?.value ?? 0);
         const kpiValue = applyFormulaTransform(kpiRawValue);
         const kpiData = widgetData as any;
         
@@ -636,10 +639,11 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
                   </span>
                 )}
               </div>
-              {sensorData.error && (
+              {/* Só mostrar erro de sensor se não for widget de overview */}
+              {!isOverview && sensorData.error && (
                 <p className="text-xs text-red-500 mt-1">Erro ao carregar dados</p>
               )}
-              {!sensorData.isOnline && !sensorData.isLoading && !sensorData.error && (
+              {!isOverview && !sensorData.isOnline && !sensorData.isLoading && !sensorData.error && (
                 <p className="text-xs text-orange-500 mt-1">Sensor offline</p>
               )}
             </div>
