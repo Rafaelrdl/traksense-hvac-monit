@@ -1302,59 +1302,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
           );
         }
         
-        // Se for overview, gerar dados mockados
-        if (isOverview) {
-          const mockData = {
-            'AHU': 42.3,
-            'Chiller': 31.2,
-            'VRF': 18.9,
-            'RTU': 7.6
-          };
-          const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
-          let currentAngle = 0;
-
-          return (
-            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
-              <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
-              <div className="flex-1 flex items-center justify-center gap-6">
-                <div className="relative w-48 h-48">
-                  <svg className="w-full h-full transform -rotate-90">
-                    {Object.entries(mockData).map(([type, percentage], i) => {
-                      const angle = (percentage / 100) * 360;
-                      const circumference = 2 * Math.PI * 80;
-                      const strokeDasharray = `${(angle / 360) * circumference} ${circumference}`;
-                      const rotation = currentAngle;
-                      currentAngle += angle;
-                      
-                      return (
-                        <circle 
-                          key={type}
-                          cx="96" 
-                          cy="96" 
-                          r="80" 
-                          stroke={colors[i]}
-                          strokeWidth="32" 
-                          fill="none"
-                          strokeDasharray={strokeDasharray}
-                          style={{ transform: `rotate(${rotation}deg)`, transformOrigin: '96px 96px' }}
-                        />
-                      );
-                    })}
-                  </svg>
-                </div>
-                <div className="flex flex-col gap-2">
-                  {Object.entries(mockData).map(([type, percentage], i) => (
-                    <div key={type} className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors[i] }} />
-                      <span className="text-sm">{type}: {percentage.toFixed(1)}%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          );
-        }
-        
         // 📊 GRÁFICO DE PIZZA/DONUT COM DADOS REAIS E MÚLTIPLAS VARIÁVEIS
         const pieHasMultipleSeries = sensorTags && sensorTags.length > 0;
         const pieHistoryData = pieHasMultipleSeries ? multiSensorHistory : sensorHistory;
@@ -1428,18 +1375,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
 
       // ============ GRÁFICO RADIAL ============
       case 'chart-radial':
-        // Se for overview, usar dados mockados
-        if (isOverview) {
-          return (
-            <div className="bg-card rounded-xl p-6 border shadow-sm h-full flex flex-col">
-              <h3 className="text-lg font-semibold mb-4">{widget.title}</h3>
-              <div className="flex-1 flex items-center justify-center">
-                <p className="text-muted-foreground">Gráfico Radial (Overview)</p>
-              </div>
-            </div>
-          );
-        }
-        
         // 📊 GRÁFICO RADIAL COM DADOS REAIS E MÚLTIPLAS VARIÁVEIS
         const radialHasMultipleSeries = sensorTags && sensorTags.length > 0;
         const radialHistoryData = radialHasMultipleSeries ? multiSensorHistory : sensorHistory;

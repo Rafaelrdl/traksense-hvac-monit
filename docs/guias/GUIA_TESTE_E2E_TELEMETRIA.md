@@ -452,10 +452,15 @@ Se algum teste falhar:
    - F12 → Network
    - Status codes (200, 401, 500, etc.)
 
-4. **Executar teste backend**:
+4. **Validar endpoints backend**:
    ```bash
-   cd traksense-backend
-   python test_telemetry_e2e.py
+   # Testar endpoint latest
+   curl -X GET "http://umc.localhost:8000/api/telemetry/latest/DEVICE_ID/" \
+     -H "accept: application/json"
+   
+   # Testar endpoint history  
+   curl -X GET "http://umc.localhost:8000/api/telemetry/history/DEVICE_ID/" \
+     -H "accept: application/json"
    ```
 
 ---
