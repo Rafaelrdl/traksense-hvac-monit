@@ -298,7 +298,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
     switch (widget.id) {
       case 'overview-uptime':
         return { 
-          value: data?.kpis?.uptime || '99,3', 
+          value: data?.kpis?.uptime ?? 0, 
           unit: '%', 
           trendValue: 2.1,
           trend: 'up',
@@ -307,11 +307,11 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
         };
       case 'overview-active-alerts':
         return { 
-          value: data?.kpis?.activeAlerts || 19, 
+          value: data?.kpis?.activeAlerts ?? 0, 
           unit: '', 
-          trendValue: -3.2,
-          trend: 'down',
-          trendLabel: 'vs ontem',
+          trendValue: null,
+          trend: 'neutral',
+          trendLabel: '',
           color: '#f59e0b' 
         };
       case 'overview-consumption':
@@ -673,11 +673,17 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
             <div className="mb-2">
               <div className="flex items-baseline gap-1">
                 <span className="text-3xl font-bold" style={{ color: kpiColor }}>
-                  {sensorData.isLoading ? '...' : (kpiValue !== null && kpiValue !== undefined ? Number(kpiValue).toFixed(widget.config?.decimals || 1) : '--')}
+                  {sensorData.isLoading ? '...' : (
+                    kpiValue !== null && kpiValue !== undefined && !isNaN(Number(kpiValue))
+                      ? Number(kpiValue).toFixed(widget.config?.decimals ?? 1) 
+                      : '--'
+                  )}
                 </span>
-                <span className="text-sm text-gray-500 font-medium">
-                  {sensorData.unit || widget.config?.unit || '%'}
-                </span>
+                {(sensorData.unit || widget.config?.unit) && (
+                  <span className="text-sm text-gray-500 font-medium">
+                    {sensorData.unit || widget.config?.unit}
+                  </span>
+                )}
               </div>
               {sensorData.error && (
                 <p className="text-xs text-red-500 mt-1">Erro ao carregar dados</p>
@@ -733,7 +739,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
             </div>
             <div className="flex-1 flex flex-col justify-center">
               <div className="text-4xl font-bold" style={{ color: cardColor }}>
-                {sensorData.isLoading ? '...' : (cardValue !== null && cardValue !== undefined ? Number(cardValue).toFixed(widget.config?.decimals || 2) : '--')}
+                {sensorData.isLoading ? '...' : (cardValue !== null && cardValue !== undefined ? Number(cardValue).toFixed(widget.config?.decimals ?? 2) : '--')}
               </div>
               <div className="text-sm text-muted-foreground mt-1">
                 {sensorData.unit || widget.config?.unit || 'valor'}
@@ -776,7 +782,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
             </div>
             <div className="flex-1 flex flex-col justify-center">
               <div className="text-3xl font-bold" style={{ color: statColor }}>
-                {sensorData.isLoading ? '...' : (statValue !== null && statValue !== undefined ? Number(statValue).toFixed(widget.config?.decimals || 2) : '--')}
+                {sensorData.isLoading ? '...' : (statValue !== null && statValue !== undefined ? Number(statValue).toFixed(widget.config?.decimals ?? 2) : '--')}
               </div>
               <div className="text-sm text-muted-foreground mt-1">{sensorData.unit || widget.config?.unit || 'valor'}</div>
               
@@ -1776,7 +1782,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-3xl font-bold" style={{ color: widget.config?.color || '#3b82f6' }}>
-                  {sensorData.isLoading ? '...' : (meterValue !== null ? Number(meterValue).toFixed(widget.config?.decimals || 1) : '--')}
+                  {sensorData.isLoading ? '...' : (meterValue !== null ? Number(meterValue).toFixed(widget.config?.decimals ?? 1) : '--')}
                 </span>
                 <span className="text-sm text-muted-foreground">{sensorData.unit || widget.config?.unit || '%'}</span>
               </div>
@@ -1838,7 +1844,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
                   {/* Valor central */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <span className="text-2xl font-bold text-foreground drop-shadow-md z-10">
-                      {sensorData.isLoading ? '...' : Number(tankValue).toFixed(widget.config?.decimals || 1)}
+                      {sensorData.isLoading ? '...' : Number(tankValue).toFixed(widget.config?.decimals ?? 1)}
                     </span>
                     <span className="text-xs text-foreground drop-shadow-md">{sensorData.unit || widget.config?.unit || '%'}</span>
                   </div>
@@ -1927,7 +1933,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
               {/* Valor e unidade */}
               <div className="flex flex-col items-start flex-shrink-0 min-w-0">
                 <span className="text-2xl font-bold truncate" style={{ color: thermColor }}>
-                  {sensorData.isLoading ? '...' : Number(thermValue).toFixed(widget.config?.decimals || 1)}
+                  {sensorData.isLoading ? '...' : Number(thermValue).toFixed(widget.config?.decimals ?? 1)}
                 </span>
                 <span className="text-xs text-muted-foreground truncate">
                   {sensorData.unit || widget.config?.unit || '°C'}

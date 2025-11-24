@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   DndContext,
   DragEndEvent,
@@ -22,12 +22,26 @@ import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
 import { Edit3, RotateCcw, Layout } from 'lucide-react';
 import { WidgetType } from '../../types/dashboard';
+import { useSiteStats } from '../../hooks/useSiteStats';
 
 export const EditableOverviewPage: React.FC = () => {
-  const { assets, sensors, alerts } = useAppStore();
+  const { assets, sensors, alerts, currentSite } = useAppStore();
   const { widgets, editMode, addWidget, reorderWidgets, setEditMode, resetToDefault, resetWidgetSizes } = useOverviewStore();
   const timeRange = useTimeRangeMs();
   const [activeId, setActiveId] = useState<string | null>(null);
+  
+  // Buscar estatísticas reais do site
+  const { data: siteStats, isLoading: isLoadingStats, error: statsError } = useSiteStats(currentSite?.id);
+  
+  // Debug: log para verificar dados
+  useEffect(() => {
+    if (siteStats) {
+      console.log('📊 Site Stats carregadas:', siteStats);
+    }
+    if (statsError) {
+      console.error('❌ Erro ao carregar stats:', statsError);
+    }
+  }, [siteStats, statsError]);
   
   const activeWidget = widgets.find(w => w.id === activeId);
 
@@ -43,19 +57,43 @@ export const EditableOverviewPage: React.FC = () => {
   const dashboardData = useMemo(() => {
     const onlineSensors = sensors.filter(s => s.online).length;
     const totalSensors = sensors.length;
-    const uptime = ((onlineSensors / totalSensors) * 100).toFixed(1);
-    const activeAlerts = alerts.filter(a => !a.resolved && !a.acknowledged).length;
+    
+    // Calcular uptime baseado em sensores (fallback)
+    const sensorUptime = totalSensors > 0 
+      ? parseFloat(((onlineSensors / totalSensors) * 100).toFixed(1))
+      : 0;
+    
+    // Alertas ativos do frontend (fallback) - contar ativos únicos como backend
+    const uniqueAssetsWithAlerts = new Set(
+      alerts
+        .filter(a => !a.resolved && !a.acknowledged)
+        .map(a => a.assetTag)
+    ).size;
+    
     const totalConsumption = assets.reduce((sum, asset) => sum + asset.powerConsumption, 0);
-    const avgHealth = assets.reduce((sum, asset) => sum + asset.healthScore, 0) / assets.length;
+    const avgHealth = assets.length > 0 
+      ? assets.reduce((sum, asset) => sum + asset.healthScore, 0) / assets.length
+      : 0;
 
     const kpis = {
-      uptime: parseFloat(uptime),
-      activeAlerts,
+      // ✅ Usar disponibilidade real dos devices do backend (ou fallback para sensores)
+      uptime: siteStats?.avg_device_availability ?? sensorUptime,
+      // ✅ Usar APENAS contagem real do backend (store tem dados mockados)
+      activeAlerts: siteStats?.assets_with_active_alerts ?? 0,
       consumption: totalConsumption.toFixed(0),
       avgHealth: avgHealth.toFixed(1),
       mtbf: '168',
       mttr: '2.5'
     };
+    
+    // Debug: verificar KPIs
+    console.log('📊 KPIs calculados:', {
+      activeAlerts: kpis.activeAlerts,
+      siteStatsValue: siteStats?.assets_with_active_alerts,
+      uniqueAssetsWithAlerts,
+      siteStatsLoaded: !!siteStats,
+      alertsInStore: alerts.length
+    });
 
     // Temperature data
     const temperatureData = (() => {
@@ -136,7 +174,7 @@ export const EditableOverviewPage: React.FC = () => {
         })
         .slice(0, 5)
     };
-  }, [assets, sensors, alerts, timeRange]);
+  }, [assets, sensors, alerts, timeRange, siteStats]);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -187,22 +225,6 @@ export const EditableOverviewPage: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-4">
-          {/* Time Range Selector */}
-          <div className="flex items-center space-x-2">
-            <label className="text-sm text-muted-foreground">Período:</label>
-            <select 
-              className="px-3 py-1 border border-input rounded-md text-sm bg-background"
-              value={useAppStore(state => state.selectedTimeRange)}
-              onChange={(e) => useAppStore.getState().setTimeRange(e.target.value as any)}
-            >
-              <option value="1h">1 Hora</option>
-              <option value="6h">6 Horas</option>
-              <option value="24h">24 Horas</option>
-              <option value="7d">7 Dias</option>
-              <option value="30d">30 Dias</option>
-            </select>
-          </div>
-          
           {/* Edit Mode Toggle */}
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-muted-foreground">Editar:</label>
