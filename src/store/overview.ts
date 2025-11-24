@@ -23,7 +23,7 @@ const defaultWidgets: DashboardWidget[] = [
     id: 'overview-uptime',
     type: 'card-kpi',
     title: 'Uptime Dispositivos',
-    size: 'col-2',
+    size: 'col-1',
     position: { x: 0, y: 0 },
     config: {
       label: 'Uptime Dispositivos',
@@ -38,7 +38,7 @@ const defaultWidgets: DashboardWidget[] = [
     id: 'overview-active-alerts',
     type: 'card-kpi',
     title: 'Ativos com Alerta',
-    size: 'col-2',
+    size: 'col-1',
     position: { x: 1, y: 0 },
     config: {
       label: 'Ativos com Alerta',
@@ -53,7 +53,7 @@ const defaultWidgets: DashboardWidget[] = [
     id: 'overview-consumption',
     type: 'card-kpi',
     title: 'Consumo Hoje',
-    size: 'col-2',
+    size: 'col-1',
     position: { x: 2, y: 0 },
     config: {
       label: 'Consumo Hoje',
@@ -68,7 +68,7 @@ const defaultWidgets: DashboardWidget[] = [
     id: 'overview-health-score',
     type: 'card-kpi',
     title: 'Saúde Média HVAC',
-    size: 'col-2',
+    size: 'col-1',
     position: { x: 3, y: 0 },
     config: {
       label: 'Saúde Média HVAC',
@@ -83,7 +83,7 @@ const defaultWidgets: DashboardWidget[] = [
     id: 'overview-mttf',
     type: 'card-kpi',
     title: 'MTBF',
-    size: 'col-2',
+    size: 'col-1',
     position: { x: 4, y: 0 },
     config: {
       label: 'MTBF',
@@ -98,7 +98,7 @@ const defaultWidgets: DashboardWidget[] = [
     id: 'overview-mttr',
     type: 'card-kpi',
     title: 'MTTR',
-    size: 'col-2',
+    size: 'col-1',
     position: { x: 5, y: 0 },
     config: {
       label: 'MTTR',
@@ -237,10 +237,10 @@ export const useOverviewStore = create<OverviewState>()(
     }),
     {
       name: 'traksense-overview-storage',
-      version: 4, // Incrementado para forçar reset e carregar novos widgets KPI
+      version: 5, // Incrementado para forçar reset com novos tamanhos (col-1 para KPIs)
       migrate: (persistedState: any, version: number) => {
-        // Se for versão antiga (< v4), resetar para widgets padrão com novos cards KPI
-        if (version < 4) {
+        // Se for versão antiga (< v5), resetar para widgets padrão com novos tamanhos
+        if (version < 5) {
           return {
             widgets: defaultWidgets,
             editMode: false

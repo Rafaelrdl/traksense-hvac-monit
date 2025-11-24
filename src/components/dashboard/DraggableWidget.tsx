@@ -555,27 +555,27 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       newSize 
     });
     
-    // Aplicar largura ajustada ao grid
-    setCustomWidth(snappedWidth);
+    // NÃO aplicar width inline - deixar o grid controlar via classes
+    setCustomWidth(undefined); // Limpar width customizada
     setCustomHeight(height);
     
-    // Persistir no store
+    // Persistir no store (APENAS size e height, SEM width)
     if (isOverview) {
       useOverviewStore.getState().updateWidget(widget.id, {
         size: newSize,
-        position: { ...widget.position, w: snappedWidth, h: height }
+        position: { ...widget.position, w: undefined, h: height }
       });
     } else {
       useDashboardStore.getState().updateWidget(layoutId, widget.id, {
         size: newSize,
-        position: { ...widget.position, w: snappedWidth, h: height }
+        position: { ...widget.position, w: undefined, h: height }
       });
     }
   };
 
   const handleResize = (width: number, height: number) => {
-    // Atualizar durante o redimensionamento para feedback visual imediato
-    setCustomWidth(width);
+    // Atualizar APENAS altura durante o redimensionamento para feedback visual
+    // Largura é controlada pelo preview de colunas (badge)
     setCustomHeight(height);
     setIsResizing(true);
     
@@ -2603,11 +2603,9 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
   return (
     <div
       ref={setNodeRef}
-      style={style}
       className={cn(
         // Sempre usa as classes de grid baseado no size do widget
         !isDragging && getSizeClasses(widget.size),
-        // Aplicar altura customizada apenas se existir
         editMode && "relative group",
         isDragging && "opacity-0", // Esconder completamente durante o drag (DragOverlay mostrará)
         editMode && "border-2 border-dashed border-primary/20 rounded-xl",
@@ -2651,7 +2649,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({ widget, layout
       )}
       
       <ResizableWidget
-        width={customWidth}
+        width={undefined}
         height={customHeight}
         minWidth={minWidth}
         minHeight={minHeight}
