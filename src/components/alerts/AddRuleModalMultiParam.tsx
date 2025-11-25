@@ -28,6 +28,7 @@ import { Switch } from '@/components/ui/switch';
 
 import { useAppStore } from '@/store/app';
 import { useRulesStore } from '@/store/rulesStore';
+import { useCreateRuleMutation, useUpdateRuleMutation } from '@/hooks/queries';
 import { ASSET_TYPES } from '@/types/equipment';
 import { 
   Rule, 
@@ -67,7 +68,8 @@ const DEFAULT_MESSAGE_TEMPLATE = "{sensor} está {operator} {threshold}{unit} (v
 
 export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddRuleModalMultiParamProps) {
   const assets = useAppStore(s => s.assets);
-  const { createRule, updateRule, fetchRules } = useRulesStore();
+  const createMutation = useCreateRuleMutation();
+  const updateMutation = useUpdateRuleMutation();
 
   // Estados básicos da regra
   const [equipmentId, setEquipmentId] = useState<string>('');
@@ -354,23 +356,26 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
     console.log('📤 Enviando regra para backend:', ruleData);
 
     if (editingRule) {
-      const result = await updateRule(editingRule.id, ruleData);
-      if (result) {
-        toast.success('Regra atualizada!', {
-          description: `A regra "${ruleName}" foi atualizada com sucesso.`,
-        });
-        await fetchRules();
-        onOpenChange(false);
-      }
+      updateMutation.mutate(
+        { ruleId: editingRule.id, data: ruleData },
+        {
+          onSuccess: () => {
+            toast.success('Regra atualizada!', {
+              description: `A regra "${ruleName}" foi atualizada com sucesso.`,
+            });
+            onOpenChange(false);
+          }
+        }
+      );
     } else {
-      const result = await createRule(ruleData);
-      if (result) {
-        toast.success('Regra criada!', {
-          description: `A regra "${ruleName}" foi criada com sucesso.`,
-        });
-        await fetchRules();
-        onOpenChange(false);
-      }
+      createMutation.mutate(ruleData, {
+        onSuccess: () => {
+          toast.success('Regra criada!', {
+            description: `A regra "${ruleName}" foi criada com sucesso.`,
+          });
+          onOpenChange(false);
+        }
+      });
     }
   };
 

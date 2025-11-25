@@ -205,4 +205,41 @@ export const sitesService = {
   async search(filters: SiteFilters): Promise<PaginatedResponse<ApiSite>> {
     return this.getAll(filters);
   },
+
+  /**
+   * Busca estatísticas de um site específico
+   * 
+   * @param id - ID do site
+   * @returns Estatísticas do site (assets, devices, sensores, alertas)
+   * 
+   * @example
+   * ```ts
+   * const stats = await sitesService.getStats(1);
+   * console.log(`Disponibilidade: ${stats.avg_device_availability}%`);
+   * console.log(`Assets com alertas: ${stats.assets_with_active_alerts}`);
+   * ```
+   */
+  async getStats(id: number): Promise<{
+    total_assets: number;
+    assets_by_status: Record<string, number>;
+    assets_by_type: Record<string, number>;
+    total_devices: number;
+    online_devices: number;
+    avg_device_availability: number;
+    total_sensors: number;
+    online_sensors: number;
+    assets_with_active_alerts: number;
+  }> {
+    const response = await api.get(`/sites/${id}/stats/`);
+    return response.data;
+  },
+
+  // Alias para compatibilidade com React Query hooks
+  list: async () => {
+    return sitesService.getAllComplete();
+  },
+
+  get: async (id: string) => {
+    return sitesService.getById(parseInt(id));
+  },
 };

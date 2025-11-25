@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DashboardWidget } from '../../types/dashboard';
 import { useAppStore } from '../../store/app';
 import { useDashboardStore } from '../../store/dashboard';
+import { useAssetsQuery, useSensorsQuery } from '@/hooks/queries';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -11,7 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { ScrollArea } from '../ui/scroll-area';
 import { Settings, Save, X, Zap, Code, Loader2 } from 'lucide-react';
 import { FORMULA_EXAMPLES } from '../../utils/formula-eval';
-import { assetsService } from '../../services/assetsService';
 import { ApiSensor } from '../../types/api';
 import { mapApiAssetsToHVACAssets } from '../../lib/mappers/assetMapper';
 
@@ -23,56 +23,17 @@ interface WidgetConfigProps {
 }
 
 export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, open, onClose }) => {
-  const { sensors, assets } = useAppStore();
+  const { sensors, assets: storeAssets } = useAppStore();
   const updateWidget = useDashboardStore(state => state.updateWidget);
   
-  // Estados locais para carregamento
-  const [localAssets, setLocalAssets] = useState<typeof assets>([]);
-  const [isLoadingLocalAssets, setIsLoadingLocalAssets] = useState(false);
-  const [hasLoadedAssets, setHasLoadedAssets] = useState(false);
+  // React Query: buscar assets
+  const { data: apiAssets = [], isLoading: isLoadingAssets } = useAssetsQuery({});
   
-  // Carregar assets: primeiro tenta usar do store (cache), se vazio, busca da API
-  React.useEffect(() => {
-    if (!open) {
-      // Reset quando fechar o modal
-      return;
-    }
-    
-    // Se já tem assets no store (cache), usa eles
-    if (assets.length > 0) {
-      console.log(`✅ WidgetConfig: Usando ${assets.length} assets do cache (store)`);
-      setLocalAssets(assets);
-      setHasLoadedAssets(true);
-      return;
-    }
-    
-    // Se já carregou localmente, não carrega novamente
-    if (hasLoadedAssets) {
-      return;
-    }
-    
-    // Se não tem no cache e não carregou ainda, busca da API
-    const loadAssetsDirectly = async () => {
-      setIsLoadingLocalAssets(true);
-      try {
-        console.log('🔄 WidgetConfig: Cache vazio, buscando assets da API...');
-        const response = await assetsService.getAllComplete();
-        console.log(`✅ WidgetConfig: ${response.length} assets carregados da API`);
-        const mappedAssets = mapApiAssetsToHVACAssets(response);
-        setLocalAssets(mappedAssets);
-        setHasLoadedAssets(true);
-      } catch (error) {
-        console.error('❌ Erro ao carregar assets:', error);
-      } finally {
-        setIsLoadingLocalAssets(false);
-      }
-    };
-    
-    loadAssetsDirectly();
-  }, [open, assets.length, hasLoadedAssets]);
-  
-  // Usa localAssets se tiver, senão usa do store
-  const displayAssets = localAssets.length > 0 ? localAssets : assets;
+  // Usar assets da query ou do store como fallback
+  const mappedAssets = apiAssets.length > 0 
+    ? mapApiAssetsToHVACAssets(apiAssets) 
+    : storeAssets;
+  const displayAssets = mappedAssets;
   
   const [title, setTitle] = useState(widget.title);
   const [size, setSize] = useState(widget.size);
@@ -82,11 +43,22 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
   const [selectedAssetId, setSelectedAssetId] = useState<number | null>(
     config.assetId ? parseInt(config.assetId.toString()) : null
   );
-  const [assetSensors, setAssetSensors] = useState<ApiSensor[]>([]);
-  const [loadingSensors, setLoadingSensors] = useState(false);
+  
+  // React Query: buscar sensores do asset selecionado
+  const { data: assetSensors = [], isLoading: loadingSensors } = useSensorsQuery(
+    selectedAssetId,
+    open && selectedAssetId !== null
+  );
   
   // Agrupar sensores por device (MAC address)
-  const [selectedDeviceName, setSelectedDeviceName] = useState<string | null>(config.deviceName || null);
+  const [selectedDeviceName, setSelectedDeviceName] = useState<string | null>(() => {
+    // Limpar "Device " prefix de dados antigos
+    const deviceName = config.deviceName || null;
+    if (deviceName && deviceName.startsWith('Device ')) {
+      return deviceName.replace('Device ', '');
+    }
+    return deviceName;
+  });
   const [selectedMetricType, setSelectedMetricType] = useState<string | null>(config.metricType || null);
   
   // 🔥 NOVO: Múltiplas variáveis para gráficos de linha/área/barras/pizza/radial/tabelas
@@ -95,7 +67,6 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
     config.sensorTags || (config.sensorTag ? [config.sensorTag] : [])
   );
   
-  // Obter devices únicos (agrupados por device ID para garantir unicidade)
   const availableDevices = React.useMemo(() => {
     const deviceMap = new Map<number, { displayName: string; fullSerial: string; deviceId: number }>();
     
@@ -148,32 +119,8 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
     ? availableVariables.find(s => s.tag === selectedMetricType)
     : null;
 
-  // Carregar sensores quando o asset é selecionado
-  useEffect(() => {
-    if (!selectedAssetId) {
-      setAssetSensors([]);
-      setSelectedDeviceName(null);
-      setSelectedMetricType(null);
-      return;
-    }
-
-    const loadAssetSensors = async () => {
-      setLoadingSensors(true);
-      try {
-        console.log(`🔍 Carregando sensores do asset ${selectedAssetId}`);
-        const sensors = await assetsService.getSensors(selectedAssetId);
-        setAssetSensors(sensors);
-        console.log(`✅ ${sensors.length} sensores carregados`);
-      } catch (error) {
-        console.error('❌ Erro ao carregar sensores do asset:', error);
-        setAssetSensors([]);
-      } finally {
-        setLoadingSensors(false);
-      }
-    };
-
-    loadAssetSensors();
-  }, [selectedAssetId]);
+  // React Query já busca sensores automaticamente quando selectedAssetId muda
+  // Remover useEffect manual de carregamento
 
   // Resetar widget config quando mudar seleções
   useEffect(() => {
@@ -320,7 +267,7 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
                 <Label htmlFor="asset" className="text-sm font-medium">
                   1️⃣ Equipamento
                 </Label>
-                {isLoadingLocalAssets ? (
+                {isLoadingAssets ? (
                   <div className="flex items-center justify-center h-10 border rounded-md bg-muted/50">
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
                     <span className="text-sm text-muted-foreground">Carregando equipamentos...</span>

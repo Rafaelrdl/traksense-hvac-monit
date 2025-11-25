@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from 'react';
-import { useAlertsStore } from '@/store/alertsStore';
+import { useAcknowledgeAlertMutation, useResolveAlertMutation } from '@/hooks/queries';
 import { Alert } from '@/services/api/alerts';
 import { toast } from 'sonner';
 import {
@@ -46,7 +46,8 @@ export const AlertDetailsDialog: React.FC<AlertDetailsDialogProps> = ({
   open,
   onOpenChange,
 }) => {
-  const { acknowledgeAlert, resolveAlert, isAcknowledging, isResolving } = useAlertsStore();
+  const acknowledgeMutation = useAcknowledgeAlertMutation();
+  const resolveMutation = useResolveAlertMutation();
   const [resolveNotes, setResolveNotes] = useState('');
   const [showResolveModal, setShowResolveModal] = useState(false);
   
@@ -55,10 +56,11 @@ export const AlertDetailsDialog: React.FC<AlertDetailsDialogProps> = ({
 
   // Reconhecer (sem modal)
   const handleAcknowledge = async () => {
-    const success = await acknowledgeAlert(alert.id);
-    if (success) {
-      onOpenChange(false);
-    }
+    acknowledgeMutation.mutate(alert.id, {
+      onSuccess: () => {
+        onOpenChange(false);
+      }
+    });
   };
 
   // Abrir modal de resolução
@@ -73,12 +75,16 @@ export const AlertDetailsDialog: React.FC<AlertDetailsDialogProps> = ({
       return;
     }
     
-    const success = await resolveAlert(alert.id, resolveNotes);
-    if (success) {
-      setResolveNotes('');
-      setShowResolveModal(false);
-      onOpenChange(false);
-    }
+    resolveMutation.mutate(
+      { alertId: alert.id, notes: resolveNotes },
+      {
+        onSuccess: () => {
+          setResolveNotes('');
+          setShowResolveModal(false);
+          onOpenChange(false);
+        }
+      }
+    );
   };
 
   const isActive = alert.is_active && !alert.acknowledged;
@@ -241,11 +247,11 @@ export const AlertDetailsDialog: React.FC<AlertDetailsDialogProps> = ({
             {isActive && (
               <Button
                 onClick={handleAcknowledge}
-                disabled={isAcknowledging}
+                disabled={acknowledgeMutation.isPending}
                 variant="secondary"
                 className="bg-yellow-600 hover:bg-yellow-700 text-white"
               >
-                {isAcknowledging ? (
+                {acknowledgeMutation.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Reconhecendo...
@@ -316,10 +322,10 @@ export const AlertDetailsDialog: React.FC<AlertDetailsDialogProps> = ({
             </Button>
             <Button
               onClick={handleResolve}
-              disabled={isResolving || !resolveNotes.trim()}
+              disabled={resolveMutation.isPending || !resolveNotes.trim()}
               className="bg-green-600 hover:bg-green-700 text-white"
             >
-              {isResolving ? (
+              {resolveMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Resolvendo...

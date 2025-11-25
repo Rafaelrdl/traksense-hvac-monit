@@ -1,87 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useAppStore } from '../../store/app';
-import { devicesService } from '../../services/devicesService';
+import { useDevicesSummaryQuery } from '@/hooks/queries/useDevicesQuery';
 import DeviceCard from '../devices/DeviceCard';
-import { DeviceSummary, DeviceStatusFilter } from '@/types/device';
+import { DeviceStatusFilter } from '@/types/device';
 
 export const SensorsPage: React.FC = () => {
   const { currentSite } = useAppStore();
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  const [noAssetsAvailable, setNoAssetsAvailable] = useState(false);
-  const [isLoadingAssets, setIsLoadingAssets] = useState(false);
-  const [telemetryError, setTelemetryError] = useState<string | null>(null);
-  
-  // Estado para devices agrupados
-  const [devices, setDevices] = useState<DeviceSummary[]>([]);
   const [deviceStatusFilter, setDeviceStatusFilter] = useState<DeviceStatusFilter>('all');
 
-  // Carregar devices agrupados com variáveis
-  const loadDevicesSummary = async () => {
-    if (!currentSite?.id) {
-      console.warn('⚠️ Nenhum site selecionado. Aguardando seleção de site...');
-      setNoAssetsAvailable(true);
-      setDevices([]);
-      return;
-    }
+  // React Query: buscar devices summary com auto-refresh de 30s
+  const {
+    data: devices = [],
+    isLoading: isLoadingAssets,
+    error,
+    refetch,
+    dataUpdatedAt,
+  } = useDevicesSummaryQuery(currentSite?.id);
 
-    console.log(`📡 [GROUPED VIEW] Carregando devices summary do site: ${currentSite.name} (ID: ${currentSite.id})`);
-    setIsLoadingAssets(true);
-    setNoAssetsAvailable(false);
-    setTelemetryError(null);
-
-    try {
-      const devicesSummary = await devicesService.getSummaryBySite(currentSite.id);
-      console.log(`✅ ${devicesSummary.length} device(s) encontrado(s) com variáveis agrupadas`);
-      
-      setDevices(devicesSummary);
-      setLastUpdate(new Date());
-      setNoAssetsAvailable(devicesSummary.length === 0);
-    } catch (error: any) {
-      console.error('❌ Erro ao carregar devices summary:', error);
-      setTelemetryError(error.message || 'Erro ao carregar devices');
-      setDevices([]);
-      setNoAssetsAvailable(true);
-    } finally {
-      setIsLoadingAssets(false);
-    }
-  };
-
-  // Carregar devices agrupados quando o site mudar
-  useEffect(() => {
-    if (!currentSite?.id) {
-      console.warn('⚠️ Nenhum site selecionado. Aguardando seleção de site...');
-      setNoAssetsAvailable(true);
-      setDevices([]);
-      return;
-    }
-
-    loadDevicesSummary();
-  }, [currentSite?.id]);
-
-  // 🔄 Auto-refresh a cada 30 segundos
-  useEffect(() => {
-    if (!currentSite?.id) return;
-
-    console.log('🔄 Iniciando auto-refresh de telemetria (30s)');
-    const intervalId = setInterval(() => {
-      console.log('🔄 Atualizando telemetria automaticamente...');
-      
-      devicesService.getSummaryBySite(currentSite.id)
-        .then((devicesSummary) => {
-          setDevices(devicesSummary);
-          setLastUpdate(new Date());
-          console.log('✅ Devices summary atualizado automaticamente');
-        })
-        .catch((error) => {
-          console.error('❌ Erro ao atualizar devices summary:', error);
-        });
-    }, 30000); // 30 segundos
-
-    return () => {
-      console.log('⏸️ Parando auto-refresh de telemetria');
-      clearInterval(intervalId);
-    };
-  }, [currentSite?.id]);
+  const lastUpdate = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
+  const noAssetsAvailable = !isLoadingAssets && devices.length === 0;
+  const telemetryError = error ? (error as Error).message : null;
 
   // Filtrar devices por status
   const filteredDevices = devices.filter((device) => {
@@ -105,7 +43,7 @@ export const SensorsPage: React.FC = () => {
     if (!currentSite?.id) return;
     
     console.log('🔄 Atualização manual solicitada');
-    loadDevicesSummary();
+    refetch();
   };
 
   return (

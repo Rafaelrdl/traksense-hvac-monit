@@ -21,7 +21,7 @@ import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
 import { Edit3, RotateCcw, Layout } from 'lucide-react';
 import { WidgetType } from '../../types/dashboard';
-import { useSiteStats } from '../../hooks/useSiteStats';
+import { useSiteStatsQuery } from '@/hooks/queries';
 
 export const EditableOverviewPage: React.FC = () => {
   const { assets, sensors, alerts, currentSite } = useAppStore();
@@ -29,8 +29,8 @@ export const EditableOverviewPage: React.FC = () => {
   const timeRange = useTimeRangeMs();
   const [activeId, setActiveId] = useState<string | null>(null);
   
-  // Buscar estatísticas reais do site
-  const { data: siteStats, isLoading: isLoadingStats, error: statsError } = useSiteStats(currentSite?.id);
+  // Buscar estatísticas reais do site com React Query
+  const { data: siteStats, isLoading: isLoadingStats, error: statsError } = useSiteStatsQuery(currentSite?.id);
   
   // Debug: log para verificar dados
   useEffect(() => {

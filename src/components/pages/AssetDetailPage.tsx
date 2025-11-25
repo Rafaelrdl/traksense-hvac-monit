@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAppStore, useSelectedAsset, useTimeRangeMs } from '../../store/app';
-import { useAlertsStore } from '../../store/alertsStore';
+import { useAlertsQuery } from '@/hooks/queries';
 import { useFeaturesStore } from '../../store/features';
 import { hasPerformanceTelemetry, reasonMissingTelemetry } from '../../lib/hasPerformanceTelemetry';
 import { MultiSeriesTelemetryChart } from '../charts/TelemetryChart';
@@ -35,8 +35,13 @@ import {
 
 export const AssetDetailPage: React.FC = () => {
   const { setSelectedAsset, sensors } = useAppStore();
-  const { alerts: apiAlerts, fetchAlerts } = useAlertsStore();
   const selectedAsset = useSelectedAsset();
+  
+  // React Query: buscar alertas do asset
+  const { data: allAlerts = [] } = useAlertsQuery({
+    // Sem filtros específicos - vamos filtrar localmente
+  });
+  
   const timeRange = useTimeRangeMs();
   const hidePerformanceWhenNoSensors = useFeaturesStore(state => state.hidePerformanceWhenNoSensors);
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
@@ -70,8 +75,8 @@ export const AssetDetailPage: React.FC = () => {
   // Get asset sensors
   const assetSensors = sensors.filter(s => s.assetId === selectedAsset.id);
   
-  // Filtra alertas da API por asset_tag
-  const assetAlerts = apiAlerts.filter(a => 
+  // Filtra alertas da API por asset_tag usando dados do React Query
+  const assetAlerts = allAlerts.filter(a => 
     a.asset_tag === selectedAsset.tag && !a.resolved
   );
   
@@ -160,12 +165,7 @@ export const AssetDetailPage: React.FC = () => {
     'maintenance': { label: 'RSSI', unit: 'dBW' },
   };
 
-  // Carregar alertas quando a aba de alertas é selecionada
-  useEffect(() => {
-    if (activeTab === 'alerts') {
-      fetchAlerts(); // Busca alertas com os filtros e paginação do store
-    }
-  }, [activeTab, fetchAlerts]);
+  // Não precisa mais do useEffect para fetchAlerts - React Query faz polling automático
 
   // Buscar sensores do ativo via API
   useEffect(() => {

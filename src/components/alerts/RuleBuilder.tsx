@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -30,21 +31,21 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { useRulesStore } from '@/store/rulesStore';
+import { useRulesQuery, useToggleRuleMutation, useDeleteRuleMutation } from '@/hooks/queries';
+import { rulesApi } from '@/services/api/alerts';
 import { useAppStore } from '@/store/app';
 import { getParameterLabel, getVariableLabel } from '@/hooks/useIoTParams';
 import { ASSET_TYPES } from '@/types/equipment';
 import { Rule } from '@/services/api/alerts';
 
 export const RuleBuilder: React.FC = () => {
-  // Estados dos stores
-  const { 
-    rules, 
-    isLoading, 
-    fetchRules, 
-    deleteRule, 
-    toggleRuleStatus 
-  } = useRulesStore();
+  const queryClient = useQueryClient();
+  
+  // React Query hooks
+  const { data: rules = [], isLoading } = useRulesQuery();
+  const toggleMutation = useToggleRuleMutation();
+  const deleteMutation = useDeleteRuleMutation();
+  
   const { assets, loadAssetsFromApi } = useAppStore();
   
   // Estados locais
@@ -52,11 +53,19 @@ export const RuleBuilder: React.FC = () => {
   const [editingRule, setEditingRule] = useState<Rule | null>(null);
   const [selectedEquipmentId, setSelectedEquipmentId] = useState<string>('all');
 
-  // Carregar regras e assets do backend ao montar o componente
+  // Prefetch rule details on hover
+  const prefetchRuleDetails = (ruleId: number) => {
+    queryClient.prefetchQuery({
+      queryKey: ['rules', ruleId],
+      queryFn: () => rulesApi.getRuleById(ruleId),
+      staleTime: 1000 * 60 * 5,
+    });
+  };
+
+  // Carregar assets do backend ao montar o componente
   useEffect(() => {
-    fetchRules();
     loadAssetsFromApi();
-  }, [fetchRules, loadAssetsFromApi]);
+  }, [loadAssetsFromApi]);
 
   // Filtrar regras por equipamento selecionado
   const filteredRules = useMemo(() => {
@@ -78,18 +87,19 @@ export const RuleBuilder: React.FC = () => {
   };
 
   const handleDeleteRule = async (ruleId: number) => {
-    const rule = rules.find(r => r.id === ruleId);
-    const success = await deleteRule(ruleId);
-    if (!success) {
-      toast.error('Erro ao remover regra');
-    }
+    deleteMutation.mutate(ruleId, {
+      onError: () => {
+        toast.error('Erro ao remover regra');
+      }
+    });
   };
 
   const handleToggleRule = async (ruleId: number) => {
-    const success = await toggleRuleStatus(ruleId);
-    if (!success) {
-      toast.error('Erro ao alterar status da regra');
-    }
+    toggleMutation.mutate(ruleId, {
+      onError: () => {
+        toast.error('Erro ao alterar status da regra');
+      }
+    });
   };
 
   // Helper functions
@@ -255,7 +265,12 @@ export const RuleBuilder: React.FC = () => {
                   />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onMouseEnter={() => prefetchRuleDetails(Number(rule.id))}
+                      >
                         <MoreVertical className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>

@@ -11,10 +11,14 @@ import { MaintenancePage } from './components/pages/MaintenancePage';
 import { SettingsPage } from './components/pages/SettingsPage';
 import { CustomDashboard } from './components/dashboard/CustomDashboard';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { QueryProvider } from './providers/QueryProvider';
 import { useAppStore } from './store/app';
 import { useNotifications } from './store/notifications';
+import { useQueryMonitoring } from './hooks/useQueryMonitoring';
 
-function App() {
+function AppContent() {
+  // Monitoramento de queries (apenas em DEV)
+  useQueryMonitoring();
   // Recuperar página salva no localStorage ou usar 'overview' como padrão
   const [currentPage, setCurrentPage] = useState(() => {
     return localStorage.getItem('currentPage') || 'overview';
@@ -133,6 +137,14 @@ function App() {
         {renderPage()}
       </Layout>
     </ProtectedRoute>
+  );
+}
+
+function App() {
+  return (
+    <QueryProvider>
+      <AppContent />
+    </QueryProvider>
   );
 }
 

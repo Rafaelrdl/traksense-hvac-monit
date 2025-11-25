@@ -4,10 +4,10 @@
  * Page for viewing and managing system alerts.
  */
 
-import React, { useEffect, useState } from 'react';
-import { useAlertsStore } from '@/store/alertsStore';
-import { useRulesStore } from '@/store/rulesStore';
-import { AlertStatus, Severity } from '@/services/api/alerts';
+import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAlertsQuery, useRulesStatisticsQuery } from '@/hooks/queries';
+import { alertsApi, AlertStatus, Severity } from '@/services/api/alerts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,58 +37,61 @@ const severityConfig: Partial<Record<Severity, { color: string; bg: string; labe
 };
 
 export const AlertsPage: React.FC = () => {
-  const {
-    alerts,
-    statistics,
-    isLoading,
-    filters,
-    fetchAlerts,
-    fetchStatistics,
-    setFilters,
-    pollAlerts,
-    stopPolling,
-  } = useAlertsStore();
-
-  const { fetchStatistics: fetchRuleStats } = useRulesStore();
-
+  const queryClient = useQueryClient();
   const [selectedAlertId, setSelectedAlertId] = useState<number | null>(null);
   const [isAddRuleModalOpen, setIsAddRuleModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<AlertStatus | 'all'>('all');
   const [severityFilter, setSeverityFilter] = useState<Severity | 'all'>('all');
 
-  // Load data on mount
-  useEffect(() => {
-    fetchAlerts();
-    fetchStatistics();
-    fetchRuleStats();
-    
-    // Start polling for real-time updates
-    pollAlerts();
-    
-    return () => {
-      stopPolling();
-    };
-  }, []);
+  // Prefetch alert details on hover
+  const prefetchAlertDetails = (alertId: number) => {
+    queryClient.prefetchQuery({
+      queryKey: ['alerts', alertId],
+      queryFn: () => alertsApi.getAlertById(alertId),
+      staleTime: 1000 * 60 * 5, // 5 minutos
+    });
+  };
+
+  // React Query: alerts com polling de 30s
+  const filters = {
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    severity: severityFilter === 'all' ? undefined : severityFilter,
+  };
+  
+  const { 
+    data: alertsData, 
+    isLoading: isLoadingAlerts,
+    refetch: refetchAlerts 
+  } = useAlertsQuery(filters);
+
+  // React Query: estatísticas de regras
+  const { data: ruleStats } = useRulesStatisticsQuery();
+
+  const alerts = alertsData || [];
+  
+  // Calcular estatísticas localmente dos alertas filtrados
+  const statistics = {
+    active: alerts.filter(a => a.is_active && !a.acknowledged).length,
+    acknowledged: alerts.filter(a => a.acknowledged && !a.resolved).length,
+    resolved: alerts.filter(a => a.resolved).length,
+    total: alerts.length,
+  };
 
   // Apply filters
   const handleApplyFilters = () => {
-    setFilters({
-      status: statusFilter === 'all' ? undefined : statusFilter,
-      severity: severityFilter === 'all' ? undefined : severityFilter,
-    });
+    // Filters são aplicados automaticamente via query key
+    // Não precisa fazer nada
   };
 
   // Reset filters
   const handleResetFilters = () => {
     setStatusFilter('all');
     setSeverityFilter('all');
-    setFilters({});
   };
 
   // Refresh data
   const handleRefresh = () => {
-    fetchAlerts();
-    fetchStatistics();
+    refetchAlerts();
   };
 
   const selectedAlert = alerts.find((a) => a.id === selectedAlertId);
@@ -180,7 +183,6 @@ export const AlertsPage: React.FC = () => {
                   size="sm"
                   onClick={() => {
                     setStatusFilter('active');
-                    setFilters({ status: 'active', severity: severityFilter === 'all' ? undefined : severityFilter });
                   }}
                 >
                   Ativos
@@ -190,7 +192,6 @@ export const AlertsPage: React.FC = () => {
                   size="sm"
                   onClick={() => {
                     setStatusFilter('acknowledged');
-                    setFilters({ status: 'acknowledged', severity: severityFilter === 'all' ? undefined : severityFilter });
                   }}
                 >
                   Reconhecidos
@@ -200,7 +201,6 @@ export const AlertsPage: React.FC = () => {
                   size="sm"
                   onClick={() => {
                     setStatusFilter('resolved');
-                    setFilters({ status: 'resolved', severity: severityFilter === 'all' ? undefined : severityFilter });
                   }}
                 >
                   Resolvidos
@@ -214,8 +214,8 @@ export const AlertsPage: React.FC = () => {
                 </Button>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
-              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoadingAlerts}>
+              <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingAlerts ? 'animate-spin' : ''}`} />
               Atualizar
             </Button>
           </div>
@@ -228,7 +228,7 @@ export const AlertsPage: React.FC = () => {
           <CardTitle className="text-lg">Lista de Alertas ({alerts.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {isLoadingAlerts ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
@@ -237,7 +237,7 @@ export const AlertsPage: React.FC = () => {
               <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Nenhum alerta encontrado</h3>
               <p className="text-muted-foreground">
-                {filters.status || filters.severity
+                {statusFilter !== 'all' || severityFilter !== 'all'
                   ? 'Tente ajustar os filtros para ver mais resultados'
                   : 'Não há alertas no momento'}
               </p>
@@ -261,6 +261,7 @@ export const AlertsPage: React.FC = () => {
                   <div
                     key={`alert-${alert.id}-${index}`}
                     className={`p-4 rounded-lg border-2 bg-white cursor-pointer transition-all hover:shadow-md ${borderColor}`}
+                    onMouseEnter={() => prefetchAlertDetails(alert.id)}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">

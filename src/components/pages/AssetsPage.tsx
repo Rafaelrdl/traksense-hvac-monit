@@ -1,5 +1,8 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAppStore } from '../../store/app';
+import { useAssetsQuery } from '@/hooks/queries';
+import { assetsService } from '@/services/assetsService';
 import { HVACAsset } from '../../types/hvac';
 import { Search, ExternalLink, Heart, Zap, AlertCircle } from 'lucide-react';
 import { AddAssetDialog } from '../assets/AddAssetDialog';
@@ -7,35 +10,56 @@ import { DeleteAssetButton } from '../assets/DeleteAssetButton';
 import { UnifiedAssetsToolbar } from '../../modules/assets/components/UnifiedAssetsToolbar';
 
 export const AssetsPage: React.FC = () => {
-  const { 
-    assets, 
-    setSelectedAsset, 
-    addAsset, 
-    isLoadingAssets,
-    error,
-    loadAssetsFromApi 
-  } = useAppStore();
+  const queryClient = useQueryClient();
+  const { setSelectedAsset, addAsset } = useAppStore();
+  
+  // React Query: buscar assets com filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [editingAsset, setEditingAsset] = useState<HVACAsset | null>(null);
 
-  // Carregar assets da API quando o componente montar
-  useEffect(() => {
-    loadAssetsFromApi();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Executar apenas uma vez ao montar
+  // Prefetch asset details and sensors on hover
+  const prefetchAssetDetails = (assetId: number) => {
+    // Prefetch asset details
+    queryClient.prefetchQuery({
+      queryKey: ['assets', assetId],
+      queryFn: () => assetsService.getById(assetId),
+      staleTime: 1000 * 60 * 5,
+    });
+    // Prefetch asset sensors
+    queryClient.prefetchQuery({
+      queryKey: ['assets', assetId, 'sensors'],
+      queryFn: () => assetsService.getSensors(assetId),
+      staleTime: 1000 * 60 * 5,
+    });
+  };
+
+  // Construir filtros para a API
+  const filters = {
+    asset_type: filterType !== 'all' ? filterType : undefined,
+    status: filterStatus !== 'all' ? filterStatus : undefined,
+    search: searchTerm || undefined,
+  };
+
+  const { data: apiAssets = [], isLoading: isLoadingAssets, error: queryError, refetch } = useAssetsQuery(filters);
+  
+  // Converter ApiAsset[] para HVACAsset[] se necessário
+  // Por enquanto, assumindo que os dados já estão no formato correto ou são compatíveis
+  const assets = apiAssets as unknown as HVACAsset[];
+  const error = queryError?.message;
 
   const filteredAssets = useMemo(() => {
+    // Filtros já aplicados na query, mas mantemos filtro local para search em tempo real
     return assets.filter(asset => {
-      const matchesSearch = asset.tag.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          asset.location.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = filterType === 'all' || asset.type === filterType;
-      const matchesStatus = filterStatus === 'all' || asset.status === filterStatus;
-      
-      return matchesSearch && matchesType && matchesStatus;
+      if (searchTerm) {
+        const matchesSearch = asset.tag?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            asset.location?.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesSearch;
+      }
+      return true;
     });
-  }, [assets, searchTerm, filterType, filterStatus]);
+  }, [assets, searchTerm]);
 
   const getStatusColor = (status: HVACAsset['status']) => {
     switch (status) {
@@ -76,7 +100,7 @@ export const AssetsPage: React.FC = () => {
           onEditSuccess={async () => {
             // Pequeno delay para garantir que o backend processou
             await new Promise(resolve => setTimeout(resolve, 500));
-            await loadAssetsFromApi(); // Recarregar assets da API após edição
+            await refetch(); // Refetch usando React Query
           }}
         />
       </div>
@@ -116,28 +140,28 @@ export const AssetsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-card rounded-lg p-4 border">
           <div className="text-2xl font-bold text-foreground">
-            {assets.filter(a => a.status === 'OK').length}
+            {assets.filter(a => a.status === 'OK' || a.status === 'ACTIVE').length}
           </div>
           <div className="text-sm text-muted-foreground">Ativos Normais</div>
         </div>
         
         <div className="bg-card rounded-lg p-4 border">
           <div className="text-2xl font-bold text-yellow-600">
-            {assets.filter(a => a.status === 'Maintenance').length}
+            {assets.filter(a => a.status === 'Maintenance' || a.status === 'MAINTENANCE').length}
           </div>
           <div className="text-sm text-muted-foreground">Em Manutenção</div>
         </div>
         
         <div className="bg-card rounded-lg p-4 border">
           <div className="text-2xl font-bold text-orange-600">
-            {assets.filter(a => a.status === 'Alert').length}
+            {assets.filter(a => a.status === 'Alert' || a.status === 'WARNING').length}
           </div>
           <div className="text-sm text-muted-foreground">Com Alertas</div>
         </div>
         
         <div className="bg-card rounded-lg p-4 border">
           <div className="text-2xl font-bold text-red-600">
-            {assets.filter(a => a.status === 'Stopped').length}
+            {assets.filter(a => a.status === 'Stopped' || a.status === 'INACTIVE' || a.status === 'ERROR').length}
           </div>
           <div className="text-sm text-muted-foreground">Parados</div>
         </div>
@@ -167,12 +191,13 @@ export const AssetsPage: React.FC = () => {
                       <div>
                         <button
                           onClick={() => setSelectedAsset(asset.id)}
+                          onMouseEnter={() => prefetchAssetDetails(asset.id)}
                           className="font-semibold text-primary hover:text-primary/80 text-left"
                         >
                           {asset.tag}
                         </button>
                         <div className="text-xs text-muted-foreground">
-                          {asset.specifications.capacity && (
+                          {asset.specifications?.capacity && (
                             <span>{asset.specifications.capacity} {asset.type === 'Chiller' ? 'tons' : 'kW'}</span>
                           )}
                         </div>
@@ -190,9 +215,9 @@ export const AssetsPage: React.FC = () => {
                   
                   <td className="py-4 px-6">
                     <div className="flex items-center space-x-2">
-                      <Heart className={`w-4 h-4 ${getHealthColor(asset.healthScore)}`} />
-                      <span className={`font-medium ${getHealthColor(asset.healthScore)}`}>
-                        {asset.healthScore.toFixed(0)}%
+                      <Heart className={`w-4 h-4 ${getHealthColor(asset.healthScore || 0)}`} />
+                      <span className={`font-medium ${getHealthColor(asset.healthScore || 0)}`}>
+                        {asset.healthScore ? asset.healthScore.toFixed(0) : '0'}%
                       </span>
                     </div>
                   </td>
@@ -200,7 +225,7 @@ export const AssetsPage: React.FC = () => {
                   <td className="py-4 px-6">
                     <div className="flex items-center space-x-2">
                       <Zap className="w-4 h-4 text-yellow-600" />
-                      <span className="text-sm">{asset.powerConsumption.toLocaleString('pt-BR')}</span>
+                      <span className="text-sm">{asset.powerConsumption ? asset.powerConsumption.toLocaleString('pt-BR') : '0'}</span>
                     </div>
                   </td>
                   
@@ -241,7 +266,7 @@ export const AssetsPage: React.FC = () => {
                       <DeleteAssetButton 
                         assetId={asset.id} 
                         assetName={asset.tag}
-                        onDeleteSuccess={() => loadAssetsFromApi()}
+                        onDeleteSuccess={() => refetch()}
                       />
                     </div>
                   </td>
