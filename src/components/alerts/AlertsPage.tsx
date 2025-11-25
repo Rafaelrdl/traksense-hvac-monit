@@ -47,7 +47,7 @@ export const AlertsPage: React.FC = () => {
   const prefetchAlertDetails = (alertId: number) => {
     queryClient.prefetchQuery({
       queryKey: ['alerts', alertId],
-      queryFn: () => alertsApi.getAlertById(alertId),
+      queryFn: () => alertsApi.get(alertId),
       staleTime: 1000 * 60 * 5, // 5 minutos
     });
   };

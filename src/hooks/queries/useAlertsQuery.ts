@@ -3,11 +3,15 @@ import { alertsApi, AlertListParams } from '@/services/api/alerts';
 
 /**
  * Query hook para listar alertas com filtros
+ * Retorna apenas o array de alertas (extrai de results)
  */
 export const useAlertsQuery = (filters: AlertListParams = {}) => {
   return useQuery({
     queryKey: ['alerts', filters],
-    queryFn: () => alertsApi.list(filters),
+    queryFn: async () => {
+      const response = await alertsApi.list(filters);
+      return response.results || [];
+    },
     refetchInterval: 30000, // 30 segundos
     staleTime: 1000 * 20, // 20 segundos
     retry: 2, // Retry 2x
@@ -17,11 +21,15 @@ export const useAlertsQuery = (filters: AlertListParams = {}) => {
 
 /**
  * Query hook para alertas ativos (com polling mais frequente)
+ * Retorna apenas o array de alertas
  */
 export const useActiveAlertsQuery = () => {
   return useQuery({
     queryKey: ['alerts', 'active'],
-    queryFn: () => alertsApi.list({ status: 'active' }),
+    queryFn: async () => {
+      const response = await alertsApi.list({ status: 'active' });
+      return response.results || [];
+    },
     refetchInterval: 10000, // 10 segundos para alertas críticos
     staleTime: 1000 * 5, // 5 segundos
     retry: 3, // Retry 3x para queries críticas
@@ -42,14 +50,18 @@ export const useAlertQuery = (alertId: number | null) => {
 
 /**
  * Query hook para histórico de alertas
+ * Retorna apenas o array de alertas
  */
 export const useAlertHistoryQuery = (ruleId?: number) => {
   return useQuery({
     queryKey: ['alerts', 'history', ruleId],
-    queryFn: () => alertsApi.list({ 
-      status: 'resolved',
-      rule_id: ruleId,
-    }),
+    queryFn: async () => {
+      const response = await alertsApi.list({ 
+        status: 'resolved',
+        rule_id: ruleId,
+      });
+      return response.results || [];
+    },
     staleTime: 1000 * 60 * 5, // 5 minutos
   });
 };

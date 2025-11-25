@@ -93,7 +93,10 @@ export const WidgetConfig: React.FC<WidgetConfigProps> = ({ widget, layoutId, op
     // Encontrar o deviceId correspondente ao displayName selecionado
     const selectedDevice = availableDevices.find(d => d.displayName === selectedDeviceName);
     if (!selectedDevice) {
-      console.warn(`⚠️ Device ${selectedDeviceName} não encontrado`);
+      // Só mostrar aviso se existem devices disponíveis (config legacy sem devices reais)
+      if (availableDevices.length > 0) {
+        console.warn(`⚠️ Device ${selectedDeviceName} não encontrado na lista de ${availableDevices.length} devices`);
+      }
       return [];
     }
     

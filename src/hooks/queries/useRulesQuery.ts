@@ -7,7 +7,11 @@ import { rulesApi, CreateRuleRequest, UpdateRuleRequest } from '@/services/api/a
 export const useRulesQuery = (filters = {}) => {
   return useQuery({
     queryKey: ['rules', filters],
-    queryFn: () => rulesApi.list(filters),
+    queryFn: async () => {
+      const response = await rulesApi.list(filters);
+      // API retorna { results: Rule[], count: number }
+      return response.results || [];
+    },
     staleTime: 1000 * 60 * 5, // 5 minutos
   });
 };
@@ -47,10 +51,10 @@ export const useCreateRuleMutation = () => {
       await queryClient.cancelQueries({ queryKey: ['rules'] });
       
       // Snapshot
-      const previousRules = queryClient.getQueryData(['rules']);
+      const previousRules = queryClient.getQueryData(['rules', {}]);
       
       // Optimistically add
-      queryClient.setQueryData(['rules', {}], (old: any) => {
+      queryClient.setQueryData(['rules', {}], (old: any[] | undefined) => {
         if (!old) return [{ ...newRule, id: Date.now(), enabled: true }];
         return [...old, { ...newRule, id: Date.now(), enabled: true }];
       });
@@ -72,24 +76,25 @@ export const useCreateRuleMutation = () => {
 
 /**
  * Mutation hook para atualizar regra
+ * Usa PATCH para atualização parcial (mais seguro que PUT)
  */
 export const useUpdateRuleMutation = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateRuleRequest }) =>
-      rulesApi.update(id, data),
+      rulesApi.patch(id, data),
     onMutate: async ({ id, data }) => {
       // Cancel queries
       await queryClient.cancelQueries({ queryKey: ['rules'] });
       await queryClient.cancelQueries({ queryKey: ['rules', id] });
       
       // Snapshot
-      const previousRules = queryClient.getQueryData(['rules']);
+      const previousRules = queryClient.getQueryData(['rules', {}]);
       const previousRule = queryClient.getQueryData(['rules', id]);
       
       // Optimistically update
-      queryClient.setQueryData(['rules', {}], (old: any) => {
+      queryClient.setQueryData(['rules', {}], (old: any[] | undefined) => {
         if (!old) return old;
         return old.map((rule: any) => 
           rule.id === id ? { ...rule, ...data } : rule
@@ -134,29 +139,34 @@ export const useDeleteRuleMutation = () => {
 
 /**
  * Mutation hook para toggle enable/disable regra
+ * Usa o endpoint dedicado /toggle_status/ do backend
  */
 export const useToggleRuleMutation = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, enabled }: { id: number; enabled: boolean }) =>
-      rulesApi.update(id, { enabled }),
-    onMutate: async ({ id, enabled }) => {
-      // Optimistic update
-      await queryClient.cancelQueries({ queryKey: ['rules', id] });
-      const previousRule = queryClient.getQueryData(['rules', id]);
+    mutationFn: (ruleId: number) => rulesApi.toggleStatus(ruleId),
+    onMutate: async (ruleId) => {
+      // Cancel queries
+      await queryClient.cancelQueries({ queryKey: ['rules'] });
       
-      queryClient.setQueryData(['rules', id], (old: any) => ({
-        ...old,
-        enabled,
-      }));
+      // Snapshot
+      const previousRules = queryClient.getQueryData(['rules', {}]);
       
-      return { previousRule };
+      // Optimistic update - toggle o status
+      queryClient.setQueryData(['rules', {}], (old: any[] | undefined) => {
+        if (!old) return old;
+        return old.map((rule: any) => 
+          rule.id === ruleId ? { ...rule, enabled: !rule.enabled } : rule
+        );
+      });
+      
+      return { previousRules };
     },
-    onError: (err, variables, context) => {
+    onError: (_err, _ruleId, context) => {
       // Rollback on error
-      if (context?.previousRule) {
-        queryClient.setQueryData(['rules', variables.id], context.previousRule);
+      if (context?.previousRules) {
+        queryClient.setQueryData(['rules', {}], context.previousRules);
       }
     },
     onSettled: () => {

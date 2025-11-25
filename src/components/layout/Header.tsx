@@ -9,6 +9,7 @@ import { EditProfileDialog } from '../auth/EditProfileDialog';
 import { TeamManagementDialog } from '../auth/TeamManagementDialog';
 import { PreferencesDialog } from '../auth/PreferencesDialog';
 import { HeaderNotifications } from '@/components/header/HeaderNotifications';
+import { useAlertNotifications } from '@/hooks/queries/useAlertNotifications';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { 
@@ -44,6 +45,9 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
   const [isTeamManagementOpen, setIsTeamManagementOpen] = useState(false);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const isMobile = useIsMobile();
+  
+  // Sincronizar alertas ativos com sistema de notificações
+  useAlertNotifications();
   
   // Configurações de timezone e formato de hora do usuário
   const userTimezone = user?.timezone || 'America/Sao_Paulo';

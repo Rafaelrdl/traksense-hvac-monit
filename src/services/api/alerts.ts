@@ -186,6 +186,7 @@ export interface AlertListParams {
   asset_tag?: string;
   page?: number;
   page_size?: number;
+  ordering?: string;
 }
 
 // ============================================================================

@@ -81,7 +81,8 @@ export type WidgetType =
   
   // Outros
   | 'text-display'         // Exibição de texto
-  | 'photo-upload';        // Upload de foto
+  | 'photo-upload'         // Upload de foto
+  | 'iframe-embed';        // Iframe embarcado
 
 export interface DashboardLayout {
   id: string;

@@ -57,7 +57,7 @@ export const RuleBuilder: React.FC = () => {
   const prefetchRuleDetails = (ruleId: number) => {
     queryClient.prefetchQuery({
       queryKey: ['rules', ruleId],
-      queryFn: () => rulesApi.getRuleById(ruleId),
+      queryFn: () => rulesApi.get(ruleId),
       staleTime: 1000 * 60 * 5,
     });
   };
@@ -261,7 +261,7 @@ export const RuleBuilder: React.FC = () => {
                 <div className="flex items-center gap-2 ml-4">
                   <Switch
                     checked={rule.enabled}
-                    onCheckedChange={() => handleToggleRule(Number(rule.id))}
+                    onCheckedChange={() => handleToggleRule(rule.id)}
                   />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

@@ -204,10 +204,13 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
           severity: severityBackendToFrontend[param.severity] || param.severity.toUpperCase() as Severity,
         }));
         setParameters(convertedParameters);
+        
+        // Carregar os sensores para descobrir o device de cada parâmetro
+        loadSensorsAndRecoverDevices(editingRule.equipment, convertedParameters);
       } 
       // Se é regra antiga (campo único), converter para array
       else if (editingRule.parameter_key) {
-        setParameters([{
+        const params = [{
           parameter_key: editingRule.parameter_key,
           variable_key: editingRule.variable_key || '',
           operator: editingRule.operator!,
@@ -216,10 +219,12 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
           severity: severityBackendToFrontend[editingRule.severity!] || editingRule.severity!.toUpperCase() as Severity,
           message_template: DEFAULT_MESSAGE_TEMPLATE,
           unit: editingRule.unit,
-        }]);
+        }];
+        setParameters(params);
+        loadSensorsAndRecoverDevices(editingRule.equipment, params);
       }
       
-      setTimeout(() => setIsInitializing(false), 0);
+      setTimeout(() => setIsInitializing(false), 500);
     } else {
       // Reset para nova regra
       setIsInitializing(false);
@@ -230,6 +235,77 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
       setParameters([]);
     }
   }, [editingRule, open]);
+
+  // Função para carregar todos os sensores e recuperar device_id dos parâmetros
+  const loadSensorsAndRecoverDevices = async (eqId: number, params: any[]) => {
+    try {
+      const { assetsService } = await import('@/services/assetsService');
+      const { api } = await import('@/lib/api');
+      
+      setLoadingDevices(true);
+      
+      // Carregar devices do equipamento
+      const devices = await assetsService.getDevices(eqId);
+      
+      // Converter devices para o formato usado pelo select
+      const devicesWithDisplay = devices.map(device => {
+        let displayName = device.name;
+        if (device.serial_number) {
+          const parts = device.serial_number.split('-');
+          displayName = parts[parts.length - 1] || device.serial_number.slice(-4);
+        }
+        return {
+          id: device.id,
+          name: device.name,
+          displayName: `Device ${displayName}`,
+          mqtt_client_id: device.mqtt_client_id,
+        };
+      });
+      
+      // Popular availableDevices para o select funcionar
+      setAvailableDevices(devicesWithDisplay);
+      setLoadingDevices(false);
+      
+      // Carregar sensores de todos os devices em paralelo
+      const sensorsByDevice: Record<number, any[]> = {};
+      await Promise.all(devices.map(async (device) => {
+        try {
+          const response = await api.get<any[]>(`/devices/${device.id}/sensors/`);
+          sensorsByDevice[device.id] = response.data.map(sensor => ({
+            key: `sensor_${sensor.id}`,
+            label: `${sensor.tag} - ${sensor.metric_type}`,
+            type: sensor.metric_type,
+            sensorId: sensor.id,
+            sensorTag: sensor.tag,
+            deviceId: device.id,
+          }));
+        } catch (error) {
+          console.error(`Erro ao carregar sensores do device ${device.id}:`, error);
+          sensorsByDevice[device.id] = [];
+        }
+      }));
+      
+      setAvailableSensorsByDevice(sensorsByDevice);
+      
+      // Agora recuperar o device_id de cada parâmetro
+      const updatedParams = params.map(param => {
+        // Procurar em qual device está o sensor
+        for (const [deviceId, sensors] of Object.entries(sensorsByDevice)) {
+          const sensor = sensors.find((s: any) => s.key === param.parameter_key);
+          if (sensor) {
+            return { ...param, device_id: parseInt(deviceId) };
+          }
+        }
+        return param;
+      });
+      
+      console.log('📡 Parâmetros recuperados com device_id:', updatedParams);
+      setParameters(updatedParams);
+    } catch (error) {
+      console.error('Erro ao recuperar devices dos parâmetros:', error);
+      setLoadingDevices(false);
+    }
+  };
 
   // Adicionar novo parâmetro
   const addParameter = () => {
@@ -357,7 +433,7 @@ export function AddRuleModalMultiParam({ open, onOpenChange, editingRule }: AddR
 
     if (editingRule) {
       updateMutation.mutate(
-        { ruleId: editingRule.id, data: ruleData },
+        { id: editingRule.id, data: ruleData },
         {
           onSuccess: () => {
             toast.success('Regra atualizada!', {
