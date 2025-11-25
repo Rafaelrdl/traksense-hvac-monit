@@ -72,14 +72,6 @@ export const SensorsPage: React.FC = () => {
                 <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
                 <span>Atualizado às {lastUpdate.toLocaleTimeString()}</span>
               </div>
-              <button
-                onClick={handleManualRefresh}
-                disabled={isLoadingAssets}
-                className="px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 rounded-md transition-colors disabled:opacity-50"
-                title="Atualizar agora (próxima atualização automática em 30s)"
-              >
-                🔄 Atualizar
-              </button>
             </div>
           )}
           

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useAppStore, useSelectedAsset, useTimeRangeMs } from '../../store/app';
-import { useAlertsQuery } from '@/hooks/queries';
+import { useAppStore, useTimeRangeMs } from '../../store/app';
+import { useAlertsQuery, useAssetDetailsQuery } from '@/hooks/queries';
 import { useFeaturesStore } from '../../store/features';
 import { hasPerformanceTelemetry, reasonMissingTelemetry } from '../../lib/hasPerformanceTelemetry';
 import { MultiSeriesTelemetryChart } from '../charts/TelemetryChart';
@@ -13,6 +13,7 @@ import { ContactSalesDialog } from '../common/ContactSalesDialog';
 import { assetsService } from '../../services/assetsService';
 import { telemetryService } from '../../services/telemetryService';
 import type { ApiSensor } from '../../types/api';
+import type { HVACAsset } from '../../types/hvac';
 import { 
   ArrowLeft, 
   ExternalLink, 
@@ -34,8 +35,47 @@ import {
 } from 'lucide-react';
 
 export const AssetDetailPage: React.FC = () => {
-  const { setSelectedAsset, sensors } = useAppStore();
-  const selectedAsset = useSelectedAsset();
+  const { setSelectedAsset, sensors, selectedAssetId } = useAppStore();
+  
+  // React Query: buscar detalhes do asset selecionado
+  const { data: assetData, isLoading: isLoadingAsset } = useAssetDetailsQuery(selectedAssetId);
+  
+  // Converter para HVACAsset (compatibilidade com código existente)
+  const selectedAsset: HVACAsset | null = assetData ? {
+    id: assetData.id,
+    tag: assetData.tag,
+    name: assetData.name,
+    type: assetData.asset_type as any,
+    status: assetData.status as any,
+    siteId: assetData.site,
+    location: assetData.location_description || assetData.full_location || '',
+    model: assetData.model || '',
+    manufacturer: assetData.manufacturer || '',
+    serialNumber: assetData.serial_number || '',
+    installDate: assetData.installation_date || assetData.created_at,
+    lastMaintenance: assetData.last_maintenance || assetData.updated_at,
+    healthScore: assetData.health_score || 85,
+    operatingHours: 0, // TODO: calcular do backend
+    powerConsumption: 0, // TODO: calcular do backend
+    // Mapear especificações - combinar dados do backend com campos diretos
+    specifications: {
+      brand: assetData.manufacturer || assetData.specifications?.brand || '',
+      model: assetData.model || assetData.specifications?.model || '',
+      serialNumber: assetData.serial_number || assetData.specifications?.serialNumber || '',
+      capacity: assetData.specifications?.capacity,
+      capacityUnit: assetData.specifications?.capacityUnit || 'TR',
+      voltage: assetData.specifications?.voltage,
+      phases: assetData.specifications?.phases,
+      refrigerant: assetData.specifications?.refrigerant,
+      equipmentType: assetData.asset_type as any,
+      equipmentTypeOther: assetData.asset_type_other || '',
+      ...assetData.specifications, // Incluir outros campos extras
+    },
+    // Informações de localização
+    company: assetData.specifications?.company || '',
+    sector: assetData.specifications?.sector || '',
+    subsector: assetData.specifications?.subsector || '',
+  } : null;
   
   // React Query: buscar alertas do asset
   const { data: allAlerts = [] } = useAlertsQuery({
@@ -56,7 +96,19 @@ export const AssetDetailPage: React.FC = () => {
   const [isLoadingTelemetry, setIsLoadingTelemetry] = useState(false);
   const [telemetryPeriod, setTelemetryPeriod] = useState<'24h' | '7d' | '30d'>('24h');
 
-  if (!selectedAsset) {
+  // Estado de loading
+  if (isLoadingAsset) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Carregando ativo...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!selectedAsset || !selectedAssetId) {
     return (
       <div className="p-6">
         <div className="text-center py-12">
