@@ -132,7 +132,7 @@ function NotificationItem({ notification, onMarkRead, onRemove }: {
  * - Keyboard accessible
  */
 export function HeaderNotifications({ onNavigateToAlerts }: { onNavigateToAlerts?: () => void }) {
-  const { items, unreadCount, markRead, markAllRead, remove } = useNotifications();
+  const { items, unreadCount, markRead, markAllRead, remove, clear } = useNotifications();
   const unread = unreadCount();
   
   return (
@@ -167,16 +167,28 @@ export function HeaderNotifications({ onNavigateToAlerts }: { onNavigateToAlerts
               </p>
             )}
           </div>
-          {unread > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={markAllRead}
-              className="h-8 text-xs"
-            >
-              Marcar todas
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {unread > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={markAllRead}
+                className="h-8 text-xs"
+              >
+                Marcar todas
+              </Button>
+            )}
+            {items.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clear}
+                className="h-8 text-xs text-muted-foreground hover:text-destructive"
+              >
+                Limpar
+              </Button>
+            )}
+          </div>
         </div>
         
         {/* Notification list */}
